@@ -40,3 +40,4 @@ async def report_incident(req: IncidentCreate):
 async def change_incident_status(incident_id: str, req: IncidentStatusUpdate):
     await update_incident_status(incident_id, req.status)
     return {"status": "ok", "incident_id": incident_id, "new_status": req.status}
+

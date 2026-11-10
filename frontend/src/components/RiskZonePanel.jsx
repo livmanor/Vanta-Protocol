@@ -107,3 +107,4 @@ export default function RiskZonePanel({ zone, onClose, onGenerateRoute, loadingR
     </div>
   );
 }
+

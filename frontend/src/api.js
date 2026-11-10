@@ -94,3 +94,4 @@ export async function reportBlockedRoad(roadData) {
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to report road diversion`);
   return res.json();
 }
+

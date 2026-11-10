@@ -69,3 +69,4 @@ export default function EvacuationPanel({ route, onClose, onClearRoute }) {
     </div>
   );
 }
+

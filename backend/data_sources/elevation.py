@@ -61,3 +61,4 @@ async def get_real_elevations(points: List[Tuple[float, float]]) -> Dict[str, An
             "data": None,
             "error": str(e)
         }
+

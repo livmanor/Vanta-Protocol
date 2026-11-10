@@ -175,3 +175,4 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
     </div>
   );
 }
+

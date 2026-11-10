@@ -89,3 +89,4 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
     </div>
   );
 }
+

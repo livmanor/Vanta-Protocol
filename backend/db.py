@@ -194,3 +194,4 @@ async def log_officer_decision(decision_id: str, decision_type: str, details: di
             (decision_id, decision_type, json.dumps(details), officer_id, now_iso)
         )
         await db.commit()
+

@@ -83,3 +83,4 @@ async def get_real_shelters_and_stations(bbox: tuple = None) -> Dict[str, Any]:
             "data": [],
             "error": str(e)
         }
+

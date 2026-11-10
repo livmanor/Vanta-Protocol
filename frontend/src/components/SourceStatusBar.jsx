@@ -71,3 +71,4 @@ export default function SourceStatusBar({ sources, onRefresh, loading }) {
     </header>
   );
 }
+

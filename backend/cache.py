@@ -25,3 +25,4 @@ class SimpleTTLCache:
         self._cache.clear()
 
 global_cache = SimpleTTLCache()
+

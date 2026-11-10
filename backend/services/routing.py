@@ -123,3 +123,4 @@ async def find_evacuation_route(
         why_this=f"Direct emergency corridor to '{shelter_name}' (OSRM live routing service temporarily unreachable). Distance: {min_dist:.2f} km.",
         computed_at=now_iso
     )
+

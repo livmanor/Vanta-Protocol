@@ -15,3 +15,4 @@ async def get_risk_zones():
         return zones
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to compute risk zones: {str(e)}")
+

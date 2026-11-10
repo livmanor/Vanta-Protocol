@@ -49,3 +49,4 @@ async def create_blocked_road(req: BlockedRoadCreate):
     )
     await insert_blocked_road(record)
     return record
+

@@ -123,3 +123,4 @@ async def get_real_river_discharge(lat: float, lng: float) -> Dict[str, Any]:
             "data": None,
             "error": str(e)
         }
+

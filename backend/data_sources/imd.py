@@ -78,3 +78,4 @@ async def get_real_imd_alerts(city_name: str = None) -> Dict[str, Any]:
             "data": [],
             "error": f"IMD public feed unreachable: {e}"
         }
+

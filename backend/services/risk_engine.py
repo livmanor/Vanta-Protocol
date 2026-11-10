@@ -220,3 +220,4 @@ async def compute_real_risk_zones() -> List[RiskZone]:
         )
 
     return risk_zones
+

@@ -137,3 +137,4 @@ export default function BlockedRoadModal({ isOpen, onClose, onReport }) {
     </div>
   );
 }
+

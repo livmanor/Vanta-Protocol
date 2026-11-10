@@ -180,3 +180,4 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
     </div>
   );
 }
+
