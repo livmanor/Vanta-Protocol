@@ -299,6 +299,74 @@ export default function Map({
     layersRef.current.prepositions = prepGroup;
   }, [prepositionSuggestions]);
 
+  // Update Blocked Roads Layer (officer-drawn road blockages / diversions)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (layersRef.current.blockedRoads) {
+      map.removeLayer(layersRef.current.blockedRoads);
+      layersRef.current.blockedRoads = null;
+    }
+
+    if (!blockedRoads || blockedRoads.length === 0) return;
+
+    const roadGroup = L.layerGroup();
+    blockedRoads.forEach(road => {
+      if (!road.geometry) return;
+
+      // Draw the blocked road LineString as a thick red-orange dashed line
+      const roadLayer = L.geoJSON(
+        { type: 'Feature', geometry: road.geometry },
+        {
+          style: {
+            color: '#f97316',
+            weight: 6,
+            opacity: 0.9,
+            dashArray: '8, 6',
+            lineCap: 'round',
+            lineJoin: 'round'
+          }
+        }
+      );
+
+      roadLayer.bindPopup(`
+        <div class="text-xs">
+          <div class="font-bold text-orange-400 uppercase tracking-wide">⚠ Road Blocked / Diversion</div>
+          <div class="text-white font-semibold mt-0.5">${road.name}</div>
+          <div class="text-gray-300 mt-1">Reason: ${road.reason}</div>
+          <div class="text-gray-400 text-[10px] mt-1">
+            Reported by: ${road.reported_by} | ${new Date(road.timestamp).toLocaleTimeString()}
+          </div>
+        </div>
+      `);
+
+      // Add a warning icon marker at the midpoint of the LineString
+      const coords = road.geometry.coordinates;
+      if (coords && coords.length > 0) {
+        const mid = coords[Math.floor(coords.length / 2)];
+        const warnIcon = L.divIcon({
+          className: 'blocked-road-icon',
+          html: `
+            <div class="w-6 h-6 bg-orange-500 text-white rounded flex items-center justify-center text-xs font-black border border-orange-300 shadow-lg">
+              ✕
+            </div>
+          `,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker([mid[1], mid[0]], { icon: warnIcon })
+          .bindTooltip(`BLOCKED: ${road.name}`, { sticky: true })
+          .addTo(roadGroup);
+      }
+
+      roadGroup.addLayer(roadLayer);
+    });
+
+    roadGroup.addTo(map);
+    layersRef.current.blockedRoads = roadGroup;
+  }, [blockedRoads]);
+
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
