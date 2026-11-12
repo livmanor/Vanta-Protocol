@@ -47,7 +47,8 @@ export default function App() {
   const [isRoadModalOpen, setIsRoadModalOpen] = useState(false);
 
   // Active Tab in Sidebar: 'zones' | 'preposition' | 'incidents'
-  const [activeTab, setActiveTab] = useState('zones');
+  // The agent workbench is the primary landing screen; the map is an on-demand view.
+  const [activeTab, setActiveTab] = useState('agents');
 
   // Load all initial state
   const loadData = useCallback(async () => {
