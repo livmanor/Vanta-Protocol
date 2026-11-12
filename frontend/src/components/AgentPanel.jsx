@@ -31,6 +31,9 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
     setConsent(false);
     try {
       const data = await searchPredictHistory(historyQuery.trim());
+      // #region agent log
+      fetch('http://127.0.0.1:7369/ingest/b6948bf1-0c84-4082-aca8-dc71a9b2d020',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'715d98'},body:JSON.stringify({sessionId:'715d98',hypothesisId:'A',location:'AgentPanel.jsx:handleHistorySearch',message:'ui auto-selects first event',data:{query:historyQuery.trim(),status:data.status,eventCount:data.events?.length,firstId:data.events?.[0]?.id,firstMean:data.events?.[0]?.mean_hotspot_rainfall_mm,firstSpan:[data.events?.[0]?.window_start,data.events?.[0]?.window_end],peakMean:Math.max(0,...(data.events||[]).map(e=>e.mean_hotspot_rainfall_mm||0))},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       setHistory(data);
       setSelectedEventId(data.events?.[0]?.id || '');
       setSelectedHistoryZone(data.resolved_zone_id || '');

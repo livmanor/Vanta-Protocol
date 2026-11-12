@@ -78,6 +78,14 @@ async def search_predict_history(search: HistorySearch):
     if zone_id:
         for event in result.get("events", []):
             event["areas"] = [area for area in event["areas"] if area["zone_id"] == zone_id]
+    # #region agent log
+    try:
+        import json as _json
+        _events = result.get("events") or []
+        open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"A","location":"predict_history.py:search","message":"resolved history search","data":{"query":search.query,"resolved_start":start.isoformat(),"resolved_end":end.isoformat(),"zone_id":zone_id,"event_count":len(_events),"auto_select_id":(_events[0]["id"] if _events else None),"auto_select_mean_mm":(_events[0].get("mean_hotspot_rainfall_mm") if _events else None),"over_14_day_ids":[item["id"] for item in _events if (datetime.fromisoformat(item["window_end"]).date()-datetime.fromisoformat(item["window_start"]).date()).days>14],"archive_status":result.get("status")},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
+    except Exception:
+        pass
+    # #endregion
     return {
         **result,
         "query": search.query,
@@ -101,6 +109,14 @@ async def run_predict_for_selected_history(selection: PredictHistoryRun):
         raise HTTPException(status_code=403, detail="Confirm that the selected rainfall event and summarized impact counts may be sent to Google Gemini for this run.")
 
     today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+    span_days = (selection.event_end - selection.event_start).days
+    # #region agent log
+    try:
+        import json as _json
+        open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"C","location":"predict_history.py:run","message":"predict run validation","data":{"event_start":selection.event_start.isoformat(),"event_end":selection.event_end.isoformat(),"span_days":span_days,"zone_id":selection.zone_id,"over_14":span_days>14},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
+    except Exception:
+        pass
+    # #endregion
     if selection.event_start > selection.event_end:
         raise HTTPException(status_code=422, detail="The event start date must be before its end date.")
     if selection.event_end >= today:

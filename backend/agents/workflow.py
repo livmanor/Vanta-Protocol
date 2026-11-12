@@ -305,6 +305,15 @@ async def list_rain_history_events(
     statuses = [item.get("status") for item in source_status.values()]
     healthy_sources = sum(status in ("live", "stale") for status in statuses)
     history_status = "live" if statuses and all(status == "live" for status in statuses) else "partial" if healthy_sources else "failed"
+    # #region agent log
+    try:
+        import json as _json
+        _peak = max(events, key=lambda item: item.get("mean_hotspot_rainfall_mm") or 0) if events else None
+        _long = [item for item in events if (datetime.fromisoformat(item["window_end"]).date() - datetime.fromisoformat(item["window_start"]).date()).days > 14]
+        open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"A","location":"workflow.py:list_rain_history_events","message":"history events ranked","data":{"event_count":len(events),"wet_day_count":len(wet_days),"first_event":events[0] if events else None,"peak_event":{"id":(_peak or {}).get("id"),"mean_mm":(_peak or {}).get("mean_hotspot_rainfall_mm")},"events_over_14_days":[{"id":item["id"],"mean_mm":item["mean_hotspot_rainfall_mm"]} for item in _long],"history_status":history_status,"available_from":available_days[0] if available_days else None,"available_through":available_days[-1] if available_days else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
+    except Exception:
+        pass
+    # #endregion
     return {
         "source": "Open-Meteo Historical Weather API",
         "status": history_status,
@@ -446,6 +455,13 @@ async def run_predict_agent(
     officer_query: str | None = None,
 ) -> Dict[str, Any]:
     zones, source_status, recent_rain_impacts = await _weather_and_history(event_start, event_end, zone_id)
+    # #region agent log
+    try:
+        import json as _json
+        open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"D","location":"workflow.py:run_predict_agent","message":"predict inputs","data":{"event_start":event_start,"event_end":event_end,"zone_id":zone_id,"history_status":recent_rain_impacts.get("status"),"zone_profiles":[{"zone_id":item.get("zone_id"),"rain_mm":item.get("event_precipitation_total_mm"),"incidents":item.get("incident_count"),"roads":item.get("blocked_road_reports")} for item in recent_rain_impacts.get("zones") or []],"live_risk":[{"id":z.id,"level":z.risk_level,"rain24":getattr(z.explanation,"rainfall_24h_mm",None)} for z in zones]},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
+    except Exception:
+        pass
+    # #endregion
     prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language, officer_query)
     return {
         "status": "complete", "agent": "predict", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
