@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { Compass, Check, AlertCircle, Shield, ArrowRight } from 'lucide-react';
+import { useLanguage } from '../i18n.jsx';
 
 export default function PrepositionPanel({ suggestions, onApprove, loading }) {
+  const { language } = useLanguage();
+  const words = {
+    en: ['Patrol & Rescue Preparation', 'AI recommendations', 'The system matches nearby available units to priority risk zones.', 'Officer approval is required before dispatch.', 'Why this?', 'Approve dispatch', 'Authorizing dispatch…', 'No pending recommendations', 'Register field units and assess them against active high-risk zones.'],
+    hi: ['गश्ती एवं बचाव तैयारी', 'एआई सुझाव', 'प्रणाली नज़दीकी उपलब्ध दलों को प्राथमिक जोखिम क्षेत्रों से मिलाती है।', 'रवाना करने से पहले अधिकारी की मंज़ूरी आवश्यक है।', 'कारण:', 'तैनाती मंज़ूर करें', 'तैनाती मंज़ूर हो रही है…', 'कोई सुझाव लंबित नहीं', 'फील्ड दल पंजीकृत करें और सक्रिय उच्च जोखिम क्षेत्रों का आकलन करें।'],
+    te: ['పెట్రోలింగ్ & రక్షణ సన్నద్ధత', 'ఏఐ సూచనలు', 'ప్రాధాన్య ప్రమాద ప్రాంతాలకు సమీపంలోని అందుబాటు బృందాలను వ్యవస్థ సరిపోలుస్తుంది.', 'పంపిణీకి ముందు అధికారి ఆమోదం తప్పనిసరి.', 'కారణం:', 'మోహరింపును ఆమోదించండి', 'మోహరింపు ఆమోదిస్తోంది…', 'పెండింగ్ సూచనలు లేవు', 'ఫీల్డ్ బృందాలను నమోదు చేసి, అధిక ప్రమాద ప్రాంతాలను అంచనా వేయండి.'],
+  }[language] || [];
   const [approvingId, setApprovingId] = useState(null);
 
   const handleApprove = async (s) => {
@@ -18,15 +25,15 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Compass className="w-4 h-4 text-amber-400" />
-          <span className="font-bold text-white text-sm">Patrol & Rescue Pre-Positioning</span>
+          <span className="font-bold text-white text-sm">{words[0]}</span>
         </div>
         <span className="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800 text-[10px] font-semibold">
-          AI Recommendations
+          {words[1]}
         </span>
       </div>
 
       <div className="text-gray-400 text-[11px] leading-relaxed">
-        Algorithm matches closest available units to priority risk zones. <strong className="text-gray-200">Officer approval required</strong> before dispatch orders are executed.
+        {words[2]} <strong className="text-gray-100">{words[3]}</strong>
       </div>
 
       {suggestions && suggestions.length > 0 ? (
@@ -62,7 +69,7 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
               </div>
 
               <div className="bg-gray-950/50 p-2 rounded text-[10px] text-gray-400">
-                <span className="text-gray-300 font-semibold">Why this? </span>
+                <span className="text-gray-200 font-semibold">{words[4]} </span>
                 {s.why_this}
               </div>
 
@@ -72,7 +79,7 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
                 className="w-full mt-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-1.5 px-3 rounded flex items-center justify-center gap-1.5 transition disabled:opacity-50"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>{approvingId === s.id ? 'Authorizing Dispatch...' : 'Approve Pre-Positioning'}</span>
+                <span>{approvingId === s.id ? words[6] : words[5]}</span>
               </button>
             </div>
           ))}
@@ -80,9 +87,9 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
       ) : (
         <div className="bg-gray-900/50 border border-gray-800/80 rounded-lg p-4 text-center">
           <AlertCircle className="w-6 h-6 text-gray-500 mx-auto mb-1.5" />
-          <div className="text-gray-300 font-medium">No Pending Recommendations</div>
+          <div className="text-gray-200 font-medium">{words[7]}</div>
           <p className="text-[10px] text-gray-500 mt-1 max-w-[240px] mx-auto">
-            Units must be registered via "Register Unit" and assessed against active high-risk zones.
+            {words[8]}
           </p>
         </div>
       )}

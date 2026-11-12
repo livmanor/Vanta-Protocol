@@ -12,6 +12,7 @@ import UnitRegisterModal from './components/UnitRegisterModal';
 import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
 import AgentPanel from './components/AgentPanel';
+import { useLanguage } from './i18n.jsx';
 import { 
   fetchSources, fetchRiskZones, fetchUnits, registerUnit, 
   fetchIncidents, reportIncident, fetchPrepositionSuggestions, 
@@ -20,6 +21,7 @@ import {
 } from './api';
 
 export default function App() {
+  const { language, setLanguage, t } = useLanguage();
   const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
   const [zoneWeather, setZoneWeather] = useState([]);
@@ -154,7 +156,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0b0f19] text-gray-100 overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-[#080d17] text-gray-100 overflow-hidden text-sm">
       {/* 1. Data Source Freshness Status Bar */}
       <SourceStatusBar 
         sources={sources} 
@@ -163,38 +165,46 @@ export default function App() {
       />
 
       {/* 2. Command Ribbon */}
-      <div className="bg-[#111827] border-b border-gray-800 px-4 py-2 flex items-center justify-between gap-4">
+      <div className="bg-[#111c2d] border-b border-slate-700 px-5 py-3 flex items-center justify-between gap-4 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>
-            <span className="font-extrabold tracking-wider text-white text-sm">CONTROL ROOM</span>
-            <span className="text-xs text-gray-400">Greater Chennai Metropolitan Area</span>
+            <span className="font-extrabold tracking-wide text-white text-base">{t('controlRoom')}</span>
+            <span className="text-sm text-gray-300">{t('area')}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-950/80 p-1" aria-label={t('langLabel')}>
+            {[['en', 'English'], ['hi', 'हिन्दी'], ['te', 'తెలుగు']].map(([code, label]) => (
+              <button key={code} onClick={() => setLanguage(code)} aria-pressed={language === code}
+                className={`rounded-md px-2.5 py-1.5 text-xs font-bold transition ${language === code ? 'bg-cyan-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setIsIncidentModalOpen(true)}
-            className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow"
+            className="bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold px-3.5 py-2 rounded-lg flex items-center gap-2 transition shadow"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Log Incident ({incidents.length})</span>
+            <span>{t('logIncident')} ({incidents.length})</span>
           </button>
 
           <button
             onClick={() => setIsUnitModalOpen(true)}
-            className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow"
+            className="bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold px-3.5 py-2 rounded-lg flex items-center gap-2 transition shadow"
           >
             <Shield className="w-3.5 h-3.5" />
-            <span>Register Unit ({units.length})</span>
+            <span>{t('registerUnit')} ({units.length})</span>
           </button>
 
           <button
             onClick={() => setIsRoadModalOpen(true)}
-            className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow"
+            className="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold px-3.5 py-2 rounded-lg flex items-center gap-2 transition shadow"
           >
             <Route className="w-3.5 h-3.5" />
-            <span>Diversion / Road Block ({blockedRoads.length})</span>
+            <span>{t('roadBlock')} ({blockedRoads.length})</span>
           </button>
         </div>
       </div>
@@ -230,9 +240,9 @@ export default function App() {
         </div>
 
         {/* Tactical Control Sidebar */}
-        <div className="w-96 bg-[#111827] border-l border-gray-800 flex flex-col z-[400] h-full shadow-2xl">
+        <div className="w-[27rem] max-w-[48vw] bg-[#111827] border-l border-slate-700 flex flex-col z-[400] h-full shadow-2xl">
           {/* Tabs */}
-          <div className="flex border-b border-gray-800 bg-gray-900/60 p-1 gap-1 text-[10px]">
+          <div className="flex border-b border-gray-800 bg-gray-900/60 p-1.5 gap-1 text-xs">
             <button
               onClick={() => setActiveTab('zones')}
               className={`flex-1 py-1.5 rounded font-semibold transition flex items-center justify-center gap-1.5 ${
@@ -242,7 +252,7 @@ export default function App() {
               }`}
             >
               <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Risk Zones</span>
+              <span>{t('zones')}</span>
             </button>
 
             <button
@@ -254,7 +264,7 @@ export default function App() {
               }`}
             >
               <Compass className="w-3.5 h-3.5" />
-              <span>Pre-position</span>
+              <span>{t('prepare')}</span>
               {prepositionSuggestions.length > 0 && (
                 <span className="w-4 h-4 bg-amber-400 text-black text-[10px] font-extrabold rounded-full flex items-center justify-center">
                   {prepositionSuggestions.length}
@@ -271,7 +281,7 @@ export default function App() {
               }`}
             >
               <Brain className="w-3.5 h-3.5" />
-              <span>Agents</span>
+              <span>{t('agents')}</span>
             </button>
 
             <button
@@ -283,7 +293,7 @@ export default function App() {
               }`}
             >
               <Flame className="w-3.5 h-3.5" />
-              <span>Incidents</span>
+              <span>{t('incidents')}</span>
             </button>
           </div>
 
@@ -301,19 +311,19 @@ export default function App() {
                   />
                 ) : (
                   <div className="bg-gray-900/50 border border-gray-800 p-3 rounded-lg text-xs text-gray-400 text-center">
-                    Click any ward or polygon on the map to inspect live metrics & compute evacuation routes.
+                    {t('inspectMap')}
                   </div>
                 )}
 
                 <div className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center justify-between">
-                  <span>Monitored Municipal Wards ({riskZones.length})</span>
+                  <span>{t('monitoredWards')} ({riskZones.length})</span>
                   <button 
                     onClick={loadData}
                     disabled={loadingRisk}
                     className="text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
                   >
                     <RefreshCw className={`w-3 h-3 ${loadingRisk ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {t('refresh')}
                   </button>
                 </div>
 
@@ -331,7 +341,7 @@ export default function App() {
                       <div>
                         <div className="font-bold text-white">{z.name}</div>
                         <div className="text-[10px] text-gray-400 mt-0.5">
-                          Elev: {z.explanation?.mean_elevation_m?.toFixed(1) || 'N/A'}m | Rain: {z.explanation?.rainfall_24h_mm?.toFixed(1) || '0.0'}mm
+                          {t('elevation')}: {z.explanation?.mean_elevation_m?.toFixed(1) || 'N/A'}m | {t('rain')}: {z.explanation?.rainfall_24h_mm?.toFixed(1) || '0.0'}mm
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -341,7 +351,7 @@ export default function App() {
                           z.risk_level === 2 ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' :
                           'bg-emerald-950 text-emerald-400 border border-emerald-800'
                         }`}>
-                          Lvl {z.risk_level}
+                          {t('lvl')} {z.risk_level}
                         </span>
                         <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
                       </div>
@@ -373,22 +383,20 @@ export default function App() {
             {activeTab === 'incidents' && (
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-xs">Logged Incidents ({incidents.length})</span>
+                  <span className="font-bold text-white text-sm">{t('loggedIncidents')} ({incidents.length})</span>
                   <button
                     onClick={() => setIsIncidentModalOpen(true)}
                     className="text-rose-400 text-xs hover:underline flex items-center gap-1"
                   >
-                    <Plus className="w-3 h-3" /> Add Incident
+                    <Plus className="w-3.5 h-3.5" /> {t('addIncident')}
                   </button>
                 </div>
 
                 {incidents.length === 0 ? (
                   <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center text-xs text-gray-400">
                     <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
-                    <div>No Incidents Reported</div>
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      Per agent_rules.md, incidents start at zero and are created only via real officer intake.
-                    </div>
+                    <div>{t('noIncidents')}</div>
+                    <div className="text-xs text-gray-400 mt-1">{t('noIncidentsHint')}</div>
                   </div>
                 ) : (
                   incidents.map(inc => (
@@ -403,7 +411,7 @@ export default function App() {
                       </div>
                       <div className="text-white font-medium">{inc.message}</div>
                       <div className="text-[10px] text-gray-400 flex items-center justify-between mt-1">
-                        <span>People: {inc.people}</span>
+                        <span>{t('people')}: {inc.people}</span>
                         <span className="text-gray-500">{inc.source}</span>
                       </div>
                     </div>
@@ -411,22 +419,20 @@ export default function App() {
                 )}
 
                 <div className="mt-4 pt-3 border-t border-gray-800 flex items-center justify-between">
-                  <span className="font-bold text-white text-xs">Registered Units ({units.length})</span>
+                  <span className="font-bold text-white text-sm">{t('registeredUnits')} ({units.length})</span>
                   <button
                     onClick={() => setIsUnitModalOpen(true)}
                     className="text-cyan-400 text-xs hover:underline flex items-center gap-1"
                   >
-                    <Plus className="w-3 h-3" /> Register Unit
+                    <Plus className="w-3.5 h-3.5" /> {t('registerUnit')}
                   </button>
                 </div>
 
                 {units.length === 0 ? (
                   <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center text-xs text-gray-400">
                     <Shield className="w-6 h-6 text-gray-500 mx-auto mb-1.5" />
-                    <div>No Field Units Registered</div>
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      Register patrol cars, rescue boats, or ambulances to activate pre-positioning.
-                    </div>
+                    <div>{t('noUnits')}</div>
+                    <div className="text-xs text-gray-400 mt-1">{t('unitsHint')}</div>
                   </div>
                 ) : (
                   units.map(u => (

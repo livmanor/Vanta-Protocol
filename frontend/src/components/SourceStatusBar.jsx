@@ -1,40 +1,43 @@
 import React from 'react';
 import { Activity, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../i18n.jsx';
 
 export default function SourceStatusBar({ sources, onRefresh, loading }) {
+  const { language } = useLanguage();
+  const copy = { en: ['Live feed integrity', 'Connecting to live feeds…', 'LIVE', 'STALE', 'UNREACHABLE'], hi: ['लाइव फ़ीड स्थिति', 'लाइव फ़ीड से जुड़ रहे हैं…', 'सक्रिय', 'पुराना', 'पहुंच से बाहर'], te: ['ప్రత్యక్ష ఫీడ్ స్థితి', 'ప్రత్యక్ష ఫీడ్‌లకు అనుసంధానం…', 'ప్రత్యక్షం', 'పాతది', 'అందుబాటులో లేదు'] }[language] || ['Live feed integrity', 'Connecting to live feeds…', 'LIVE', 'STALE', 'UNREACHABLE'];
   const getBadge = (status) => {
     switch (status) {
       case 'live':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950/70 text-emerald-400 border border-emerald-800">
             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            LIVE
+            {copy[2]}
           </span>
         );
       case 'stale':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-950/70 text-amber-400 border border-amber-800">
             <AlertTriangle className="w-3 h-3 text-amber-400" />
-            STALE
+            {copy[3]}
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-rose-950/70 text-rose-400 border border-rose-800">
             <XCircle className="w-3 h-3 text-rose-400" />
-            UNREACHABLE
+            {copy[4]}
           </span>
         );
     }
   };
 
   return (
-    <header className="bg-[#111827] border-b border-gray-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+    <header className="bg-[#0c1422] border-b border-slate-700 px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 text-sm">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 font-bold text-cyan-400 tracking-wider">
           <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
           <span>VANTA PROTOCOL</span>
-          <span className="text-gray-500 font-normal">| Live Feed Integrity</span>
+          <span className="text-gray-400 font-normal">| {copy[0]}</span>
         </div>
       </div>
 
@@ -56,7 +59,7 @@ export default function SourceStatusBar({ sources, onRefresh, loading }) {
             </div>
           ))
         ) : (
-          <span className="text-gray-500 italic">Connecting to live feeds...</span>
+          <span className="text-gray-400">{copy[1]}</span>
         )}
 
         <button
