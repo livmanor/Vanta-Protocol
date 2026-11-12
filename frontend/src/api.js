@@ -95,3 +95,39 @@ export async function reportBlockedRoad(roadData) {
   return res.json();
 }
 
+/* ── Agentic system contract ─────────────────────────────────────
+ * The backend should expose (see docs/UI_API_CONTRACT.md):
+ *   GET  /api/agents               → Agent[]  (id, name, phase, goal, status, last_run, last_report, pending_actions, activity)
+ *   POST /api/agents/{id}/run      → Agent    (triggers one agent cycle)
+ *   POST /api/agents/actions/{id}/approve → Agent (officer approves a pending action)
+ *   POST /api/agents/actions/{id}/reject  → Agent
+ * If these are not implemented yet, the UI shows honest "not connected"
+ * states per the repo's zero-mock policy — nothing is fabricated.
+ */
+export async function fetchAgents() {
+  const res = await fetch(`${API_BASE}/agents`);
+  if (res.status === 404) throw new Error('AGENT_ENDPOINT_MISSING');
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch agent status`);
+  return res.json();
+}
+
+export async function runAgent(agentId) {
+  const res = await fetch(`${API_BASE}/agents/${agentId}/run`, { method: 'POST' });
+  if (res.status === 404) throw new Error('AGENT_ENDPOINT_MISSING');
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to run agent ${agentId}`);
+  return res.json();
+}
+
+export async function approveAgentAction(actionId) {
+  const res = await fetch(`${API_BASE}/agents/actions/${actionId}/approve`, { method: 'POST' });
+  if (res.status === 404) throw new Error('AGENT_ENDPOINT_MISSING');
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to approve action ${actionId}`);
+  return res.json();
+}
+
+export async function rejectAgentAction(actionId) {
+  const res = await fetch(`${API_BASE}/agents/actions/${actionId}/reject`, { method: 'POST' });
+  if (res.status === 404) throw new Error('AGENT_ENDPOINT_MISSING');
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to reject action ${actionId}`);
+  return res.json();
+}

@@ -2,45 +2,121 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* ── Vanta design tokens ───────────────────────────── */
+  --vanta-bg: #060a12;            /* app background            */
+  --vanta-panel: #0c1320;         /* raised panels             */
+  --vanta-panel-2: #101a2c;       /* cards / elevated          */
+  --vanta-border: #1c2940;        /* hairline borders          */
+  --vanta-border-hi: #2b3d5e;     /* hover borders             */
+  --vanta-text: #e6edf7;          /* primary text              */
+  --vanta-text-dim: #8b9bb4;      /* secondary text            */
+  --vanta-text-faint: #5b6b85;    /* tertiary text             */
+
+  --vanta-predict: #22d3ee;       /* PREDICT  agent  (cyan)    */
+  --vanta-prepare: #f5a524;       /* PREPARE  agent  (amber)   */
+  --vanta-respond: #fb7185;       /* RESPOND  agent  (rose)    */
+  --vanta-ok: #34d399;
+  --vanta-danger: #f87171;
+
+  --vanta-radius: 10px;
+}
+
 html, body, #root {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: #0b0f19;
+  background-color: var(--vanta-bg);
+  color: var(--vanta-text);
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-feature-settings: "tnum" 1; /* tabular numbers for metrics */
 }
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #111827;
-}
+/* ── Scrollbars ────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 3px;
+  background: #243350;
+  border-radius: 4px;
+  border: 2px solid var(--vanta-bg);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+::-webkit-scrollbar-thumb:hover { background: #33507e; }
+
+/* ── Reusable primitives ───────────────────────────── */
+.v-panel {
+  background: var(--vanta-panel);
+  border: 1px solid var(--vanta-border);
+  border-radius: var(--vanta-radius);
+}
+.v-card {
+  background: linear-gradient(180deg, var(--vanta-panel-2) 0%, var(--vanta-panel) 100%);
+  border: 1px solid var(--vanta-border);
+  border-radius: var(--vanta-radius);
+}
+.v-card-hover:hover { border-color: var(--vanta-border-hi); }
+
+/* Ambient scanline for the command bar */
+.v-scanbar {
+  background:
+    linear-gradient(90deg, rgba(34,211,238,0.06), rgba(34,211,238,0) 40%),
+    var(--vanta-panel);
+}
+
+/* Mono digits for ETAs / metrics */
+.v-mono {
+  font-family: "JetBrains Mono", "Cascadia Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status dot with pulse ring */
+.v-dot { position: relative; }
+.v-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+  opacity: 0.4;
+  animation: v-pulse 2s ease-out infinite;
+}
+@keyframes v-pulse {
+  0%   { transform: scale(0.6); opacity: 0.5; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Section label */
+.v-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vanta-text-faint);
+  font-weight: 700;
+}
+
+/* Agent rail accent strip */
+.v-rail-accent { box-shadow: inset 3px 0 0 0 var(--accent, var(--vanta-predict)); }
+
+/* Fade-in for view swaps */
+.v-view-enter { animation: v-fade 220ms ease-out; }
+@keyframes v-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Leaflet dark theme map overrides */
 .leaflet-container {
   background-color: #0d131f !important;
+  font-family: inherit;
 }
 .leaflet-tile {
   filter: brightness(0.65) invert(1) contrast(2.6) hue-rotate(200deg) saturate(0.3) brightness(0.75);
 }
 .leaflet-popup-content-wrapper {
-  background: #111827 !important;
-  color: #f3f4f6 !important;
-  border: 1px solid #374151;
+  background: var(--vanta-panel) !important;
+  color: var(--vanta-text) !important;
+  border: 1px solid var(--vanta-border);
   border-radius: 8px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
 }
-.leaflet-popup-tip {
-  background: #111827 !important;
-}
-
+.leaflet-popup-tip { background: var(--vanta-panel) !important; }

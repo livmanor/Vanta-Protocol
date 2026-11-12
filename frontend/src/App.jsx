@@ -1,21 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  ShieldAlert, Compass, Plus, AlertCircle, Shield, Route, 
-  MapPin, CheckCircle2, ChevronRight, Layers, Flame, RefreshCw 
+import {
+  Bot, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
+  ShieldAlert, Siren
 } from 'lucide-react';
 import SourceStatusBar from './components/SourceStatusBar';
 import Map from './components/Map';
+import AgentConsole from './components/AgentConsole';
 import RiskZonePanel from './components/RiskZonePanel';
 import EvacuationPanel from './components/EvacuationPanel';
 import PrepositionPanel from './components/PrepositionPanel';
 import UnitRegisterModal from './components/UnitRegisterModal';
 import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
-import { 
-  fetchSources, fetchRiskZones, fetchUnits, registerUnit, 
-  fetchIncidents, reportIncident, fetchPrepositionSuggestions, 
-  approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads, reportBlockedRoad 
+import {
+  fetchSources, fetchRiskZones, fetchUnits, registerUnit,
+  fetchIncidents, reportIncident, fetchPrepositionSuggestions,
+  approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads, reportBlockedRoad
 } from './api';
+
+/* Left-rail navigation items */
+const NAV = [
+  { id: 'map',    label: 'Tactical Map',  Icon: MapIcon },
+  { id: 'agents', label: 'Agent Command', Icon: Bot, accent: '#22d3ee' },
+];
 
 export default function App() {
   const [sources, setSources] = useState([]);
@@ -32,15 +39,14 @@ export default function App() {
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [loadingRoute, setLoadingRoute] = useState(false);
 
-  // Modals
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
   const [isRoadModalOpen, setIsRoadModalOpen] = useState(false);
 
-  // Active Tab in Sidebar: 'zones' | 'preposition' | 'incidents'
-  const [activeTab, setActiveTab] = useState('zones');
+  const [view, setView] = useState('map'); // 'map' | 'agents'
+  const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
+  const [clock, setClock] = useState(new Date());
 
-  // Load all initial state
   const loadData = useCallback(async () => {
     setLoadingSources(true);
     setLoadingRisk(true);
@@ -72,20 +78,22 @@ export default function App() {
 
   useEffect(() => {
     loadData();
-    // Auto-refresh sources periodically (every 60s)
     const interval = setInterval(loadData, 60000);
-    return () => clearInterval(interval);
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => { clearInterval(interval); clearInterval(t); };
   }, [loadData]);
 
-  // Handle Generate Evacuation Route
+  // Nudge Leaflet when the map becomes visible again after switching views
+  useEffect(() => {
+    if (view === 'map') window.dispatchEvent(new Event('resize'));
+  }, [view]);
+
   const handleGenerateRoute = async (zone) => {
     setLoadingRoute(true);
     try {
-      // Zone center coordinate from polygon
       const coords = zone.polygon.coordinates[0];
       const avgLng = coords.reduce((a, b) => a + b[0], 0) / coords.length;
       const avgLat = coords.reduce((a, b) => a + b[1], 0) / coords.length;
-
       const route = await generateEvacuationRoute(zone.id, zone.name, avgLat, avgLng);
       setActiveRoute(route);
     } catch (err) {
@@ -95,333 +103,348 @@ export default function App() {
     }
   };
 
-  // Handle Unit Registration
   const handleRegisterUnit = async (unitData) => {
     const created = await registerUnit(unitData);
     setUnits(prev => [created, ...prev]);
-    // Refresh prepositioning suggestions with the new unit
     const prep = await fetchPrepositionSuggestions().catch(() => []);
     setPrepositionSuggestions(prep);
   };
 
-  // Handle Incident Report
   const handleReportIncident = async (incData) => {
     const created = await reportIncident(incData);
     setIncidents(prev => [created, ...prev]);
   };
 
-  // Handle Blocked Road
   const handleReportRoad = async (roadData) => {
     const created = await reportBlockedRoad(roadData);
     setBlockedRoads(prev => [created, ...prev]);
   };
 
-  // Handle Preposition Approval
   const handleApprovePreposition = async (suggestionId, unitId, targetZoneName) => {
     await approvePrepositioning(suggestionId, unitId, targetZoneName);
-    // Refresh units and suggestions
-    const [uList, prep] = await Promise.all([
-      fetchUnits(),
-      fetchPrepositionSuggestions()
-    ]);
+    const [uList, prep] = await Promise.all([fetchUnits(), fetchPrepositionSuggestions()]);
     setUnits(uList);
     setPrepositionSuggestions(prep);
   };
 
-  return (
-    <div className="flex flex-col h-screen w-screen bg-[#0b0f19] text-gray-100 overflow-hidden">
-      {/* 1. Data Source Freshness Status Bar */}
-      <SourceStatusBar 
-        sources={sources} 
-        onRefresh={loadData} 
-        loading={loadingSources} 
-      />
+  /* Highest risk zone drives the header alert state */
+  const maxRisk = riskZones.reduce((m, z) => Math.max(m, z.risk_level || 0), 0);
+  const alertTone =
+    maxRisk >= 4 ? { dot: 'bg-rose-500', text: 'text-rose-300', label: 'CRITICAL' } :
+    maxRisk === 3 ? { dot: 'bg-amber-400', text: 'text-amber-300', label: 'ELEVATED' } :
+    { dot: 'bg-emerald-400', text: 'text-emerald-300', label: 'NOMINAL' };
 
-      {/* 2. Command Ribbon */}
-      <div className="bg-[#111827] border-b border-gray-800 px-4 py-2 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>
-            <span className="font-extrabold tracking-wider text-white text-sm">CONTROL ROOM</span>
-            <span className="text-xs text-gray-400">Greater Chennai Metropolitan Area</span>
+  const pendingApprovals = prepositionSuggestions.length;
+
+  return (
+    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: 'var(--vanta-bg)' }}>
+      {/* ── Command bar ─────────────────────────────────── */}
+      <header className="flex items-center gap-4 px-4 h-14 border-b shrink-0" style={{ borderColor: 'var(--vanta-border)', background: 'var(--vanta-panel)' }}>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center shadow-lg shadow-cyan-900/40">
+            <Siren className="w-4.5 h-4.5 text-white" />
+          </div>
+          <div className="leading-tight">
+            <div className="font-extrabold tracking-widest text-white text-[13px]">VANTA PROTOCOL</div>
+            <div className="text-[10px]" style={{ color: 'var(--vanta-text-faint)' }}>
+              Greater Chennai Metropolitan Area
+            </div>
           </div>
         </div>
 
+        <div className="h-6 w-px" style={{ background: 'var(--vanta-border)' }} />
+
+        {/* Threat level */}
         <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${alertTone.dot} ${maxRisk >= 4 ? 'v-dot' : ''}`} style={maxRisk >= 4 ? { color: '#f87171' } : {}} />
+          <span className="text-[11px] font-bold tracking-wider">THREAT LEVEL</span>
+          <span className={`text-[11px] font-extrabold ${alertTone.text}`}>{alertTone.label}</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          {/* Clock */}
+          <span className="v-mono text-[12px] px-2.5 py-1 rounded-md v-panel" style={{ color: 'var(--vanta-text-dim)' }}>
+            {clock.toLocaleTimeString('en-IN', { hour12: false })}
+          </span>
+
           <button
             onClick={() => setIsIncidentModalOpen(true)}
-            className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow"
+            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-rose-900/70 bg-rose-950/40 text-rose-300 hover:bg-rose-900/50 hover:text-rose-200 transition"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Log Incident ({incidents.length})</span>
+            <Plus className="w-3.5 h-3.5" /> Incident <span className="v-mono opacity-70">{incidents.length}</span>
           </button>
-
           <button
             onClick={() => setIsUnitModalOpen(true)}
-            className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow"
+            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-cyan-900/70 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/50 hover:text-cyan-200 transition"
           >
-            <Shield className="w-3.5 h-3.5" />
-            <span>Register Unit ({units.length})</span>
+            <Shield className="w-3.5 h-3.5" /> Units <span className="v-mono opacity-70">{units.length}</span>
           </button>
-
           <button
             onClick={() => setIsRoadModalOpen(true)}
-            className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow"
+            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-amber-900/70 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50 hover:text-amber-200 transition"
           >
-            <Route className="w-3.5 h-3.5" />
-            <span>Diversion / Road Block ({blockedRoads.length})</span>
+            <Route className="w-3.5 h-3.5" /> Diversions <span className="v-mono opacity-70">{blockedRoads.length}</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* 3. Main Workspace */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Map View */}
-        <div className="flex-1 h-full relative">
-          <Map
-            riskZones={riskZones}
-            selectedZone={selectedZone}
-            onSelectZone={(zone) => {
-              setSelectedZone(zone);
-              setActiveTab('zones');
-            }}
-            activeRoute={activeRoute}
-            units={units}
-            incidents={incidents}
-            blockedRoads={blockedRoads}
-            prepositionSuggestions={prepositionSuggestions}
-          />
+      {/* ── Feed integrity strip ────────────────────────── */}
+      <SourceStatusBar sources={sources} onRefresh={loadData} loading={loadingSources} />
 
-          {/* Floating Active Evacuation Corridor Card if open */}
-          {activeRoute && (
-            <div className="absolute bottom-5 left-5 z-[500] w-80">
-              <EvacuationPanel
-                route={activeRoute}
-                onClose={() => setActiveRoute(null)}
-                onClearRoute={() => setActiveRoute(null)}
+      {/* ── Body: rail + main ───────────────────────────── */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left nav rail */}
+        <nav
+          className="w-16 flex flex-col items-center gap-1 py-3 border-r shrink-0 z-[600]"
+          style={{ borderColor: 'var(--vanta-border)', background: 'var(--vanta-panel)' }}
+        >
+          {NAV.map(({ id, label, Icon, accent }) => (
+            <button
+              key={id}
+              onClick={() => setView(id)}
+              title={label}
+              className={`group relative w-11 h-11 rounded-xl flex items-center justify-center transition ${
+                view === id ? 'text-white' : 'hover:bg-white/5'
+              }`}
+              style={view === id ? { background: 'rgba(34,211,238,0.10)', color: accent || '#67e8f9' } : { color: 'var(--vanta-text-dim)' }}
+            >
+              {view === id && <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-full bg-cyan-400" />}
+              <Icon className="w-5 h-5" />
+            </button>
+          ))}
+
+          {/* Pending approvals badge */}
+          {pendingApprovals > 0 && (
+            <button
+              onClick={() => { setView('map'); setActiveTab('preposition'); }}
+              title={`${pendingApprovals} pre-positioning approvals pending`}
+              className="mt-1 w-11 h-11 rounded-xl flex items-center justify-center relative text-amber-300 hover:bg-amber-500/10 transition"
+            >
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-amber-400 text-black text-[9px] font-extrabold rounded-full flex items-center justify-center">
+                {pendingApprovals}
+              </span>
+              <Compass className="w-5 h-5" />
+            </button>
+          )}
+        </nav>
+
+        {/* Main area */}
+        <main className="flex-1 relative overflow-hidden">
+          {/* MAP VIEW (kept mounted so Leaflet state survives) */}
+          <div
+            className="absolute inset-0 flex"
+            style={{ visibility: view === 'map' ? 'visible' : 'hidden', pointerEvents: view === 'map' ? 'auto' : 'none' }}
+          >
+            <div className="flex-1 h-full relative">
+              <Map
+                riskZones={riskZones}
+                selectedZone={selectedZone}
+                onSelectZone={(zone) => { setSelectedZone(zone); setView('map'); setActiveTab('zones'); }}
+                activeRoute={activeRoute}
+                units={units}
+                incidents={incidents}
+                blockedRoads={blockedRoads}
+                prepositionSuggestions={prepositionSuggestions}
               />
+
+              {activeRoute && (
+                <div className="absolute bottom-5 left-5 z-[500] w-80">
+                  <EvacuationPanel
+                    route={activeRoute}
+                    onClose={() => setActiveRoute(null)}
+                    onClearRoute={() => setActiveRoute(null)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Right dock */}
+            <aside
+              className="w-[22rem] flex flex-col border-l z-[400] h-full shadow-2xl"
+              style={{ borderColor: 'var(--vanta-border)', background: 'var(--vanta-panel)' }}
+            >
+              <div className="flex border-b p-1.5 gap-1 text-[11px] shrink-0" style={{ borderColor: 'var(--vanta-border)' }}>
+                {[
+                  { id: 'zones', label: 'Risk Zones', Icon: ShieldAlert, active: 'bg-cyan-600/90' },
+                  { id: 'preposition', label: 'Pre-position', Icon: Compass, active: 'bg-amber-600/90' },
+                  { id: 'incidents', label: 'Incidents', Icon: Flame, active: 'bg-rose-600/90' },
+                ].map(({ id, label, Icon, active }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={`relative flex-1 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-1.5 ${
+                      activeTab === id ? `${active} text-white shadow` : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                    {id === 'preposition' && prepositionSuggestions.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 text-black text-[9px] font-extrabold rounded-full flex items-center justify-center border-2" style={{ borderColor: 'var(--vanta-panel)' }}>
+                        {prepositionSuggestions.length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+                {activeTab === 'zones' && (
+                  <div className="flex flex-col gap-3 v-view-enter">
+                    {selectedZone ? (
+                      <RiskZonePanel
+                        zone={selectedZone}
+                        onClose={() => setSelectedZone(null)}
+                        onGenerateRoute={handleGenerateRoute}
+                        loadingRoute={loadingRoute}
+                      />
+                    ) : (
+                      <div className="v-panel p-3 text-[11px] text-center" style={{ color: 'var(--vanta-text-dim)' }}>
+                        Click any ward or polygon on the map to inspect live metrics & compute evacuation routes.
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="v-label">Monitored wards ({riskZones.length})</span>
+                      <Layers className="w-3 h-3" style={{ color: 'var(--vanta-text-faint)' }} />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      {[...riskZones].sort((a, b) => (b.risk_level || 0) - (a.risk_level || 0)).map((z) => (
+                        <button
+                          key={z.id}
+                          onClick={() => setSelectedZone(z)}
+                          className={`v-card v-card-hover p-2.5 text-left transition flex items-center justify-between ${
+                            selectedZone?.id === z.id ? 'ring-1 ring-cyan-500/70' : ''
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="font-bold text-white text-[12px] truncate">{z.name}</div>
+                            <div className="v-mono text-[10px] mt-0.5" style={{ color: 'var(--vanta-text-faint)' }}>
+                              Elev {z.explanation?.mean_elevation_m?.toFixed(1) ?? '–'}m · Rain {z.explanation?.rainfall_24h_mm?.toFixed(1) ?? '0.0'}mm
+                            </div>
+                          </div>
+                          <span className={`shrink-0 ml-2 w-7 h-7 rounded-md flex items-center justify-center v-mono text-[11px] font-extrabold ${
+                            z.risk_level >= 4 ? 'bg-rose-950 text-rose-400 border border-rose-800' :
+                            z.risk_level === 3 ? 'bg-amber-950 text-amber-400 border border-amber-800' :
+                            z.risk_level === 2 ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' :
+                            'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                          }`}>
+                            {z.risk_level}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'preposition' && (
+                  <div className="v-view-enter">
+                    <PrepositionPanel
+                      suggestions={prepositionSuggestions}
+                      onApprove={handleApprovePreposition}
+                    />
+                  </div>
+                )}
+
+                {activeTab === 'incidents' && (
+                  <div className="flex flex-col gap-3 v-view-enter">
+                    <div className="flex items-center justify-between">
+                      <span className="v-label">Logged incidents ({incidents.length})</span>
+                      <button
+                        onClick={() => setIsIncidentModalOpen(true)}
+                        className="text-rose-400 text-[11px] hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Add
+                      </button>
+                    </div>
+
+                    {incidents.length === 0 ? (
+                      <div className="v-panel p-4 text-center text-[11px]" style={{ color: 'var(--vanta-text-dim)' }}>
+                        <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
+                        <div className="text-white font-semibold">No incidents reported</div>
+                        <div className="text-[10px] mt-1" style={{ color: 'var(--vanta-text-faint)' }}>
+                          Per agent_rules.md, incidents start at zero and are created only via real officer intake.
+                        </div>
+                      </div>
+                    ) : (
+                      incidents.map((inc) => (
+                        <div key={inc.id} className="v-card p-2.5 text-[11px] flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-rose-400 uppercase tracking-wide text-[10px]">
+                              {inc.type} · U{inc.urgency}
+                            </span>
+                            <span className="v-mono text-[10px]" style={{ color: 'var(--vanta-text-faint)' }}>
+                              {new Date(inc.timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <div className="text-white font-medium leading-snug">{inc.message}</div>
+                          <div className="text-[10px] flex items-center justify-between" style={{ color: 'var(--vanta-text-dim)' }}>
+                            <span>People: {inc.people}</span>
+                            <span style={{ color: 'var(--vanta-text-faint)' }}>{inc.source}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+
+                    <div className="mt-2 pt-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--vanta-border)' }}>
+                      <span className="v-label">Field units ({units.length})</span>
+                      <button
+                        onClick={() => setIsUnitModalOpen(true)}
+                        className="text-cyan-400 text-[11px] hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Register
+                      </button>
+                    </div>
+
+                    {units.length === 0 ? (
+                      <div className="v-panel p-4 text-center text-[11px]" style={{ color: 'var(--vanta-text-dim)' }}>
+                        <Shield className="w-6 h-6 mx-auto mb-1.5" style={{ color: 'var(--vanta-text-faint)' }} />
+                        <div className="text-white font-semibold">No field units registered</div>
+                        <div className="text-[10px] mt-1" style={{ color: 'var(--vanta-text-faint)' }}>
+                          Register patrol cars, rescue boats, or ambulances to activate pre-positioning.
+                        </div>
+                      </div>
+                    ) : (
+                      units.map((u) => (
+                        <div key={u.id} className="v-card p-2.5 text-[11px] flex items-center justify-between">
+                          <div className="min-w-0">
+                            <div className="font-bold text-white flex items-center gap-1.5">
+                              <span>{u.kind === 'rescue_boat' ? '⛵' : u.kind === 'ambulance' ? '🚑' : '🚔'}</span>
+                              <span className="truncate">{u.id}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 capitalize shrink-0">
+                                {u.kind.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <div className="text-[10px] mt-0.5" style={{ color: 'var(--vanta-text-faint)' }}>{u.station}</div>
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0 ${
+                            u.status === 'available' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {u.status}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </aside>
+          </div>
+
+          {/* AGENT COMMAND VIEW */}
+          {view === 'agents' && (
+            <div className="absolute inset-0 z-[450]" style={{ background: 'var(--vanta-bg)' }}>
+              <AgentConsole />
             </div>
           )}
-        </div>
-
-        {/* Tactical Control Sidebar */}
-        <div className="w-96 bg-[#111827] border-l border-gray-800 flex flex-col z-[400] h-full shadow-2xl">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-800 bg-gray-900/60 p-1 gap-1 text-xs">
-            <button
-              onClick={() => setActiveTab('zones')}
-              className={`flex-1 py-1.5 rounded font-semibold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'zones'
-                  ? 'bg-cyan-600 text-white shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Risk Zones</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('preposition')}
-              className={`flex-1 py-1.5 rounded font-semibold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'preposition'
-                  ? 'bg-amber-600 text-white shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>Pre-position</span>
-              {prepositionSuggestions.length > 0 && (
-                <span className="w-4 h-4 bg-amber-400 text-black text-[10px] font-extrabold rounded-full flex items-center justify-center">
-                  {prepositionSuggestions.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('incidents')}
-              className={`flex-1 py-1.5 rounded font-semibold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'incidents'
-                  ? 'bg-rose-600 text-white shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5" />
-              <span>Incidents</span>
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-            {activeTab === 'zones' && (
-              <div className="flex flex-col gap-3">
-                {selectedZone ? (
-                  <RiskZonePanel
-                    zone={selectedZone}
-                    onClose={() => setSelectedZone(null)}
-                    onGenerateRoute={handleGenerateRoute}
-                    loadingRoute={loadingRoute}
-                  />
-                ) : (
-                  <div className="bg-gray-900/50 border border-gray-800 p-3 rounded-lg text-xs text-gray-400 text-center">
-                    Click any ward or polygon on the map to inspect live metrics & compute evacuation routes.
-                  </div>
-                )}
-
-                <div className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center justify-between">
-                  <span>Monitored Municipal Wards ({riskZones.length})</span>
-                  <button 
-                    onClick={loadData}
-                    disabled={loadingRisk}
-                    className="text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${loadingRisk ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  {riskZones.map((z) => (
-                    <div
-                      key={z.id}
-                      onClick={() => setSelectedZone(z)}
-                      className={`p-2.5 rounded-lg border cursor-pointer transition text-xs flex items-center justify-between ${
-                        selectedZone && selectedZone.id === z.id
-                          ? 'bg-cyan-950/40 border-cyan-500'
-                          : 'bg-gray-900/70 border-gray-800 hover:border-gray-700'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-bold text-white">{z.name}</div>
-                        <div className="text-[10px] text-gray-400 mt-0.5">
-                          Elev: {z.explanation?.mean_elevation_m?.toFixed(1) || 'N/A'}m | Rain: {z.explanation?.rainfall_24h_mm?.toFixed(1) || '0.0'}mm
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          z.risk_level >= 4 ? 'bg-red-950 text-red-400 border border-red-800' :
-                          z.risk_level === 3 ? 'bg-amber-950 text-amber-400 border border-amber-800' :
-                          z.risk_level === 2 ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' :
-                          'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                        }`}>
-                          Lvl {z.risk_level}
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'preposition' && (
-              <PrepositionPanel
-                suggestions={prepositionSuggestions}
-                onApprove={handleApprovePreposition}
-              />
-            )}
-
-            {activeTab === 'incidents' && (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-xs">Logged Incidents ({incidents.length})</span>
-                  <button
-                    onClick={() => setIsIncidentModalOpen(true)}
-                    className="text-rose-400 text-xs hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add Incident
-                  </button>
-                </div>
-
-                {incidents.length === 0 ? (
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center text-xs text-gray-400">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
-                    <div>No Incidents Reported</div>
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      Per agent_rules.md, incidents start at zero and are created only via real officer intake.
-                    </div>
-                  </div>
-                ) : (
-                  incidents.map(inc => (
-                    <div key={inc.id} className="bg-gray-900/80 border border-gray-800 rounded-lg p-2.5 text-xs flex flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-rose-400 uppercase tracking-wide text-[10px]">
-                          {inc.type} (Urgency {inc.urgency}/5)
-                        </span>
-                        <span className="text-[10px] text-gray-500">
-                          {new Date(inc.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className="text-white font-medium">{inc.message}</div>
-                      <div className="text-[10px] text-gray-400 flex items-center justify-between mt-1">
-                        <span>People: {inc.people}</span>
-                        <span className="text-gray-500">{inc.source}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-
-                <div className="mt-4 pt-3 border-t border-gray-800 flex items-center justify-between">
-                  <span className="font-bold text-white text-xs">Registered Units ({units.length})</span>
-                  <button
-                    onClick={() => setIsUnitModalOpen(true)}
-                    className="text-cyan-400 text-xs hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Register Unit
-                  </button>
-                </div>
-
-                {units.length === 0 ? (
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center text-xs text-gray-400">
-                    <Shield className="w-6 h-6 text-gray-500 mx-auto mb-1.5" />
-                    <div>No Field Units Registered</div>
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      Register patrol cars, rescue boats, or ambulances to activate pre-positioning.
-                    </div>
-                  </div>
-                ) : (
-                  units.map(u => (
-                    <div key={u.id} className="bg-gray-900/80 border border-gray-800 rounded-lg p-2.5 text-xs flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-white flex items-center gap-1.5">
-                          <span>{u.kind === 'rescue_boat' ? '⛵' : u.kind === 'ambulance' ? '🚑' : '🚔'}</span>
-                          <span>{u.id}</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-gray-800 text-gray-400 capitalize">{u.kind.replace('_', ' ')}</span>
-                        </div>
-                        <div className="text-[10px] text-gray-400 mt-0.5">{u.station}</div>
-                      </div>
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                        u.status === 'available' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-gray-800 text-gray-400'
-                      }`}>
-                        {u.status}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        </main>
       </div>
 
       {/* Modals */}
-      <UnitRegisterModal
-        isOpen={isUnitModalOpen}
-        onClose={() => setIsUnitModalOpen(false)}
-        onRegister={handleRegisterUnit}
-      />
-
-      <IncidentIntakeModal
-        isOpen={isIncidentModalOpen}
-        onClose={() => setIsIncidentModalOpen(false)}
-        onReport={handleReportIncident}
-      />
-
-      <BlockedRoadModal
-        isOpen={isRoadModalOpen}
-        onClose={() => setIsRoadModalOpen(false)}
-        onReport={handleReportRoad}
-      />
+      <UnitRegisterModal isOpen={isUnitModalOpen} onClose={() => setIsUnitModalOpen(false)} onRegister={handleRegisterUnit} />
+      <IncidentIntakeModal isOpen={isIncidentModalOpen} onClose={() => setIsIncidentModalOpen(false)} onReport={handleReportIncident} />
+      <BlockedRoadModal isOpen={isRoadModalOpen} onClose={() => setIsRoadModalOpen(false)} onReport={handleReportRoad} />
     </div>
   );
 }
-

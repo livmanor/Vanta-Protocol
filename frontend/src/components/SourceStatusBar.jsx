@@ -1,74 +1,62 @@
 import React from 'react';
-import { Activity, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 
-export default function SourceStatusBar({ sources, onRefresh, loading }) {
-  const getBadge = (status) => {
-    switch (status) {
-      case 'live':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950/70 text-emerald-400 border border-emerald-800">
-            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            LIVE
-          </span>
-        );
-      case 'stale':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-950/70 text-amber-400 border border-amber-800">
-            <AlertTriangle className="w-3 h-3 text-amber-400" />
-            STALE
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-rose-950/70 text-rose-400 border border-rose-800">
-            <XCircle className="w-3 h-3 text-rose-400" />
-            UNREACHABLE
-          </span>
-        );
-    }
-  };
+/* Compact live-feed integrity strip: source pills with LIVE/STALE/UNREACHABLE. */
+function Pill({ source }) {
+  const status = (source.status || '').toLowerCase();
+  const map = {
+    live:        { cls: 'text-emerald-300 border-emerald-800/70 bg-emerald-950/40', Icon: CheckCircle2 },
+    stale:       { cls: 'text-amber-300 border-amber-800/70 bg-amber-950/40', Icon: AlertTriangle },
+    unreachable: { cls: 'text-rose-300 border-rose-900/70 bg-rose-950/40', Icon: XCircle },
+  }[status] || { cls: 'text-slate-400 border-slate-700 bg-slate-900/40', Icon: XCircle };
 
   return (
-    <header className="bg-[#111827] border-b border-gray-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 font-bold text-cyan-400 tracking-wider">
-          <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
-          <span>VANTA PROTOCOL</span>
-          <span className="text-gray-500 font-normal">| Live Feed Integrity</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 overflow-x-auto py-1">
-        {sources && sources.length > 0 ? (
-          sources.map((src, idx) => (
-            <div 
-              key={idx}
-              className="flex items-center gap-1.5 bg-[#1f2937]/60 px-2.5 py-1 rounded border border-gray-800 whitespace-nowrap"
-              title={`Endpoint: ${src.endpoint}\nLast Updated: ${src.last_updated || 'Never'}\n${src.error_message ? 'Error: ' + src.error_message : ''}`}
-            >
-              <span className="text-gray-300 font-medium">{src.name}</span>
-              {getBadge(src.status)}
-              {src.last_updated && (
-                <span className="text-[10px] text-gray-500 ml-1">
-                  {new Date(src.last_updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </span>
-              )}
-            </div>
-          ))
-        ) : (
-          <span className="text-gray-500 italic">Connecting to live feeds...</span>
-        )}
-
-        <button
-          onClick={onRefresh}
-          disabled={loading}
-          className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition disabled:opacity-50 ml-1"
-          title="Refresh Data Feeds"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
-        </button>
-      </div>
-    </header>
+    <div className={`flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-md border text-[10.5px] font-semibold whitespace-nowrap ${map.cls}`}>
+      <map.Icon className="w-3 h-3 shrink-0" />
+      <span className="text-slate-200 font-medium">{source.name}</span>
+      <span className="uppercase tracking-wider">{source.status}</span>
+      {source.updated_at && (
+        <span className="v-mono font-normal opacity-60">
+          {new Date(source.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      )}
+    </div>
   );
 }
 
+export default function SourceStatusBar({ sources = [], onRefresh, loading }) {
+  const live = sources.filter((s) => (s.status || '').toLowerCase() === 'live').length;
+  const allOk = sources.length > 0 && live === sources.length;
+
+  return (
+    <div className="v-scanbar border-b flex items-center gap-3 px-3 h-9 overflow-x-auto">
+      {/* Summary chip */}
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          className={`w-2 h-2 rounded-full ${allOk ? 'bg-emerald-400 v-dot' : 'bg-amber-400'}`}
+          style={allOk ? { color: '#34d399' } : { color: '#f5a524' }}
+        />
+        <span className="text-[11px] font-bold tracking-widest text-slate-200">FEED INTEGRITY</span>
+        <span className="v-mono text-[10.5px]" style={{ color: 'var(--vanta-text-faint)' }}>
+          {live}/{sources.length || '–'} LIVE
+        </span>
+      </div>
+
+      <div className="h-4 w-px bg-slate-800 shrink-0" />
+
+      {sources.length === 0 && (
+        <span className="text-[11px] text-slate-500">No sources reported yet…</span>
+      )}
+      {sources.map((s, i) => <Pill key={s.name || i} source={s} />)}
+
+      <button
+        onClick={onRefresh}
+        disabled={loading}
+        className="ml-auto shrink-0 flex items-center gap-1.5 text-[11px] text-cyan-400 hover:text-cyan-300 transition disabled:opacity-40"
+      >
+        <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+        Refresh
+      </button>
+    </div>
+  );
+}
