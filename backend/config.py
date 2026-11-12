@@ -4,13 +4,13 @@ from pydantic import SecretStr
 from typing import Optional
 
 class Settings(BaseSettings):
-    CITY_NAME: str = "Chennai"
-    DEFAULT_LAT: float = 13.0827
-    DEFAULT_LNG: float = 80.2707
-    BBOX_MIN_LAT: float = 12.90
-    BBOX_MIN_LNG: float = 80.12
-    BBOX_MAX_LAT: float = 13.20
-    BBOX_MAX_LNG: float = 80.32
+    CITY_NAME: str = "Hyderabad"
+    DEFAULT_LAT: float = 17.3914
+    DEFAULT_LNG: float = 78.4702
+    BBOX_MIN_LAT: float = 17.15
+    BBOX_MIN_LNG: float = 78.30
+    BBOX_MAX_LAT: float = 17.50
+    BBOX_MAX_LNG: float = 78.57
 
     OPEN_METEO_FORECAST_URL: str = "https://api.open-meteo.com/v1/forecast"
     OPEN_METEO_ARCHIVE_URL: str = "https://archive-api.open-meteo.com/v1/archive"

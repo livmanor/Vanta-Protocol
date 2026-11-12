@@ -28,7 +28,7 @@ export default function Map({
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [13.040, 80.245],
+      center: [17.3914, 78.4702],
       zoom: 12,
       zoomControl: true,
       attributionControl: false
@@ -77,6 +77,14 @@ export default function Map({
       geometry: z.polygon,
       properties: { ...z }
     })), {
+      pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+        radius: 9,
+        fillColor: getRiskColor(feature.properties.risk_level),
+        color: '#f8fafc',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9,
+      }),
       style: (feature) => {
         const isSelected = selectedZone && selectedZone.id === feature.properties.id;
         const color = getRiskColor(feature.properties.risk_level);

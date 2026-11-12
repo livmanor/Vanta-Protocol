@@ -1,5 +1,6 @@
 import asyncio
 import json
+import math
 from datetime import datetime, timezone
 from collections import defaultdict
 from typing import Any, Dict, List
@@ -29,7 +30,7 @@ def _zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, An
             "river_discharge_m3s": explanation.river_discharge_m3s,
             "mean_elevation_m": explanation.mean_elevation_m,
         } if explanation else None,
-        "risk_model_note": "The existing risk score can include a project-configured historical-flood flag; this flag is not verified by the live feeds.",
+        "risk_model_note": "The score includes a mapped major waterlogging hotspot from the Hyderabad Traffic Police list dated 2025-08-06. This indicates historical vulnerability, not current flooding.",
         "source_status": source_status,
     }
 
@@ -82,8 +83,20 @@ def _point_in_ring(lng: float, lat: float, ring: List[List[float]]) -> bool:
 
 
 def _zone_for_point(lng: float, lat: float, zones: List[RiskZone]) -> str:
+    # Point risk locations are fixed HTP waterlogging hotspots, not polygons.
+    # Attribute an incident only when it is within 500 m of a mapped hotspot.
     for zone in zones:
         geometry = zone.polygon or {}
+        if geometry.get("type") == "Point":
+            point_lng, point_lat = geometry.get("coordinates", [None, None])
+            if point_lng is not None and point_lat is not None:
+                lat_delta = math.radians(lat - point_lat)
+                lng_delta = math.radians(lng - point_lng)
+                a = math.sin(lat_delta / 2) ** 2 + math.cos(math.radians(point_lat)) * math.cos(math.radians(lat)) * math.sin(lng_delta / 2) ** 2
+                distance_m = 6_371_000 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                if distance_m <= 500:
+                    return zone.id
+            continue
         polygons = geometry.get("coordinates", [])
         if geometry.get("type") == "Polygon":
             polygons = [polygons]
@@ -184,8 +197,8 @@ class PredictAgent:
                 "Do not calculate or change risk scores, invent measurements, infer missing values, "
                 "or claim a live source is healthy unless the input says so. Highlight the most "
                 "important zones and give a verification check to the watch officer. This is advisory, "
-                "not an alert or dispatch order. Do not present the configured historical-flood flag "
-                "as verified history. Use only exact supplied zone IDs."
+                "not an alert or dispatch order. Treat mapped hotspot status as historical vulnerability, "
+                "not current flooding. Use only exact supplied zone IDs."
             ),
             context=context,
             schema=PredictAgentOutput,
@@ -197,7 +210,7 @@ class PredictAgent:
                 if source.get("status") in ("failed", "stale"):
                     source_gaps.append(f"{zone.name}: {source['name']} is {source['status']}.")
         output.data_gaps = list(dict.fromkeys(
-            source_gaps + ["Historical-flood flags in the current risk model are configured values, not verified live data."] + output.data_gaps
+            source_gaps + ["Hotspot locations come from the Hyderabad Traffic Police list dated 2025-08-06; verify that each remains vulnerable."] + output.data_gaps
         ))[:8]
         return output
 

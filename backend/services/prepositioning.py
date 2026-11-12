@@ -23,12 +23,17 @@ def generate_prepositioning_suggestions(
     assigned_unit_ids = set()
 
     for zone in high_risk_zones:
-        # Find zone centroid from polygon
-        coords = zone.polygon.get("coordinates", [[]])[0]
-        if not coords:
-            continue
-        avg_lng = sum(p[0] for p in coords) / len(coords)
-        avg_lat = sum(p[1] for p in coords) / len(coords)
+        # A hotspot is a Point; older polygon zones still use their ring centroid.
+        geometry = zone.polygon or {}
+        coords = geometry.get("coordinates", [])
+        if geometry.get("type") == "Point" and len(coords) >= 2:
+            avg_lng, avg_lat = coords[0], coords[1]
+        else:
+            ring = coords[0] if coords else []
+            if not ring:
+                continue
+            avg_lng = sum(point[0] for point in ring) / len(ring)
+            avg_lat = sum(point[1] for point in ring) / len(ring)
 
         # Match best available unit
         best_unit = None
