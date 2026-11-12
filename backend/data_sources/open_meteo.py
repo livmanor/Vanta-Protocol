@@ -1,7 +1,6 @@
 import httpx
 import logging
 from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
 from typing import Optional, Dict, Any
 from backend.config import settings
 from backend.cache import global_cache
@@ -17,7 +16,7 @@ async def get_recent_historical_rain(
     end_date: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Fetch recent observed/reanalysis daily rainfall from Open-Meteo Archive."""
-    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
     requested_end = datetime.fromisoformat(end_date).date() if end_date else today
     requested_start = datetime.fromisoformat(start_date).date() if start_date else requested_end - timedelta(days=days)
     cache_key = f"open_meteo_archive_rain_{lat:.3f}_{lng:.3f}_{requested_start}_{requested_end}"

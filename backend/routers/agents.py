@@ -61,4 +61,4 @@ async def run_single_agent(agent_id: Literal["predict", "prepare", "respond"], a
     except AgentConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except AgentProviderError as exc:
-        raise HTTPException(status_code=502, detail="Agent provider unavailable. Please retry.") from exc
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
