@@ -7,68 +7,51 @@ from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_
 from backend.data_sources.elevation import get_real_elevations
 from backend.data_sources.imd import get_real_imd_alerts
 
-# Real municipal zones / wards bounding Chennai coastal and river basins (Adyar, Cooum, Kosasthalaiyar)
+# Geocoded major waterlogging points published by Hyderabad Traffic Police.
+# Source list is dated 2025-08-06. These points are historical vulnerability
+# locations, not administrative boundaries or reports of current inundation.
 REAL_ZONES_METADATA = [
     {
-        "id": "zone-adyar",
-        "name": "Zone XIII - Adyar Basin",
-        "centroid": (13.0067, 80.2570),
+        "id": "hyd-hotspot-nampally-metro",
+        "name": "Nampally Metro Underpass",
+        "centroid": (17.391440, 78.470213),
         "historical_flood_prone": True,
-        # GeoJSON Polygon coordinates [lng, lat]
-        "coordinates": [
-            [80.240, 13.020], [80.270, 13.020], [80.275, 12.990],
-            [80.245, 12.990], [80.240, 13.020]
-        ]
+        "source_severity": "Major",
     },
     {
-        "id": "zone-velachery",
-        "name": "Zone XIV - Velachery / Pallikaranai Marsh",
-        "centroid": (12.9750, 80.2200),
+        "id": "hyd-hotspot-banjara-rd12",
+        "name": "Banjara Hills · Road No. 12",
+        "centroid": (17.411480, 78.435294),
         "historical_flood_prone": True,
-        "coordinates": [
-            [80.200, 12.990], [80.240, 12.990], [80.240, 12.955],
-            [80.200, 12.955], [80.200, 12.990]
-        ]
+        "source_severity": "Major",
     },
     {
-        "id": "zone-cooum-central",
-        "name": "Zone IX - Teynampet / Cooum Corridor",
-        "centroid": (13.0400, 80.2500),
+        "id": "hyd-hotspot-gun-park",
+        "name": "Gun Park / Hyderabad Traffic Police",
+        "centroid": (17.4008462, 78.4698862),
         "historical_flood_prone": True,
-        "coordinates": [
-            [80.230, 13.060], [80.270, 13.060], [80.270, 13.030],
-            [80.230, 13.030], [80.230, 13.060]
-        ]
+        "source_severity": "Major",
     },
     {
-        "id": "zone-sholinganallur",
-        "name": "Zone XV - Sholinganallur Coastal Belt",
-        "centroid": (12.9000, 80.2300),
-        "historical_flood_prone": False,
-        "coordinates": [
-            [80.210, 12.920], [80.255, 12.920], [80.260, 12.870],
-            [80.215, 12.870], [80.210, 12.920]
-        ]
-    },
-    {
-        "id": "zone-anna-nagar",
-        "name": "Zone VIII - Anna Nagar",
-        "centroid": (13.0850, 80.2100),
-        "historical_flood_prone": False,
-        "coordinates": [
-            [80.190, 13.105], [80.230, 13.105], [80.230, 13.070],
-            [80.190, 13.070], [80.190, 13.105]
-        ]
-    },
-    {
-        "id": "zone-tondiarpet",
-        "name": "Zone IV - Tondiarpet North Coast",
-        "centroid": (13.1300, 80.2900),
+        "id": "hyd-hotspot-chatrinaka",
+        "name": "Chatrinaka Police Station",
+        "centroid": (17.343282, 78.478107),
         "historical_flood_prone": True,
-        "coordinates": [
-            [80.270, 13.150], [80.305, 13.150], [80.300, 13.110],
-            [80.265, 13.110], [80.270, 13.150]
-        ]
+        "source_severity": "Major",
+    },
+    {
+        "id": "hyd-hotspot-kachiguda",
+        "name": "Kachiguda · 6 No. Junction",
+        "centroid": (17.391500, 78.511201),
+        "historical_flood_prone": True,
+        "source_severity": "Major",
+    },
+    {
+        "id": "hyd-hotspot-moosarambagh-bridge",
+        "name": "Moosarambagh Bridge · Ali Café",
+        "centroid": (17.381185, 78.517900),
+        "historical_flood_prone": True,
+        "source_severity": "Major",
     }
 ]
 
@@ -87,7 +70,7 @@ def calculate_zone_risk(
     - Wind gust / Cyclone intensity: 20%
     - River discharge anomaly: 20%
     - Low elevation (< 10m): 15%
-    - Historical flood basin: 10%
+    - Published major waterlogging hotspot: 10%
     """
     score = 1.0  # Base level 1 (Low)
 
@@ -120,7 +103,7 @@ def calculate_zone_risk(
         elif elevation_m <= 10.0:
             score += 0.35
 
-    # 5. Historical flood corridor (0 to 0.5)
+    # 5. Published major waterlogging hotspot (0 to 0.5)
     if historical_flood:
         score += 0.5
 
@@ -136,7 +119,7 @@ def calculate_zone_risk(
     if elevation_m is not None:
         reasons.append(f"Terrain elevation: {elevation_m:.1f} m (low-lying: {'Yes' if elevation_m < 10 else 'No'})")
     if historical_flood:
-        reasons.append("Identified historical flood/inundation corridor")
+        reasons.append("Hyderabad Traffic Police major waterlogging hotspot (2025 list)")
 
     why_this = " | ".join(reasons) if reasons else "Normal meteorological conditions, minimal flood/cyclone hazard"
 
@@ -201,17 +184,14 @@ async def compute_real_risk_zones() -> List[RiskZone]:
         if elev_m is not None:
             sources.append("Open-Elevation API")
         if zone_meta["historical_flood_prone"]:
-            sources.append("OpenStreetMap River Basin Data")
+            sources.append("Hyderabad Traffic Police waterlogging points (as of 2025-08-06)")
 
         risk_zones.append(
             RiskZone(
                 id=zone_meta["id"],
                 name=zone_meta["name"],
                 risk_level=risk_level,
-                polygon={
-                    "type": "Polygon",
-                    "coordinates": [zone_meta["coordinates"]]
-                },
+                polygon={"type": "Point", "coordinates": [c_lng, c_lat]},
                 population=None,  # Rule 4: population may be null when no real source is available. Do not guess it.
                 derived_from=sources,
                 computed_at=now_iso,

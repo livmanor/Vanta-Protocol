@@ -70,7 +70,7 @@ class RiskZone(BaseModel):
     id: str
     name: str
     risk_level: int = Field(ge=1, le=5)
-    polygon: Dict[str, Any]  # GeoJSON Polygon / MultiPolygon
+    polygon: Dict[str, Any]  # GeoJSON Point (hotspot) or Polygon / MultiPolygon
     population: Optional[int] = None
     derived_from: List[str]
     computed_at: str

@@ -117,9 +117,12 @@ export default function App() {
   const handleGenerateRoute = async (zone) => {
     setLoadingRoute(true);
     try {
-      const coords = zone.polygon.coordinates[0];
-      const avgLng = coords.reduce((a, b) => a + b[0], 0) / coords.length;
-      const avgLat = coords.reduce((a, b) => a + b[1], 0) / coords.length;
+      // A hotspot is already a target point; polygon zones use their ring centroid.
+      const geometry = zone.polygon || {};
+      const coords = geometry.coordinates || [];
+      const ring = coords[0] || [];
+      const avgLng = geometry.type === 'Point' ? coords[0] : ring.reduce((sum, point) => sum + point[0], 0) / (ring.length || 1);
+      const avgLat = geometry.type === 'Point' ? coords[1] : ring.reduce((sum, point) => sum + point[1], 0) / (ring.length || 1);
       const route = await generateEvacuationRoute(zone.id, zone.name, avgLat, avgLng);
       setActiveRoute(route);
     } catch (err) {

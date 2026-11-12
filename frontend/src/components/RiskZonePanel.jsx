@@ -5,9 +5,9 @@ import { useLanguage } from '../i18n.jsx';
 export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute, loadingRoute }) {
   const { language } = useLanguage();
   const words = {
-    en: ['Ward risk assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', '24h rainfall', 'River discharge', 'Terrain elevation', 'Historical flood', 'Why this risk rating?', 'Prepare evacuation route', 'Routing via OSRM…'],
-    hi: ['वार्ड जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', '24 घंटे की वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'ऐतिहासिक बाढ़', 'यह जोखिम क्यों?', 'निकासी मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…'],
-    te: ['వార్డు ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', '24 గంటల వర్షపాతం', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'చారిత్రక వరద', 'ఈ ప్రమాద స్థాయి ఎందుకు?', 'తరలింపు మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…'],
+    en: ['Hotspot risk assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', '24h rainfall', 'River discharge', 'Terrain elevation', 'Mapped vulnerability', 'Why this risk rating?', 'Prepare route', 'Routing via OSRM…'],
+    hi: ['हॉटस्पॉट जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', '24 घंटे की वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'मानचित्रित संवेदनशीलता', 'यह जोखिम क्यों?', 'मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…'],
+    te: ['హాట్‌స్పాట్ ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', '24 గంటల వర్షపాతం', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'మ్యాప్‌లో గుర్తించిన ముప్పు', 'ఈ ప్రమాద స్థాయి ఎందుకు?', 'మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…'],
   }[language] || [];
   if (!zone) return null;
 
@@ -116,7 +116,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
           <div>
             <div className="text-xs text-gray-300">{words[12]}</div>
             <div className={`font-semibold ${exp.historical_flood_prone ? 'text-amber-400' : 'text-gray-400'}`}>
-              {exp.historical_flood_prone ? 'Yes (Adyar/Cooum)' : 'None'}
+              {exp.historical_flood_prone ? (language === 'hi' ? 'HTP प्रमुख हॉटस्पॉट · अगस्त 2025' : language === 'te' ? 'HTP ప్రధాన హాట్‌స్పాట్ · ఆగస్టు 2025' : 'HTP major hotspot · Aug 2025') : (language === 'hi' ? 'कोई हॉटस्पॉट मैप नहीं' : language === 'te' ? 'హాట్‌స్పాట్ మ్యాప్‌లో లేదు' : 'No mapped hotspot')}
             </div>
           </div>
         </div>
