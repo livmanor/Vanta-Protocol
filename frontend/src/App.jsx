@@ -88,11 +88,11 @@ export default function App() {
     }
   }, []);
 
-  const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage) => {
+  const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage, inputs = {}) => {
     setLoadingAgent(agentId);
     setAgentErrors(previous => ({ ...previous, [agentId]: '' }));
     try {
-      const result = await runAgent(agentId, confirmGoogleProcessing, runLanguage || language);
+      const result = await runAgent(agentId, confirmGoogleProcessing, runLanguage || language, inputs);
       setAgentResults(previous => ({ ...previous, [agentId]: result }));
       if (agentId === 'prepare') setPrepositionSuggestions(result.positioning_recommendations || []);
     } catch (err) {
