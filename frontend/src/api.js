@@ -18,6 +18,23 @@ export async function fetchZoneWeather() {
   return res.json();
 }
 
+export async function fetchAgentStatus() {
+  const res = await fetch(`${API_BASE}/agents/status`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch agent status`);
+  return res.json();
+}
+
+export async function runPredictPrepareAgents(confirmGoogleProcessing) {
+  const res = await fetch(`${API_BASE}/agents/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirm_google_processing: confirmGoogleProcessing })
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Agent workflow failed`);
+  return payload;
+}
+
 export async function fetchUnits() {
   const res = await fetch(`${API_BASE}/units`);
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch units`);

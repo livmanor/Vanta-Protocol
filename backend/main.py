@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.config import settings
 from backend.db import init_db
-from backend.routers import risk, routes, units, incidents, sources, weather
+from backend.routers import risk, routes, units, incidents, sources, weather, agents
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("vanta")
@@ -40,6 +40,7 @@ app.include_router(units.router)
 app.include_router(incidents.router)
 app.include_router(sources.router)
 app.include_router(weather.router)
+app.include_router(agents.router)
 
 @app.get("/api/health")
 async def health_check():

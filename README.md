@@ -32,6 +32,14 @@ Every data source is connected at runtime and displayed in the UI's **Source Sta
 
 ## Core Capabilities (V1)
 
+### Gemini Predict and Prepare Agents
+- The **Predict** agent interprets the live, deterministic risk-zone output and highlights areas for officer review.
+- The **Prepare** agent reviews existing deterministic unit-positioning recommendations and adds grounded readiness notes. It does not create units, change assignments, or dispatch.
+- The workflow is manually started from the **Agents** tab; it does not call Gemini during automatic dashboard refreshes.
+- Each run requires an operator to confirm the specific zone and summarized positioning data sent to Google. Unit IDs, station names, exact unit coordinates, and incident reports are excluded.
+- Configure `GEMINI_API_KEY` in the local backend `.env` file (never commit the key). `GEMINI_MODEL` can select the model. The backend sends zone metrics and source freshness, and omits unit IDs, station names, and exact unit coordinates.
+- `GET /api/agents/status` reports configuration; `POST /api/agents/run` runs Predict followed by Prepare. Without a key, the UI reports setup is required.
+
 ### 1. Predict Milestone
 - **Dynamic Ward/Zone Risk Derivation**: Derives real-time flood and cyclone risk scores ($1\text{ to }5$) across municipal zones (e.g. Adyar Basin, Velachery/Pallikaranai Marsh, Cooum Corridor, Tondiarpet Coast).
 - **Explainable Model Output**: Every zone displays a transparent "Why this?" breakdown (e.g. `24h Rain: 0.0mm | River Discharge: 0.4 m³/s | Elevation: 6.1m (low-lying) | Historical flood basin`).

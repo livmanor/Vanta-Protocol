@@ -1,5 +1,7 @@
 import os
 from pydantic_settings import BaseSettings
+from pydantic import SecretStr
+from typing import Optional
 
 class Settings(BaseSettings):
     CITY_NAME: str = "Chennai"
@@ -20,6 +22,9 @@ class Settings(BaseSettings):
     FLOOD_CACHE_TTL: int = 1800
     ELEVATION_CACHE_TTL: int = 86400
     OSM_CACHE_TTL: int = 3600
+
+    GEMINI_API_KEY: Optional[SecretStr] = None
+    GEMINI_MODEL: str = "gemini-3.8-flash"
 
     PORT: int = 8000
     HOST: str = "0.0.0.0"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  ShieldAlert, Compass, Plus, AlertCircle, Shield, Route, 
+  ShieldAlert, Compass, Plus, AlertCircle, Shield, Route, Brain,
   MapPin, CheckCircle2, ChevronRight, Layers, Flame, RefreshCw 
 } from 'lucide-react';
 import SourceStatusBar from './components/SourceStatusBar';
@@ -11,17 +11,22 @@ import PrepositionPanel from './components/PrepositionPanel';
 import UnitRegisterModal from './components/UnitRegisterModal';
 import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
+import AgentPanel from './components/AgentPanel';
 import { 
   fetchSources, fetchRiskZones, fetchUnits, registerUnit, 
   fetchIncidents, reportIncident, fetchPrepositionSuggestions, 
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads, reportBlockedRoad,
-  fetchZoneWeather
+  fetchZoneWeather, fetchAgentStatus, runPredictPrepareAgents
 } from './api';
 
 export default function App() {
   const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
   const [zoneWeather, setZoneWeather] = useState([]);
+  const [agentStatus, setAgentStatus] = useState(null);
+  const [agentRun, setAgentRun] = useState(null);
+  const [agentError, setAgentError] = useState('');
+  const [loadingAgents, setLoadingAgents] = useState(false);
   const [units, setUnits] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [blockedRoads, setBlockedRoads] = useState([]);
@@ -47,10 +52,11 @@ export default function App() {
     setLoadingSources(true);
     setLoadingRisk(true);
     try {
-      const [srcs, rZones, weather, uList, incList, roads] = await Promise.all([
+      const [srcs, rZones, weather, aStatus, uList, incList, roads] = await Promise.all([
         fetchSources().catch(e => { console.error(e); return []; }),
         fetchRiskZones().catch(e => { console.error(e); return []; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
+        fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
         fetchIncidents().catch(e => { console.error(e); return []; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; })
@@ -58,6 +64,7 @@ export default function App() {
       setSources(srcs);
       setRiskZones(rZones);
       setZoneWeather(weather);
+      setAgentStatus(aStatus);
       setUnits(uList);
       setIncidents(incList);
       setBlockedRoads(roads);
@@ -73,6 +80,20 @@ export default function App() {
       setLoadingRisk(false);
     }
   }, []);
+
+  const handleRunAgents = async (confirmGoogleProcessing) => {
+    setLoadingAgents(true);
+    setAgentError('');
+    try {
+      const result = await runPredictPrepareAgents(confirmGoogleProcessing);
+      setAgentRun(result);
+      setPrepositionSuggestions(result.positioning_recommendations || []);
+    } catch (err) {
+      setAgentError(err.message);
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -211,7 +232,7 @@ export default function App() {
         {/* Tactical Control Sidebar */}
         <div className="w-96 bg-[#111827] border-l border-gray-800 flex flex-col z-[400] h-full shadow-2xl">
           {/* Tabs */}
-          <div className="flex border-b border-gray-800 bg-gray-900/60 p-1 gap-1 text-xs">
+          <div className="flex border-b border-gray-800 bg-gray-900/60 p-1 gap-1 text-[10px]">
             <button
               onClick={() => setActiveTab('zones')}
               className={`flex-1 py-1.5 rounded font-semibold transition flex items-center justify-center gap-1.5 ${
@@ -239,6 +260,18 @@ export default function App() {
                   {prepositionSuggestions.length}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('agents')}
+              className={`flex-1 py-1.5 rounded font-semibold transition flex items-center justify-center gap-1 ${
+                activeTab === 'agents'
+                  ? 'bg-violet-600 text-white shadow'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5" />
+              <span>Agents</span>
             </button>
 
             <button
@@ -322,6 +355,18 @@ export default function App() {
               <PrepositionPanel
                 suggestions={prepositionSuggestions}
                 onApprove={handleApprovePreposition}
+              />
+            )}
+
+            {activeTab === 'agents' && (
+              <AgentPanel
+                status={agentStatus}
+                result={agentRun}
+                error={agentError}
+                loading={loadingAgents}
+                onRun={handleRunAgents}
+                onReviewPreparation={() => setActiveTab('preposition')}
+                riskZones={riskZones}
               />
             )}
 
