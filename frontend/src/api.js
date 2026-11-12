@@ -24,11 +24,18 @@ export async function fetchAgentStatus() {
   return res.json();
 }
 
-export async function runAgent(agentId, confirmGoogleProcessing, language = 'en') {
-  const res = await fetch(`${API_BASE}/agents/run/${agentId}`, {
+export async function fetchPredictHistoryEvents(days = 90) {
+  const res = await fetch(`${API_BASE}/agents/predict/events?days=${days}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch historical rain events`);
+  return res.json();
+}
+
+export async function runAgent(agentId, confirmGoogleProcessing, language = 'en', inputs = {}) {
+  const endpoint = agentId === 'predict' ? `${API_BASE}/agents/predict/run` : `${API_BASE}/agents/run/${agentId}`;
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ confirm_google_processing: confirmGoogleProcessing, language })
+    body: JSON.stringify({ confirm_google_processing: confirmGoogleProcessing, language, ...inputs })
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Agent workflow failed`);

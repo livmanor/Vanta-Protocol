@@ -34,11 +34,12 @@ Every data source is connected at runtime and displayed in the UI's **Source Sta
 
 ### Gemini Agent Workbench
 - The **Agents** workspace offers three separately selectable and independently run agents: Weather Predict, Prepare and Respond. Each has its own goal, data disclosure and report; one agent does not silently run the others.
-- The **Predict** agent compares live deterministic risk-zone output with the most recent wet spell in Open-Meteo's historical rainfall archive and real officer-entered flood/blocked-road records logged during that spell.
+- The **Predict** agent lets an officer browse detected rainfall events from the available 90-day Open-Meteo archive, inspect rainfall and app-recorded effects at each mapped hotspot, optionally focus on one hotspot, and run a comparison for that selected window. The API exposes `GET /api/agents/predict/events?days=90` and `POST /api/agents/predict/run` for this interactive workflow.
 - The **Prepare** agent uses the forecast, those historical impacts, resource availability and deterministic positioning recommendations to produce evidence-linked pre-event readiness actions and officer checks. It can provide checks when no units are registered; it never creates units, changes assignments, or dispatches.
 - The workflow is manually started from the **Agents** tab; it does not call Gemini during automatic dashboard refreshes.
 - Each run requires an operator to confirm the zone forecasts, historical rainfall and aggregate impact counts sent to Google. Raw incident reports, unit IDs, station names and exact unit coordinates are excluded. Responses follow the selected English, Hindi or Telugu UI language.
 - Historical rainfall is reanalysis rather than rain-gauge observation. Traffic evidence is limited to records entered in this app; no live traffic or external traffic archive is connected. No record means unknown/unreported, not that roads were clear.
+- The event explorer shows the archive's actual available-through date because historical product freshness can vary. Event totals are point samples at six mapped waterlogging hotspots, not citywide rainfall totals. Only incidents and blocked roads recorded in Vanta during the selected dates appear as local effects.
 - Configure `GEMINI_API_KEY` in the local backend `.env` file (never commit the key). `GEMINI_MODEL` can select the model.
 - `GET /api/agents/status` reports configuration and agent goals. `POST /api/agents/run/predict`, `/prepare` or `/respond` runs only the selected agent. The legacy `POST /api/agents/run` combined endpoint remains for compatibility. Without a key, the UI reports setup is required.
 

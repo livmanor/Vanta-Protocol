@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, ArrowRight, CheckCircle2, CloudRain, Compass, RefreshCw, ShieldCheck, Siren, Sparkles } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
+import { fetchPredictHistoryEvents } from '../api';
 
 const agents = {
   predict: { icon: CloudRain, color: 'cyan', title: ['Weather Predict', 'मौसम अनुमान', 'వాతావరణ అంచనా'], goal: ['Compare live forecasts with the latest historical rain and recorded area impacts.', 'लाइव पूर्वानुमान की तुलना हाल की बारिश और दर्ज क्षेत्रीय प्रभावों से करें।', 'ప్రత్యక్ష అంచనాలను ఇటీవలి వర్షపాతం, నమోదైన ప్రాంతీయ ప్రభావాలతో పోల్చండి.'], data: ['Live weather and flood risk, recent rainfall history, logged flood and road-block counts.', 'लाइव मौसम व बाढ़ जोखिम, हाल की वर्षा, दर्ज बाढ़ और सड़क अवरोधों की संख्या।', 'ప్రత్యక్ష వాతావరణం, వరద ప్రమాదం, ఇటీవలి వర్షపాతం, నమోదైన వరద/రోడ్డు మూసివేతల సంఖ్య.'], output: ['Rain-event comparison, focus areas, data gaps and officer verification checks.', 'बारिश की तुलना, ध्यान देने योग्य क्षेत्र, डेटा की कमी और अधिकारी जाँच।', 'వర్షపాతం పోలిక, దృష్టి ప్రాంతాలు, డేటా లోపాలు, అధికారి తనిఖీలు.'] },
@@ -13,10 +14,37 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const langIndex = language === 'hi' ? 1 : language === 'te' ? 2 : 0;
   const [selected, setSelected] = useState('predict');
   const [consent, setConsent] = useState(false);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [selectedHistoryZone, setSelectedHistoryZone] = useState('');
   const selectedResult = results[selected];
   const current = agents[selected];
   const zoneName = (id) => riskZones.find(zone => zone.id === id)?.name || id;
   useEffect(() => setConsent(false), [selected]);
+  useEffect(() => {
+    if (selected !== 'predict') return undefined;
+    let active = true;
+    setHistoryLoading(true);
+    setHistoryError('');
+    fetchPredictHistoryEvents(90)
+      .then(data => {
+        if (!active) return;
+        setHistory(data);
+        setSelectedEventId(currentId => data.events?.some(item => item.id === currentId) ? currentId : data.events?.[0]?.id || '');
+      })
+      .catch(error => { if (active) setHistoryError(error.message); })
+      .finally(() => { if (active) setHistoryLoading(false); });
+    return () => { active = false; };
+  }, [selected]);
+  const selectedEvent = history?.events?.find(item => item.id === selectedEventId);
+  const selectedEventAreas = selectedEvent?.areas?.filter(item => !selectedHistoryZone || item.zone_id === selectedHistoryZone) || [];
+  const historyLabels = {
+    en: { title: 'Choose a past rain event', hint: 'Browse detected rainfall events, then inspect reported effects before running Predict.', loading: 'Finding rainfall events from the last 90 days…', unavailable: 'Historical rainfall is unavailable right now.', empty: 'No rainfall events were found in the available archive window.', event: 'Rain event', area: 'Focus area', all: 'All mapped hotspots', impacts: 'Evidence by hotspot', rainfall: 'Rain total', max: 'Max daily rain', reports: 'Flood / trapped / road reports', blocks: 'Blocked-road reports', coverage: 'Archive coverage', source: 'Rainfall is reanalysis sampled at six mapped hotspots, not gauge data or a citywide total. Archive availability varies by dataset.', records: 'Effect counts include only reports recorded in this app; no report does not mean no impact.', allAreas: 'All mapped hotspots', selected: 'Selected for this run' },
+    hi: { title: 'पिछली बारिश चुनें', hint: 'बारिश की घटनाएँ देखें और पूर्वानुमान चलाने से पहले दर्ज प्रभाव जाँचें।', loading: 'पिछले 90 दिनों की बारिश की घटनाएँ खोजी जा रही हैं…', unavailable: 'ऐतिहासिक वर्षा अभी उपलब्ध नहीं है।', empty: 'उपलब्ध संग्रह में कोई वर्षा घटना नहीं मिली।', event: 'बारिश की घटना', area: 'ध्यान क्षेत्र', all: 'सभी मानचित्रित हॉटस्पॉट', impacts: 'हॉटस्पॉट के अनुसार साक्ष्य', rainfall: 'कुल वर्षा', max: 'अधिकतम दैनिक वर्षा', reports: 'बाढ़ / फँसे लोग / सड़क रिपोर्ट', blocks: 'सड़क अवरोध रिपोर्ट', coverage: 'संग्रह कवरेज', source: 'वर्षा छह मानचित्रित हॉटस्पॉट पर पुनर्विश्लेषण है; यह वर्षामापी या पूरे शहर का कुल नहीं है। उपलब्धता डेटा स्रोत के अनुसार बदलती है।', records: 'प्रभावों में केवल इस ऐप में दर्ज रिपोर्टें शामिल हैं; रिपोर्ट न होना प्रभाव न होने का प्रमाण नहीं है।', allAreas: 'सभी मानचित्रित हॉटस्पॉट', selected: 'इस रन के लिए चुना गया' },
+    te: { title: 'గత వర్ష ఘటనను ఎంచుకోండి', hint: 'వర్ష ఘటనలను పరిశీలించి, అంచనాను నడిపే ముందు నమోదైన ప్రభావాలను చూడండి.', loading: 'గత 90 రోజుల వర్ష ఘటనలను వెతుకుతోంది…', unavailable: 'చారిత్రక వర్షపాతం ప్రస్తుతం అందుబాటులో లేదు.', empty: 'అందుబాటులో ఉన్న ఆర్కైవ్‌లో వర్ష ఘటనలు కనబడలేదు.', event: 'వర్ష ఘటన', area: 'దృష్టి ప్రాంతం', all: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', impacts: 'హాట్‌స్పాట్ వారీ ఆధారాలు', rainfall: 'మొత్తం వర్షపాతం', max: 'గరిష్ఠ రోజువారీ వర్షం', reports: 'వరద / చిక్కుకున్నవారు / రోడ్డు నివేదికలు', blocks: 'రోడ్డు మూసివేత నివేదికలు', coverage: 'ఆర్కైవ్ పరిధి', source: 'వర్షపాతం ఆరు మ్యాప్ హాట్‌స్పాట్‌ల వద్ద రీఅనాలిసిస్; గేజ్ కొలత లేదా నగర మొత్తం కాదు. డేటాసెట్‌ను బట్టి తాజాదనం మారుతుంది.', records: 'ప్రభావ లెక్కలు ఈ యాప్‌లో నమోదైన నివేదికలనే కలుపుతాయి; నివేదిక లేకపోవడం ప్రభావం లేదని కాదు.', allAreas: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', selected: 'ఈ రన్ కోసం ఎంపిక' },
+  }[language] || {};
 
   const colors = { cyan: 'border-cyan-700 bg-cyan-950/40 text-cyan-200', amber: 'border-amber-700 bg-amber-950/40 text-amber-200', rose: 'border-rose-700 bg-rose-950/40 text-rose-200' };
   const dataForConsent = {
@@ -65,13 +93,54 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
           <div className="rounded-lg bg-slate-950/80 p-3"><div className="text-xs font-bold uppercase text-slate-400">{language === 'hi' ? 'आपको क्या मिलेगा' : language === 'te' ? 'మీకు లభించేది' : 'Output'}</div><p className="mt-1 text-xs leading-relaxed text-slate-200">{current.output[langIndex]}</p></div>
         </div>
 
+        {selected === 'predict' && <div className="mt-3 rounded-xl border border-cyan-900/80 bg-slate-950/70 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div><h4 className="font-bold text-cyan-100">{historyLabels.title}</h4><p className="mt-1 text-xs text-slate-300">{historyLabels.hint}</p></div>
+            {history?.available_from && <span className="rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-300">{historyLabels.coverage}: {history.available_from} – {history.available_through || '—'}</span>}
+          </div>
+          {historyLoading && <div className="mt-3 flex items-center gap-2 text-xs text-cyan-100"><RefreshCw className="h-3.5 w-3.5 animate-spin" />{historyLabels.loading}</div>}
+          {(historyError || (history && history.status === 'failed')) && <div className="mt-3 rounded-lg border border-amber-800 bg-amber-950/30 p-2 text-xs text-amber-100">{historyError || historyLabels.unavailable}</div>}
+          {!historyLoading && !historyError && history?.status !== 'failed' && !history?.events?.length && <div className="mt-3 text-xs text-slate-300">{historyLabels.empty}</div>}
+          {selectedEvent && <>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              <label className="text-xs font-semibold text-slate-300">{historyLabels.event}
+                <select value={selectedEventId} onChange={event => { setSelectedEventId(event.target.value); setConsent(false); }} className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+                  {(history?.events || []).map(item => <option key={item.id} value={item.id}>{item.window_start} – {item.window_end} · {item.mean_hotspot_rainfall_mm === null ? '—' : `${item.mean_hotspot_rainfall_mm} mm mean at ${item.rainfall_point_count} points`}</option>)}
+                </select>
+              </label>
+              <label className="text-xs font-semibold text-slate-300">{historyLabels.area}
+                <select value={selectedHistoryZone} onChange={event => { setSelectedHistoryZone(event.target.value); setConsent(false); }} className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+                  <option value="">{historyLabels.all}</option>
+                  {(riskZones || []).map(zone => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="mt-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3">
+              <div className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">{historyLabels.impacts} · {selectedEvent.window_start} – {selectedEvent.window_end}</div>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {selectedEventAreas.map(area => <div key={area.zone_id} className="rounded-lg border border-slate-700 bg-slate-950/80 p-2.5 text-xs">
+                  <b className="text-white">{zoneName(area.zone_id)}</b>
+                  <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-slate-300">
+                    <span>{historyLabels.rainfall}</span><span className="text-right text-white">{area.rainfall_total_mm ?? '—'} mm</span>
+                    <span>{historyLabels.max}</span><span className="text-right text-white">{area.max_daily_rainfall_mm ?? '—'} mm</span>
+                    <span>{historyLabels.reports}</span><span className="text-right text-white">{area.incident_reports}</span>
+                    <span>{historyLabels.blocks}</span><span className="text-right text-white">{area.blocked_road_reports}</span>
+                  </div>
+                </div>)}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-amber-200">{historyLabels.source} {historyLabels.records}</p>
+              <p className="mt-2 text-[11px] font-semibold text-cyan-100">{historyLabels.selected}: {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}</p>
+            </div>
+          </>}
+        </div>}
+
         {!status?.configured && <div className="mt-3 rounded-lg border border-amber-800 bg-amber-950/30 p-3 text-sm text-amber-100"><AlertTriangle className="mr-1 inline h-4 w-4" />{language === 'hi' ? 'backend .env में GEMINI_API_KEY जोड़ें और backend पुनः शुरू करें।' : language === 'te' ? 'backend .envలో GEMINI_API_KEY జోడించి backendను మళ్లీ ప్రారంభించండి.' : 'Add GEMINI_API_KEY to backend .env and restart the backend.'}</div>}
         {status?.configured && <label className="mt-3 flex cursor-pointer gap-3 rounded-lg border border-slate-600 bg-slate-950/80 p-3">
           <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-violet-500" />
-          <span className="text-xs leading-relaxed text-slate-200">{dataForConsent[selected][langIndex]}</span>
+          <span className="text-xs leading-relaxed text-slate-200">{dataForConsent[selected][langIndex]}{selected === 'predict' && selectedEvent && <span className="mt-1 block font-semibold text-cyan-100">{historyLabels.selected}: {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}</span>}</span>
         </label>}
         {err && <div className="mt-3 rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-rose-100">{err}</div>}
-        <button onClick={() => onRun(selected, consent, language)} disabled={!status?.configured || !consent || loading}
+        <button onClick={() => onRun(selected, consent, language, selected === 'predict' && selectedEvent ? { event_start: selectedEvent.window_start, event_end: selectedEvent.window_end, zone_id: selectedHistoryZone || null } : {})} disabled={!status?.configured || !consent || loading || (selected === 'predict' && !selectedEvent)}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 font-bold text-white shadow-lg transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50">
           {runningCurrent ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {runningCurrent ? (language === 'hi' ? 'एजेंट चल रहा है…' : language === 'te' ? 'ఏజెంట్ నడుస్తోంది…' : `Running ${current.title[0]}…`) : (language === 'hi' ? `${current.title[1]} चलाएँ` : language === 'te' ? `${current.title[2]} నడపండి` : `Run ${current.title[0]}`)}

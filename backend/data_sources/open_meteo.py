@@ -9,12 +9,18 @@ from backend.cache import global_cache
 logger = logging.getLogger("open_meteo")
 
 
-async def get_recent_historical_rain(lat: float, lng: float, days: int = 30) -> Dict[str, Any]:
+async def get_recent_historical_rain(
+    lat: float,
+    lng: float,
+    days: int = 30,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Dict[str, Any]:
     """Fetch recent observed/reanalysis daily rainfall from Open-Meteo Archive."""
     today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
-    start_date = today - timedelta(days=days)
-    end_date = today
-    cache_key = f"open_meteo_archive_rain_{lat:.3f}_{lng:.3f}_{start_date}_{end_date}"
+    requested_end = datetime.fromisoformat(end_date).date() if end_date else today
+    requested_start = datetime.fromisoformat(start_date).date() if start_date else requested_end - timedelta(days=days)
+    cache_key = f"open_meteo_archive_rain_{lat:.3f}_{lng:.3f}_{requested_start}_{requested_end}"
     cached = global_cache.get(cache_key)
     if cached and not cached[2]:
         data, fetched_at, is_stale = cached
@@ -25,8 +31,8 @@ async def get_recent_historical_rain(lat: float, lng: float, days: int = 30) -> 
             response = await client.get(settings.OPEN_METEO_ARCHIVE_URL, params={
                 "latitude": lat,
                 "longitude": lng,
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
+                "start_date": requested_start.isoformat(),
+                "end_date": requested_end.isoformat(),
                 "daily": "precipitation_sum,rain_sum",
                 "timezone": "Asia/Kolkata",
             })
