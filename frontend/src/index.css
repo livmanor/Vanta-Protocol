@@ -114,6 +114,41 @@ button, input, select, textarea { font: inherit; }
   body { font-size: 13px; }
 }
 
+/* ── UI polish layer (safe, additive) ──────────────── */
+
+/* Softer, deeper panel elevation */
+.v-card {
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 18px -10px rgba(0,0,0,0.6);
+}
+
+/* Buttons: consistent focus ring + press feedback */
+button:focus-visible {
+  outline: 2px solid rgba(34,211,238,0.6);
+  outline-offset: 2px;
+}
+button:active:not(:disabled) { transform: translateY(0.5px); }
+
+/* Consent / report cards get a readable gradient */
+input[type="checkbox"] { accent-color: #22d3ee; }
+
+/* Leaflet: crisper zoom control on the dark theme */
+.leaflet-bar a {
+  background: var(--vanta-panel) !important;
+  color: var(--vanta-text) !important;
+  border-color: var(--vanta-border) !important;
+}
+.leaflet-bar a:hover { background: var(--vanta-panel-2) !important; }
+
+/* Scrollbar: subtle top fade hint inside scroll areas */
+.v-scroll-fade {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 8px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 8px);
+}
+
+/* Danger text legibility tweak */
+.text-rose-400 { color: #fb7185; }
+
+
 /* Leaflet dark theme map overrides */
 .leaflet-container {
   background-color: #0d131f !important;
