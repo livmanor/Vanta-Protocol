@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertTriangle, ArrowRight, CheckCircle2, CloudRain, Compass, RefreshCw, ShieldCheck, Siren, Sparkles } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, CheckCircle2, CloudRain, Compass, RefreshCw, Search, ShieldCheck, Siren, Sparkles } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
-import { fetchPredictHistoryEvents } from '../api';
+import { searchPredictHistory } from '../api';
 
 const agents = {
   predict: { icon: CloudRain, color: 'cyan', title: ['Weather Predict', 'मौसम अनुमान', 'వాతావరణ అంచనా'], goal: ['Compare live forecasts with the latest historical rain and recorded area impacts.', 'लाइव पूर्वानुमान की तुलना हाल की बारिश और दर्ज क्षेत्रीय प्रभावों से करें।', 'ప్రత్యక్ష అంచనాలను ఇటీవలి వర్షపాతం, నమోదైన ప్రాంతీయ ప్రభావాలతో పోల్చండి.'], data: ['Live weather and flood risk, recent rainfall history, logged flood and road-block counts.', 'लाइव मौसम व बाढ़ जोखिम, हाल की वर्षा, दर्ज बाढ़ और सड़क अवरोधों की संख्या।', 'ప్రత్యక్ష వాతావరణం, వరద ప్రమాదం, ఇటీవలి వర్షపాతం, నమోదైన వరద/రోడ్డు మూసివేతల సంఖ్య.'], output: ['Rain-event comparison, focus areas, data gaps and officer verification checks.', 'बारिश की तुलना, ध्यान देने योग्य क्षेत्र, डेटा की कमी और अधिकारी जाँच।', 'వర్షపాతం పోలిక, దృష్టి ప్రాంతాలు, డేటా లోపాలు, అధికారి తనిఖీలు.'] },
@@ -15,6 +15,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const [selected, setSelected] = useState('predict');
   const [consent, setConsent] = useState(false);
   const [history, setHistory] = useState(null);
+  const [historyQuery, setHistoryQuery] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [selectedEventId, setSelectedEventId] = useState('');
@@ -23,32 +24,34 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const current = agents[selected];
   const zoneName = (id) => riskZones.find(zone => zone.id === id)?.name || id;
   useEffect(() => setConsent(false), [selected]);
-  useEffect(() => {
-    if (selected !== 'predict') return undefined;
-    let active = true;
+  const handleHistorySearch = async () => {
+    if (!historyQuery.trim()) return;
     setHistoryLoading(true);
     setHistoryError('');
-    fetchPredictHistoryEvents(90)
-      .then(data => {
-        if (!active) return;
-        setHistory(data);
-        setSelectedEventId(currentId => data.events?.some(item => item.id === currentId) ? currentId : data.events?.[0]?.id || '');
-      })
-      .catch(error => { if (active) setHistoryError(error.message); })
-      .finally(() => { if (active) setHistoryLoading(false); });
-    return () => { active = false; };
-  }, [selected]);
+    setConsent(false);
+    try {
+      const data = await searchPredictHistory(historyQuery.trim());
+      setHistory(data);
+      setSelectedEventId(data.events?.[0]?.id || '');
+      setSelectedHistoryZone(data.resolved_zone_id || '');
+    } catch (error) {
+      setHistory(null);
+      setHistoryError(error.message);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
   const selectedEvent = history?.events?.find(item => item.id === selectedEventId);
   const selectedEventAreas = selectedEvent?.areas?.filter(item => !selectedHistoryZone || item.zone_id === selectedHistoryZone) || [];
   const historyLabels = {
-    en: { title: 'Choose a past rain event', hint: 'Browse detected rainfall events, then inspect reported effects before running Predict.', loading: 'Finding rainfall events from the last 90 days…', unavailable: 'Historical rainfall is unavailable right now.', empty: 'No rainfall events were found in the available archive window.', event: 'Rain event', area: 'Focus area', all: 'All mapped hotspots', impacts: 'Evidence by hotspot', rainfall: 'Rain total', max: 'Max daily rain', reports: 'Flood / trapped / road reports', blocks: 'Blocked-road reports', coverage: 'Archive coverage', source: 'Rainfall is reanalysis sampled at six mapped hotspots, not gauge data or a citywide total. Archive availability varies by dataset.', records: 'Effect counts include only reports recorded in this app; no report does not mean no impact.', allAreas: 'All mapped hotspots', selected: 'Selected for this run' },
-    hi: { title: 'पिछली बारिश चुनें', hint: 'बारिश की घटनाएँ देखें और पूर्वानुमान चलाने से पहले दर्ज प्रभाव जाँचें।', loading: 'पिछले 90 दिनों की बारिश की घटनाएँ खोजी जा रही हैं…', unavailable: 'ऐतिहासिक वर्षा अभी उपलब्ध नहीं है।', empty: 'उपलब्ध संग्रह में कोई वर्षा घटना नहीं मिली।', event: 'बारिश की घटना', area: 'ध्यान क्षेत्र', all: 'सभी मानचित्रित हॉटस्पॉट', impacts: 'हॉटस्पॉट के अनुसार साक्ष्य', rainfall: 'कुल वर्षा', max: 'अधिकतम दैनिक वर्षा', reports: 'बाढ़ / फँसे लोग / सड़क रिपोर्ट', blocks: 'सड़क अवरोध रिपोर्ट', coverage: 'संग्रह कवरेज', source: 'वर्षा छह मानचित्रित हॉटस्पॉट पर पुनर्विश्लेषण है; यह वर्षामापी या पूरे शहर का कुल नहीं है। उपलब्धता डेटा स्रोत के अनुसार बदलती है।', records: 'प्रभावों में केवल इस ऐप में दर्ज रिपोर्टें शामिल हैं; रिपोर्ट न होना प्रभाव न होने का प्रमाण नहीं है।', allAreas: 'सभी मानचित्रित हॉटस्पॉट', selected: 'इस रन के लिए चुना गया' },
-    te: { title: 'గత వర్ష ఘటనను ఎంచుకోండి', hint: 'వర్ష ఘటనలను పరిశీలించి, అంచనాను నడిపే ముందు నమోదైన ప్రభావాలను చూడండి.', loading: 'గత 90 రోజుల వర్ష ఘటనలను వెతుకుతోంది…', unavailable: 'చారిత్రక వర్షపాతం ప్రస్తుతం అందుబాటులో లేదు.', empty: 'అందుబాటులో ఉన్న ఆర్కైవ్‌లో వర్ష ఘటనలు కనబడలేదు.', event: 'వర్ష ఘటన', area: 'దృష్టి ప్రాంతం', all: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', impacts: 'హాట్‌స్పాట్ వారీ ఆధారాలు', rainfall: 'మొత్తం వర్షపాతం', max: 'గరిష్ఠ రోజువారీ వర్షం', reports: 'వరద / చిక్కుకున్నవారు / రోడ్డు నివేదికలు', blocks: 'రోడ్డు మూసివేత నివేదికలు', coverage: 'ఆర్కైవ్ పరిధి', source: 'వర్షపాతం ఆరు మ్యాప్ హాట్‌స్పాట్‌ల వద్ద రీఅనాలిసిస్; గేజ్ కొలత లేదా నగర మొత్తం కాదు. డేటాసెట్‌ను బట్టి తాజాదనం మారుతుంది.', records: 'ప్రభావ లెక్కలు ఈ యాప్‌లో నమోదైన నివేదికలనే కలుపుతాయి; నివేదిక లేకపోవడం ప్రభావం లేదని కాదు.', allAreas: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', selected: 'ఈ రన్ కోసం ఎంపిక' },
+    en: { title: 'Ask about a past rain or flood', hint: 'Describe the event in your own words. Example: “Retrieve effects of last year’s flood in Hyderabad city.”', search: 'Search history', loading: 'Resolving your question and retrieving historical rainfall…', unavailable: 'Historical rainfall is unavailable right now.', empty: 'No matching rainfall events were found for that period.', event: 'Matching rain event', area: 'Focus area', all: 'All mapped hotspots', impacts: 'Evidence by hotspot', rainfall: 'Rain total', max: 'Max daily rain', reports: 'Flood / trapped / road reports', blocks: 'Blocked-road reports', coverage: 'Archive coverage', source: 'Rainfall is reanalysis sampled at six mapped hotspots, not gauge data or a citywide total. Archive availability varies by dataset.', records: 'Effect counts include only reports recorded in this app; no report does not mean no impact.', allAreas: 'All mapped hotspots', selected: 'Resolved search' },
+    hi: { title: 'पिछली बारिश या बाढ़ के बारे में पूछें', hint: 'घटना अपने शब्दों में लिखें। उदाहरण: “पिछले साल हैदराबाद में बाढ़ के प्रभाव दिखाएँ।”', search: 'इतिहास खोजें', loading: 'आपका प्रश्न समझकर ऐतिहासिक वर्षा खोजी जा रही है…', unavailable: 'ऐतिहासिक वर्षा अभी उपलब्ध नहीं है।', empty: 'इस अवधि में कोई वर्षा घटना नहीं मिली।', event: 'मिली वर्षा घटना', area: 'ध्यान क्षेत्र', all: 'सभी मानचित्रित हॉटस्पॉट', impacts: 'हॉटस्पॉट के अनुसार साक्ष्य', rainfall: 'कुल वर्षा', max: 'अधिकतम दैनिक वर्षा', reports: 'बाढ़ / फँसे लोग / सड़क रिपोर्ट', blocks: 'सड़क अवरोध रिपोर्ट', coverage: 'संग्रह कवरेज', source: 'वर्षा छह मानचित्रित हॉटस्पॉट पर पुनर्विश्लेषण है; यह वर्षामापी या पूरे शहर का कुल नहीं है। उपलब्धता बदल सकती है।', records: 'केवल ऐप में दर्ज प्रभाव शामिल हैं; रिपोर्ट न होना प्रभाव न होने का प्रमाण नहीं है।', allAreas: 'सभी मानचित्रित हॉटस्पॉट', selected: 'समझी गई खोज' },
+    te: { title: 'గత వర్షం లేదా వరద గురించి అడగండి', hint: 'మీ మాటల్లో ఘటనను వివరించండి. ఉదాహరణ: “గత ఏడాది హైదరాబాద్ వరద ప్రభావాలు చూపించు.”', search: 'చరిత్రలో వెతకండి', loading: 'మీ ప్రశ్నను అర్థం చేసుకుని చారిత్రక వర్షాన్ని వెతుకుతోంది…', unavailable: 'చారిత్రక వర్షపాతం ప్రస్తుతం అందుబాటులో లేదు.', empty: 'ఆ కాలానికి సరిపడే వర్ష ఘటనలు లేవు.', event: 'సరిపడిన వర్ష ఘటన', area: 'దృష్టి ప్రాంతం', all: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', impacts: 'హాట్‌స్పాట్ వారీ ఆధారాలు', rainfall: 'మొత్తం వర్షపాతం', max: 'గరిష్ఠ రోజువారీ వర్షం', reports: 'వరద / చిక్కుకున్నవారు / రోడ్డు నివేదికలు', blocks: 'రోడ్డు మూసివేత నివేదికలు', coverage: 'ఆర్కైవ్ పరిధి', source: 'వర్షపాతం ఆరు మ్యాప్ హాట్‌స్పాట్‌ల వద్ద రీఅనాలిసిస్; గేజ్ కొలత లేదా నగర మొత్తం కాదు. అందుబాటు మారవచ్చు.', records: 'యాప్‌లో నమోదైన ప్రభావాలే లెక్కించబడతాయి; నివేదిక లేదంటే ప్రభావం లేదని కాదు.', allAreas: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', selected: 'అర్థం చేసుకున్న శోధన' },
   }[language] || {};
 
   const colors = { cyan: 'border-cyan-700 bg-cyan-950/40 text-cyan-200', amber: 'border-amber-700 bg-amber-950/40 text-amber-200', rose: 'border-rose-700 bg-rose-950/40 text-rose-200' };
   const dataForConsent = {
-    predict: ['This run sends zone risk, forecast, historical rainfall and aggregated flood/road-report counts to Google Gemini. No raw incident reports or exact locations are sent.', 'इस रन में क्षेत्रीय जोखिम, पूर्वानुमान, ऐतिहासिक वर्षा और बाढ़/सड़क रिपोर्ट की कुल संख्या Google Gemini को भेजी जाएगी। मूल रिपोर्ट या सटीक स्थान नहीं भेजे जाएँगे।', 'ఈ రన్‌లో ప్రాంతీయ ప్రమాదం, అంచనా, చారిత్రక వర్షపాతం, వరద/రోడ్డు నివేదికల సమగ్ర సంఖ్యలు Google Geminiకి పంపబడతాయి. అసలు నివేదికలు లేదా ఖచ్చితమైన స్థానాలు పంపబడవు.'],
+    predict: ['This run sends your search question, selected date window, zone risk, forecast, historical rainfall and aggregated impact counts to Google Gemini. No raw incident reports or exact locations are sent.', 'इस रन में आपका खोज प्रश्न, चुनी गई तारीखें, क्षेत्रीय जोखिम, पूर्वानुमान, ऐतिहासिक वर्षा और प्रभावों की कुल संख्या Google Gemini को भेजी जाएगी। मूल रिपोर्ट या सटीक स्थान नहीं भेजे जाएँगे।', 'ఈ రన్‌లో మీ శోధన ప్రశ్న, ఎంచుకున్న తేదీలు, ప్రాంతీయ ప్రమాదం, అంచనా, చారిత్రక వర్షపాతం, ప్రభావాల సమగ్ర సంఖ్యలు Google Geminiకి పంపబడతాయి. అసలు నివేదికలు లేదా ఖచ్చితమైన స్థానాలు పంపబడవు.'],
     prepare: ['This run sends zone risk, forecast, historical rainfall and aggregated resource-positioning information to Google Gemini. Unit IDs, station names and exact locations are excluded.', 'इस रन में क्षेत्रीय जोखिम, पूर्वानुमान, ऐतिहासिक वर्षा और संसाधन स्थिति का सार Google Gemini को भेजा जाएगा। यूनिट आईडी, स्टेशन नाम और सटीक स्थान शामिल नहीं हैं।', 'ఈ రన్‌లో ప్రాంతీయ ప్రమాదం, అంచనా, చారిత్రక వర్షపాతం, వనరుల స్థితి సమగ్ర వివరాలు Google Geminiకి పంపబడతాయి. యూనిట్ ఐడీలు, స్టేషన్ పేర్లు, ఖచ్చితమైన స్థానాలు ఉండవు.'],
     respond: ['This run sends aggregated active incident type, urgency and people counts by zone, logged closure counts, risk and resource availability to Google Gemini. Raw messages, IDs and exact locations are excluded.', 'इस रन में क्षेत्रवार सक्रिय घटना प्रकार, तात्कालिकता और लोगों की कुल संख्या, सड़क बंद की संख्या, जोखिम और संसाधन उपलब्धता Google Gemini को भेजी जाएगी। मूल संदेश, आईडी और सटीक स्थान शामिल नहीं हैं।', 'ఈ రన్‌లో ప్రాంతాల వారీగా క్రియాశీల ఘటన రకాలు, అత్యవసరత, ప్రజల సంఖ్య, రోడ్డు మూసివేతలు, ప్రమాదం, వనరుల లభ్యత Google Geminiకి పంపబడతాయి. అసలు సందేశాలు, ఐడీలు, ఖచ్చితమైన స్థానాలు పంపబడవు.'],
   };
@@ -98,9 +101,14 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             <div><h4 className="font-bold text-cyan-100">{historyLabels.title}</h4><p className="mt-1 text-xs text-slate-300">{historyLabels.hint}</p></div>
             {history?.available_from && <span className="rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-300">{historyLabels.coverage}: {history.available_from} – {history.available_through || '—'}</span>}
           </div>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input value={historyQuery} onChange={event => setHistoryQuery(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') handleHistorySearch(); }} placeholder={historyLabels.hint} className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500" aria-label={historyLabels.title} />
+            <button onClick={handleHistorySearch} disabled={historyLoading || !historyQuery.trim()} className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 py-2 font-bold text-white hover:bg-cyan-600 disabled:opacity-50"><Search className="h-4 w-4" />{historyLabels.search}</button>
+          </div>
           {historyLoading && <div className="mt-3 flex items-center gap-2 text-xs text-cyan-100"><RefreshCw className="h-3.5 w-3.5 animate-spin" />{historyLabels.loading}</div>}
           {(historyError || (history && history.status === 'failed')) && <div className="mt-3 rounded-lg border border-amber-800 bg-amber-950/30 p-2 text-xs text-amber-100">{historyError || historyLabels.unavailable}</div>}
-          {!historyLoading && !historyError && history?.status !== 'failed' && !history?.events?.length && <div className="mt-3 text-xs text-slate-300">{historyLabels.empty}</div>}
+          {!historyLoading && history && history.status !== 'failed' && !history.events?.length && <div className="mt-3 text-xs text-slate-300">{historyLabels.empty}</div>}
+          {history?.resolved_window && <p className="mt-3 rounded-lg border border-cyan-900 bg-cyan-950/30 p-2 text-xs text-cyan-100">{historyLabels.selected}: {history.resolved_window.start} – {history.resolved_window.end} · {history.resolved_area}</p>}
           {selectedEvent && <>
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               <label className="text-xs font-semibold text-slate-300">{historyLabels.event}
@@ -137,10 +145,10 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
         {!status?.configured && <div className="mt-3 rounded-lg border border-amber-800 bg-amber-950/30 p-3 text-sm text-amber-100"><AlertTriangle className="mr-1 inline h-4 w-4" />{language === 'hi' ? 'backend .env में GEMINI_API_KEY जोड़ें और backend पुनः शुरू करें।' : language === 'te' ? 'backend .envలో GEMINI_API_KEY జోడించి backendను మళ్లీ ప్రారంభించండి.' : 'Add GEMINI_API_KEY to backend .env and restart the backend.'}</div>}
         {status?.configured && <label className="mt-3 flex cursor-pointer gap-3 rounded-lg border border-slate-600 bg-slate-950/80 p-3">
           <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-violet-500" />
-          <span className="text-xs leading-relaxed text-slate-200">{dataForConsent[selected][langIndex]}{selected === 'predict' && selectedEvent && <span className="mt-1 block font-semibold text-cyan-100">{historyLabels.selected}: {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}</span>}</span>
+          <span className="text-xs leading-relaxed text-slate-200">{dataForConsent[selected][langIndex]}{selected === 'predict' && selectedEvent && <span className="mt-1 block font-semibold text-cyan-100">{historyLabels.selected}: “{historyQuery}” · {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}</span>}</span>
         </label>}
         {err && <div className="mt-3 rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-rose-100">{err}</div>}
-        <button onClick={() => onRun(selected, consent, language, selected === 'predict' && selectedEvent ? { event_start: selectedEvent.window_start, event_end: selectedEvent.window_end, zone_id: selectedHistoryZone || null } : {})} disabled={!status?.configured || !consent || loading || (selected === 'predict' && !selectedEvent)}
+        <button onClick={() => onRun(selected, consent, language, selected === 'predict' && selectedEvent ? { event_start: selectedEvent.window_start, event_end: selectedEvent.window_end, zone_id: selectedHistoryZone || null, officer_query: historyQuery } : {})} disabled={!status?.configured || !consent || loading || (selected === 'predict' && !selectedEvent)}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 font-bold text-white shadow-lg transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50">
           {runningCurrent ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {runningCurrent ? (language === 'hi' ? 'एजेंट चल रहा है…' : language === 'te' ? 'ఏజెంట్ నడుస్తోంది…' : `Running ${current.title[0]}…`) : (language === 'hi' ? `${current.title[1]} चलाएँ` : language === 'te' ? `${current.title[2]} నడపండి` : `Run ${current.title[0]}`)}

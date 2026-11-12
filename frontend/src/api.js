@@ -30,6 +30,17 @@ export async function fetchPredictHistoryEvents(days = 90) {
   return res.json();
 }
 
+export async function searchPredictHistory(query) {
+  const res = await fetch(`${API_BASE}/agents/predict/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Failed to search historical events`);
+  return payload;
+}
+
 export async function runAgent(agentId, confirmGoogleProcessing, language = 'en', inputs = {}) {
   const endpoint = agentId === 'predict' ? `${API_BASE}/agents/predict/run` : `${API_BASE}/agents/run/${agentId}`;
   const res = await fetch(endpoint, {

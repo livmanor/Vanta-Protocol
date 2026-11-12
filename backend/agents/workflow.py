@@ -165,8 +165,8 @@ async def _collect_recent_rain_impacts(
         for incident in incidents:
             day = (incident.timestamp or "")[:10]
             if start_day <= day <= end_day and incident.type in ("flood", "trapped", "road_blocked"):
-                zone_id = _zone_for_point(incident.lng, incident.lat, zones)
-                summary = impact_counts[zone_id]
+                impact_zone_id = _zone_for_point(incident.lng, incident.lat, zones)
+                summary = impact_counts[impact_zone_id]
                 summary["incident_count"] += 1
                 summary["incident_types"][incident.type] = summary["incident_types"].get(incident.type, 0) + 1
         for road in roads:
@@ -175,8 +175,8 @@ async def _collect_recent_rain_impacts(
                 coords = (road.geometry or {}).get("coordinates") or []
                 if coords:
                     middle = coords[len(coords) // 2]
-                    zone_id = _zone_for_point(float(middle[0]), float(middle[1]), zones)
-                    impact_counts[zone_id]["blocked_road_reports"] += 1
+                    impact_zone_id = _zone_for_point(float(middle[0]), float(middle[1]), zones)
+                    impact_counts[impact_zone_id]["blocked_road_reports"] += 1
 
     profile = []
     profile_zones = [zone for zone in zones if not zone_id or zone.id == zone_id]
@@ -203,11 +203,15 @@ async def _collect_recent_rain_impacts(
     }
 
 
-async def list_rain_history_events(days: int = 90) -> Dict[str, Any]:
+async def list_rain_history_events(
+    days: int = 90,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> Dict[str, Any]:
     """Discover rainfall events and summarize only app-recorded impacts by hotspot."""
     today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
-    requested_start = today - timedelta(days=days)
-    requested_end = today
+    requested_start = datetime.fromisoformat(start_date).date() if start_date else today - timedelta(days=days)
+    requested_end = datetime.fromisoformat(end_date).date() if end_date else today
     histories = await asyncio.gather(*[
         get_recent_historical_rain(
             *meta["centroid"],
@@ -257,7 +261,7 @@ async def list_rain_history_events(days: int = 90) -> Dict[str, Any]:
         for meta in REAL_ZONES_METADATA
     ] if event_windows else []
     events = []
-    for days_in_event in reversed(event_windows[-12:]):
+    for days_in_event in reversed(event_windows[-50:]):
         event_start, event_end = days_in_event[0], days_in_event[-1]
         area_summaries = []
         for meta in REAL_ZONES_METADATA:
@@ -315,10 +319,11 @@ async def list_rain_history_events(days: int = 90) -> Dict[str, Any]:
         "impact_note": "Effects count only flood, trapped-person and road-block reports recorded in this app during the event window. No record means unreported, not that the area or road was clear.",
     }
 class PredictAgent:
-    async def run(self, zones: List[RiskZone], source_status: Dict[str, Dict[str, Any]], recent_rain_impacts: Dict[str, Any], language: str) -> PredictAgentOutput:
+    async def run(self, zones: List[RiskZone], source_status: Dict[str, Dict[str, Any]], recent_rain_impacts: Dict[str, Any], language: str, officer_query: str | None = None) -> PredictAgentOutput:
         allowed_ids = {zone.id for zone in zones}
         context = json.dumps({
             "current_risk_zones": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
+            "officer_history_question": officer_query,
             "selected_historical_rain_event_and_logged_impacts": recent_rain_impacts,
         }, ensure_ascii=False)
         output = await generate_structured(
@@ -439,13 +444,14 @@ async def run_predict_agent(
     event_start: str | None = None,
     event_end: str | None = None,
     zone_id: str | None = None,
+    officer_query: str | None = None,
 ) -> Dict[str, Any]:
     zones, source_status, recent_rain_impacts = await _weather_and_history(event_start, event_end, zone_id)
-    prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language)
+    prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language, officer_query)
     return {
         "status": "complete", "agent": "predict", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
         "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
-        "history_selection": {"start": event_start, "end": event_end, "zone_id": zone_id},
+        "history_selection": {"query": officer_query, "start": event_start, "end": event_end, "zone_id": zone_id},
         "recent_rain_impacts": recent_rain_impacts, "predict": prediction.model_dump(mode="json"),
     }
 
