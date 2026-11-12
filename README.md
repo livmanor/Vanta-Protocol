@@ -20,7 +20,7 @@ Every data source is connected at runtime and displayed in the UI's **Source Sta
 
 | # | Domain | External Source | Endpoint | How It's Used | Implementation File |
 |---|---|---|---|---|---|
-| 1 | **Rainfall & Weather** | **Open-Meteo Weather Forecast API** | `https://api.open-meteo.com/v1/forecast` | Fetches 24h precipitation sum, precipitation probability, and wind gusts at zone centroids. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
+| 1 | **Rainfall & Weather** | **Open-Meteo Weather Forecast API** | `https://api.open-meteo.com/v1/forecast` | Fetches current WMO weather condition, temperature, feels-like temperature, humidity, rain, cloud cover, wind and gusts, plus today's and the next two days' forecast at each zone centroid. No API key is required for this public endpoint. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
 | 2 | **River Discharge & Flooding** | **Open-Meteo GloFAS Flood API** | `https://flood-api.open-meteo.com/v1/flood` | Fetches real-time river discharge ($\text{m}^3/\text{s}$) to detect basin overflow hazards. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
 | 3 | **Terrain Elevation** | **Open-Elevation (SRTM)** | `https://api.open-elevation.com/api/v1/lookup` | Measures topographical elevation; identifies low-lying coastal depressions ($\le 10\text{ m}$). | [`backend/data_sources/elevation.py`](backend/data_sources/elevation.py) |
 | 4 | **Shelters & Police Stations** | **OpenStreetMap Overpass API** | `https://overpass-api.de/api/interpreter` | Queries verified civic shelters, community halls, hospitals, and police stations. | [`backend/data_sources/osm.py`](backend/data_sources/osm.py) |
@@ -35,6 +35,7 @@ Every data source is connected at runtime and displayed in the UI's **Source Sta
 ### 1. Predict Milestone
 - **Dynamic Ward/Zone Risk Derivation**: Derives real-time flood and cyclone risk scores ($1\text{ to }5$) across municipal zones (e.g. Adyar Basin, Velachery/Pallikaranai Marsh, Cooum Corridor, Tondiarpet Coast).
 - **Explainable Model Output**: Every zone displays a transparent "Why this?" breakdown (e.g. `24h Rain: 0.0mm | River Discharge: 0.4 m³/s | Elevation: 6.1m (low-lying) | Historical flood basin`).
+- **Zone Weather Conditions**: Selecting a ward shows live Open-Meteo current conditions and today's forecast; the panel includes the feed status and update time. `GET /api/weather` exposes these readings per monitored zone.
 
 ### 2. Prepare Milestone
 - **Evacuation Corridors**: Automatically identifies the closest verified emergency shelter and routes civilian evacuation corridors via OSRM, accounting for active road blocks.

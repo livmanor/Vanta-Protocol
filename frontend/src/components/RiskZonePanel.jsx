@@ -1,10 +1,13 @@
 import React from 'react';
 import { ShieldAlert, Navigation, CloudRain, Droplets, Mountain, History, X } from 'lucide-react';
 
-export default function RiskZonePanel({ zone, onClose, onGenerateRoute, loadingRoute }) {
+export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute, loadingRoute }) {
   if (!zone) return null;
 
   const exp = zone.explanation || {};
+  const current = weather?.current;
+  const today = weather?.today;
+  const show = (value, unit = '') => value === null || value === undefined ? '—' : `${value}${unit}`;
 
   const getRiskBadge = (lvl) => {
     switch (lvl) {
@@ -38,6 +41,34 @@ export default function RiskZonePanel({ zone, onClose, onGenerateRoute, loadingR
         <span className="text-gray-300 font-medium">Assessed Risk Severity:</span>
         {getRiskBadge(zone.risk_level)}
       </div>
+
+      <section className="bg-gray-900/60 border border-gray-800 rounded-lg p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Open-Meteo Weather</div>
+            <div className="font-bold text-white mt-0.5">{current?.condition || (weather?.status === 'failed' ? 'Weather unavailable' : 'No current reading')}</div>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded border font-bold ${weather?.status === 'live' ? 'text-emerald-400 border-emerald-800 bg-emerald-950/50' : weather?.status === 'stale' ? 'text-amber-300 border-amber-800 bg-amber-950/50' : 'text-rose-300 border-rose-800 bg-rose-950/50'}`}>
+            {(weather?.status || 'failed').toUpperCase()}
+          </span>
+        </div>
+        {current ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 text-[10px]">
+              <div><div className="text-gray-500">Temperature</div><div className="text-white font-semibold">{show(current.temperature_c, '°C')}</div></div>
+              <div><div className="text-gray-500">Feels like</div><div className="text-white font-semibold">{show(current.feels_like_c, '°C')}</div></div>
+              <div><div className="text-gray-500">Humidity</div><div className="text-white font-semibold">{show(current.relative_humidity_pct, '%')}</div></div>
+              <div><div className="text-gray-500">Rain now</div><div className="text-white font-semibold">{show(current.precipitation_mm, ' mm')}</div></div>
+              <div><div className="text-gray-500">Wind</div><div className="text-white font-semibold">{show(current.wind_speed_kmh, ' km/h')}</div></div>
+              <div><div className="text-gray-500">Gusts</div><div className="text-white font-semibold">{show(current.wind_gusts_kmh, ' km/h')}</div></div>
+            </div>
+            {today && <div className="mt-2 pt-2 border-t border-gray-800 text-[10px] text-gray-300">
+              Today: {today.condition || '—'} · {show(today.temperature_min_c, '°')}–{show(today.temperature_max_c, '°')} · rain {show(today.precipitation_sum_mm, ' mm')} ({show(today.precipitation_probability_max_pct, '%')} chance)
+            </div>}
+          </>
+        ) : <p className="text-[10px] text-gray-400">{weather?.error_message || 'Waiting for Open-Meteo data.'}</p>}
+        {weather?.last_updated && <div className="text-[9px] text-gray-500 mt-2">Updated {new Date(weather.last_updated).toLocaleString()}</div>}
+      </section>
 
       {/* Live metrics */}
       <div className="grid grid-cols-2 gap-2 text-gray-300">

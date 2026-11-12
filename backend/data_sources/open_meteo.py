@@ -13,7 +13,7 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     """
     cache_key = f"open_meteo_weather_{lat:.3f}_{lng:.3f}"
     cached = global_cache.get(cache_key)
-    if cached:
+    if cached and not cached[2]:
         data, fetched_at, is_stale = cached
         return {
             "source": "Open-Meteo Forecast API",
@@ -27,8 +27,14 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     params = {
         "latitude": lat,
         "longitude": lng,
-        "hourly": "precipitation,precipitation_probability,rain,wind_speed_10m,wind_gusts_10m",
-        "daily": "precipitation_sum,precipitation_probability_max,wind_speed_10m_max",
+        "current": ",".join([
+            "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+            "is_day", "precipitation", "rain", "showers", "snowfall",
+            "weather_code", "cloud_cover", "wind_speed_10m",
+            "wind_direction_10m", "wind_gusts_10m",
+        ]),
+        "hourly": "precipitation,precipitation_probability,rain,showers,weather_code,wind_speed_10m,wind_gusts_10m",
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max",
         "forecast_days": 3,
         "timezone": "auto"
     }
@@ -73,7 +79,7 @@ async def get_real_river_discharge(lat: float, lng: float) -> Dict[str, Any]:
     """
     cache_key = f"open_meteo_flood_{lat:.3f}_{lng:.3f}"
     cached = global_cache.get(cache_key)
-    if cached:
+    if cached and not cached[2]:
         data, fetched_at, is_stale = cached
         return {
             "source": "Open-Meteo GloFAS Flood API",

@@ -14,12 +14,14 @@ import BlockedRoadModal from './components/BlockedRoadModal';
 import { 
   fetchSources, fetchRiskZones, fetchUnits, registerUnit, 
   fetchIncidents, reportIncident, fetchPrepositionSuggestions, 
-  approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads, reportBlockedRoad 
+  approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads, reportBlockedRoad,
+  fetchZoneWeather
 } from './api';
 
 export default function App() {
   const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
+  const [zoneWeather, setZoneWeather] = useState([]);
   const [units, setUnits] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [blockedRoads, setBlockedRoads] = useState([]);
@@ -45,15 +47,17 @@ export default function App() {
     setLoadingSources(true);
     setLoadingRisk(true);
     try {
-      const [srcs, rZones, uList, incList, roads] = await Promise.all([
+      const [srcs, rZones, weather, uList, incList, roads] = await Promise.all([
         fetchSources().catch(e => { console.error(e); return []; }),
         fetchRiskZones().catch(e => { console.error(e); return []; }),
+        fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
         fetchIncidents().catch(e => { console.error(e); return []; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; })
       ]);
       setSources(srcs);
       setRiskZones(rZones);
+      setZoneWeather(weather);
       setUnits(uList);
       setIncidents(incList);
       setBlockedRoads(roads);
@@ -257,6 +261,7 @@ export default function App() {
                 {selectedZone ? (
                   <RiskZonePanel
                     zone={selectedZone}
+                    weather={zoneWeather.find(item => item.zone_id === selectedZone.id)}
                     onClose={() => setSelectedZone(null)}
                     onGenerateRoute={handleGenerateRoute}
                     loadingRoute={loadingRoute}
