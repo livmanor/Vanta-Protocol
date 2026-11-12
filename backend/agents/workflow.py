@@ -4,7 +4,6 @@ import math
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from typing import Any, Dict, List
-from zoneinfo import ZoneInfo
 
 from backend.agents.gemini import generate_structured
 from backend.agents.schemas import PredictAgentOutput, PrepareAgentOutput, RespondAgentOutput
@@ -209,7 +208,7 @@ async def list_rain_history_events(
     end_date: str | None = None,
 ) -> Dict[str, Any]:
     """Discover rainfall events and summarize only app-recorded impacts by hotspot."""
-    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
     requested_start = datetime.fromisoformat(start_date).date() if start_date else today - timedelta(days=days)
     requested_end = datetime.fromisoformat(end_date).date() if end_date else today
     histories = await asyncio.gather(*[

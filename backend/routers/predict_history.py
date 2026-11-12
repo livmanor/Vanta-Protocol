@@ -1,8 +1,6 @@
-import calendar
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Literal, Optional
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -74,7 +72,7 @@ def _resolve_history_query(query: str, today: date):
 @router.post("/search")
 async def search_predict_history(search: HistorySearch):
     """Interpret a plain-language history question and retrieve matching rain events."""
-    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
     start, end, zone_id, matched_zone = _resolve_history_query(search.query, today)
     result = await list_rain_history_events(start_date=start.isoformat(), end_date=end.isoformat())
     if zone_id:
@@ -102,7 +100,7 @@ async def run_predict_for_selected_history(selection: PredictHistoryRun):
     if not selection.confirm_google_processing:
         raise HTTPException(status_code=403, detail="Confirm that the selected rainfall event and summarized impact counts may be sent to Google Gemini for this run.")
 
-    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
     if selection.event_start > selection.event_end:
         raise HTTPException(status_code=422, detail="The event start date must be before its end date.")
     if selection.event_end >= today:
