@@ -9,4 +9,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <LanguageProvider><App /></LanguageProvider>
   </React.StrictMode>,
 )
-
