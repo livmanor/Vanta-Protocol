@@ -1,11 +1,46 @@
 import httpx
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional, Dict, Any
 from backend.config import settings
 from backend.cache import global_cache
 
 logger = logging.getLogger("open_meteo")
+
+
+async def get_recent_historical_rain(lat: float, lng: float, days: int = 30) -> Dict[str, Any]:
+    """Fetch recent observed/reanalysis daily rainfall from Open-Meteo Archive."""
+    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    start_date = today - timedelta(days=days)
+    end_date = today
+    cache_key = f"open_meteo_archive_rain_{lat:.3f}_{lng:.3f}_{start_date}_{end_date}"
+    cached = global_cache.get(cache_key)
+    if cached and not cached[2]:
+        data, fetched_at, is_stale = cached
+        return {"source": "Open-Meteo Historical Weather API", "status": "stale" if is_stale else "live", "last_updated": fetched_at, "data": data, "error": None}
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(settings.OPEN_METEO_ARCHIVE_URL, params={
+                "latitude": lat,
+                "longitude": lng,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "daily": "precipitation_sum,rain_sum",
+                "timezone": "Asia/Kolkata",
+            })
+            response.raise_for_status()
+            data = response.json()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        global_cache.set(cache_key, data, 21600, now_iso)
+        return {"source": "Open-Meteo Historical Weather API", "status": "live", "last_updated": now_iso, "data": data, "error": None}
+    except Exception as exc:
+        logger.warning("Open-Meteo historical rainfall unavailable: %s", exc)
+        if cached:
+            data, fetched_at, _ = cached
+            return {"source": "Open-Meteo Historical Weather API", "status": "stale", "last_updated": fetched_at, "data": data, "error": "Historical rainfall request failed; showing cached data."}
+        return {"source": "Open-Meteo Historical Weather API", "status": "failed", "last_updated": None, "data": None, "error": "Historical rainfall is unavailable."}
 
 async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     """Fetches real-time rainfall, precipitation probability, and wind speed from Open-Meteo.
@@ -13,7 +48,7 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     """
     cache_key = f"open_meteo_weather_{lat:.3f}_{lng:.3f}"
     cached = global_cache.get(cache_key)
-    if cached:
+    if cached and not cached[2]:
         data, fetched_at, is_stale = cached
         return {
             "source": "Open-Meteo Forecast API",
@@ -27,8 +62,14 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     params = {
         "latitude": lat,
         "longitude": lng,
-        "hourly": "precipitation,precipitation_probability,rain,wind_speed_10m,wind_gusts_10m",
-        "daily": "precipitation_sum,precipitation_probability_max,wind_speed_10m_max",
+        "current": ",".join([
+            "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+            "is_day", "precipitation", "rain", "showers", "snowfall",
+            "weather_code", "cloud_cover", "wind_speed_10m",
+            "wind_direction_10m", "wind_gusts_10m",
+        ]),
+        "hourly": "precipitation,precipitation_probability,rain,showers,weather_code,wind_speed_10m,wind_gusts_10m",
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max",
         "forecast_days": 3,
         "timezone": "auto"
     }
@@ -73,7 +114,7 @@ async def get_real_river_discharge(lat: float, lng: float) -> Dict[str, Any]:
     """
     cache_key = f"open_meteo_flood_{lat:.3f}_{lng:.3f}"
     cached = global_cache.get(cache_key)
-    if cached:
+    if cached and not cached[2]:
         data, fetched_at, is_stale = cached
         return {
             "source": "Open-Meteo GloFAS Flood API",

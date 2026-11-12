@@ -120,3 +120,42 @@ class DataSourceStatus(BaseModel):
     response_time_ms: Optional[float] = None
     error_message: Optional[str] = None
 
+class WeatherCurrent(BaseModel):
+    time: Optional[str] = None
+    weather_code: Optional[int] = None
+    condition: Optional[str] = None
+    temperature_c: Optional[float] = None
+    feels_like_c: Optional[float] = None
+    relative_humidity_pct: Optional[float] = None
+    precipitation_mm: Optional[float] = None
+    rain_mm: Optional[float] = None
+    showers_mm: Optional[float] = None
+    snowfall_cm: Optional[float] = None
+    cloud_cover_pct: Optional[float] = None
+    wind_speed_kmh: Optional[float] = None
+    wind_direction_deg: Optional[float] = None
+    wind_gusts_kmh: Optional[float] = None
+    is_day: Optional[bool] = None
+
+class WeatherDaily(BaseModel):
+    date: Optional[str] = None
+    weather_code: Optional[int] = None
+    condition: Optional[str] = None
+    temperature_min_c: Optional[float] = None
+    temperature_max_c: Optional[float] = None
+    precipitation_sum_mm: Optional[float] = None
+    precipitation_probability_max_pct: Optional[float] = None
+    wind_speed_max_kmh: Optional[float] = None
+    wind_gusts_max_kmh: Optional[float] = None
+
+class ZoneWeather(BaseModel):
+    zone_id: str
+    zone_name: str
+    latitude: float
+    longitude: float
+    status: Literal["live", "stale", "failed"]
+    last_updated: Optional[str] = None
+    error_message: Optional[str] = None
+    current: Optional[WeatherCurrent] = None
+    today: Optional[WeatherDaily] = None
+

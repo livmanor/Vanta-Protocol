@@ -29,9 +29,17 @@ html, body, #root {
   padding: 0;
   background-color: var(--vanta-bg);
   color: var(--vanta-text);
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-feature-settings: "tnum" 1; /* tabular numbers for metrics */
 }
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, "Noto Sans Devanagari", "Noto Sans Telugu", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 1; /* tabular numerals for metrics */
+}
+
+button, input, select, textarea { font: inherit; }
 
 /* ── Scrollbars ────────────────────────────────────── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -94,14 +102,16 @@ html, body, #root {
   font-weight: 700;
 }
 
-/* Agent rail accent strip */
-.v-rail-accent { box-shadow: inset 3px 0 0 0 var(--accent, var(--vanta-predict)); }
-
 /* Fade-in for view swaps */
 .v-view-enter { animation: v-fade 220ms ease-out; }
 @keyframes v-fade {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: none; }
+}
+
+/* Small screens: stack the map and dock vertically */
+@media (max-width: 900px) {
+  body { font-size: 13px; }
 }
 
 /* Leaflet dark theme map overrides */
