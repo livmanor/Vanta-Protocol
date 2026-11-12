@@ -83,11 +83,11 @@ export default function App() {
     }
   }, []);
 
-  const handleRunAgents = async (confirmGoogleProcessing) => {
+  const handleRunAgents = async (confirmGoogleProcessing, language) => {
     setLoadingAgents(true);
     setAgentError('');
     try {
-      const result = await runPredictPrepareAgents(confirmGoogleProcessing);
+      const result = await runPredictPrepareAgents(confirmGoogleProcessing, language);
       setAgentRun(result);
       setPrepositionSuggestions(result.positioning_recommendations || []);
     } catch (err) {

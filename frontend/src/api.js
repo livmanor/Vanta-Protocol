@@ -24,11 +24,11 @@ export async function fetchAgentStatus() {
   return res.json();
 }
 
-export async function runPredictPrepareAgents(confirmGoogleProcessing) {
+export async function runPredictPrepareAgents(confirmGoogleProcessing, language = 'en') {
   const res = await fetch(`${API_BASE}/agents/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ confirm_google_processing: confirmGoogleProcessing })
+    body: JSON.stringify({ confirm_google_processing: confirmGoogleProcessing, language })
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Agent workflow failed`);

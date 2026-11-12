@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
 
 from backend.agents.gemini import AgentConfigurationError, AgentProviderError, is_configured
 from backend.agents.workflow import run_predict_prepare_workflow
@@ -10,6 +11,7 @@ router = APIRouter(prefix="/api/agents", tags=["Predict and Prepare Agents"])
 
 class AgentRunApproval(BaseModel):
     confirm_google_processing: bool = False
+    language: Literal["en", "hi", "te"] = "en"
 
 
 @router.get("/status")
@@ -35,7 +37,7 @@ async def run_agents(approval: AgentRunApproval):
             detail="Confirm that zone risk data and summarized positioning recommendations may be sent to Google Gemini for this run.",
         )
     try:
-        return await run_predict_prepare_workflow()
+        return await run_predict_prepare_workflow(approval.language)
     except AgentConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except AgentProviderError as exc:

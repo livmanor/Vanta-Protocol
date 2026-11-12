@@ -1,11 +1,46 @@
 import httpx
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional, Dict, Any
 from backend.config import settings
 from backend.cache import global_cache
 
 logger = logging.getLogger("open_meteo")
+
+
+async def get_recent_historical_rain(lat: float, lng: float, days: int = 30) -> Dict[str, Any]:
+    """Fetch recent observed/reanalysis daily rainfall from Open-Meteo Archive."""
+    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    start_date = today - timedelta(days=days)
+    end_date = today
+    cache_key = f"open_meteo_archive_rain_{lat:.3f}_{lng:.3f}_{start_date}_{end_date}"
+    cached = global_cache.get(cache_key)
+    if cached and not cached[2]:
+        data, fetched_at, is_stale = cached
+        return {"source": "Open-Meteo Historical Weather API", "status": "stale" if is_stale else "live", "last_updated": fetched_at, "data": data, "error": None}
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(settings.OPEN_METEO_ARCHIVE_URL, params={
+                "latitude": lat,
+                "longitude": lng,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "daily": "precipitation_sum,rain_sum",
+                "timezone": "Asia/Kolkata",
+            })
+            response.raise_for_status()
+            data = response.json()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        global_cache.set(cache_key, data, 21600, now_iso)
+        return {"source": "Open-Meteo Historical Weather API", "status": "live", "last_updated": now_iso, "data": data, "error": None}
+    except Exception as exc:
+        logger.warning("Open-Meteo historical rainfall unavailable: %s", exc)
+        if cached:
+            data, fetched_at, _ = cached
+            return {"source": "Open-Meteo Historical Weather API", "status": "stale", "last_updated": fetched_at, "data": data, "error": "Historical rainfall request failed; showing cached data."}
+        return {"source": "Open-Meteo Historical Weather API", "status": "failed", "last_updated": None, "data": None, "error": "Historical rainfall is unavailable."}
 
 async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     """Fetches real-time rainfall, precipitation probability, and wind speed from Open-Meteo.

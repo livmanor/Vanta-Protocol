@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     BBOX_MAX_LNG: float = 80.32
 
     OPEN_METEO_FORECAST_URL: str = "https://api.open-meteo.com/v1/forecast"
+    OPEN_METEO_ARCHIVE_URL: str = "https://archive-api.open-meteo.com/v1/archive"
     OPEN_METEO_FLOOD_URL: str = "https://flood-api.open-meteo.com/v1/flood"
     OPEN_ELEVATION_URL: str = "https://api.open-elevation.com/api/v1/lookup"
     OVERPASS_API_URL: str = "https://overpass-api.de/api/interpreter"

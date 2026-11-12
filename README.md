@@ -33,11 +33,12 @@ Every data source is connected at runtime and displayed in the UI's **Source Sta
 ## Core Capabilities (V1)
 
 ### Gemini Predict and Prepare Agents
-- The **Predict** agent interprets the live, deterministic risk-zone output and highlights areas for officer review.
-- The **Prepare** agent reviews existing deterministic unit-positioning recommendations and adds grounded readiness notes. It does not create units, change assignments, or dispatch.
+- The **Predict** agent compares live deterministic risk-zone output with the most recent wet spell in Open-Meteo's historical rainfall archive and real officer-entered flood/blocked-road records logged during that spell.
+- The **Prepare** agent uses the forecast, those historical impacts, resource availability and deterministic positioning recommendations to produce evidence-linked pre-event readiness actions and officer checks. It can provide checks when no units are registered; it never creates units, changes assignments, or dispatches.
 - The workflow is manually started from the **Agents** tab; it does not call Gemini during automatic dashboard refreshes.
-- Each run requires an operator to confirm the specific zone and summarized positioning data sent to Google. Unit IDs, station names, exact unit coordinates, and incident reports are excluded.
-- Configure `GEMINI_API_KEY` in the local backend `.env` file (never commit the key). `GEMINI_MODEL` can select the model. The backend sends zone metrics and source freshness, and omits unit IDs, station names, and exact unit coordinates.
+- Each run requires an operator to confirm the zone forecasts, historical rainfall and aggregate impact counts sent to Google. Raw incident reports, unit IDs, station names and exact unit coordinates are excluded. Responses follow the selected English, Hindi or Telugu UI language.
+- Historical rainfall is reanalysis rather than rain-gauge observation. Traffic evidence is limited to records entered in this app; no live traffic or external traffic archive is connected. No record means unknown/unreported, not that roads were clear.
+- Configure `GEMINI_API_KEY` in the local backend `.env` file (never commit the key). `GEMINI_MODEL` can select the model.
 - `GET /api/agents/status` reports configuration; `POST /api/agents/run` runs Predict followed by Prepare. Without a key, the UI reports setup is required.
 
 ### 1. Predict Milestone
