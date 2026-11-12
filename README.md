@@ -32,14 +32,15 @@ Every data source is connected at runtime and displayed in the UI's **Source Sta
 
 ## Core Capabilities (V1)
 
-### Gemini Predict and Prepare Agents
+### Gemini Agent Workbench
+- The **Agents** workspace offers three separately selectable and independently run agents: Weather Predict, Prepare and Respond. Each has its own goal, data disclosure and report; one agent does not silently run the others.
 - The **Predict** agent compares live deterministic risk-zone output with the most recent wet spell in Open-Meteo's historical rainfall archive and real officer-entered flood/blocked-road records logged during that spell.
 - The **Prepare** agent uses the forecast, those historical impacts, resource availability and deterministic positioning recommendations to produce evidence-linked pre-event readiness actions and officer checks. It can provide checks when no units are registered; it never creates units, changes assignments, or dispatches.
 - The workflow is manually started from the **Agents** tab; it does not call Gemini during automatic dashboard refreshes.
 - Each run requires an operator to confirm the zone forecasts, historical rainfall and aggregate impact counts sent to Google. Raw incident reports, unit IDs, station names and exact unit coordinates are excluded. Responses follow the selected English, Hindi or Telugu UI language.
 - Historical rainfall is reanalysis rather than rain-gauge observation. Traffic evidence is limited to records entered in this app; no live traffic or external traffic archive is connected. No record means unknown/unreported, not that roads were clear.
 - Configure `GEMINI_API_KEY` in the local backend `.env` file (never commit the key). `GEMINI_MODEL` can select the model.
-- `GET /api/agents/status` reports configuration; `POST /api/agents/run` runs Predict followed by Prepare. Without a key, the UI reports setup is required.
+- `GET /api/agents/status` reports configuration and agent goals. `POST /api/agents/run/predict`, `/prepare` or `/respond` runs only the selected agent. The legacy `POST /api/agents/run` combined endpoint remains for compatibility. Without a key, the UI reports setup is required.
 
 ### 1. Predict Milestone
 - **Dynamic Ward/Zone Risk Derivation**: Derives real-time flood and cyclone risk scores ($1\text{ to }5$) across municipal zones (e.g. Adyar Basin, Velachery/Pallikaranai Marsh, Cooum Corridor, Tondiarpet Coast).

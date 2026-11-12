@@ -17,7 +17,7 @@ import {
   fetchSources, fetchRiskZones, fetchUnits, registerUnit, 
   fetchIncidents, reportIncident, fetchPrepositionSuggestions, 
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads, reportBlockedRoad,
-  fetchZoneWeather, fetchAgentStatus, runPredictPrepareAgents
+  fetchZoneWeather, fetchAgentStatus, runAgent
 } from './api';
 
 export default function App() {
@@ -26,9 +26,9 @@ export default function App() {
   const [riskZones, setRiskZones] = useState([]);
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
-  const [agentRun, setAgentRun] = useState(null);
-  const [agentError, setAgentError] = useState('');
-  const [loadingAgents, setLoadingAgents] = useState(false);
+  const [agentResults, setAgentResults] = useState({});
+  const [agentErrors, setAgentErrors] = useState({});
+  const [loadingAgent, setLoadingAgent] = useState(null);
   const [units, setUnits] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [blockedRoads, setBlockedRoads] = useState([]);
@@ -83,17 +83,17 @@ export default function App() {
     }
   }, []);
 
-  const handleRunAgents = async (confirmGoogleProcessing, language) => {
-    setLoadingAgents(true);
-    setAgentError('');
+  const handleRunAgent = async (agentId, confirmGoogleProcessing, language) => {
+    setLoadingAgent(agentId);
+    setAgentErrors(previous => ({ ...previous, [agentId]: '' }));
     try {
-      const result = await runPredictPrepareAgents(confirmGoogleProcessing, language);
-      setAgentRun(result);
-      setPrepositionSuggestions(result.positioning_recommendations || []);
+      const result = await runAgent(agentId, confirmGoogleProcessing, language);
+      setAgentResults(previous => ({ ...previous, [agentId]: result }));
+      if (agentId === 'prepare') setPrepositionSuggestions(result.positioning_recommendations || []);
     } catch (err) {
-      setAgentError(err.message);
+      setAgentErrors(previous => ({ ...previous, [agentId]: err.message }));
     } finally {
-      setLoadingAgents(false);
+      setLoadingAgent(null);
     }
   };
 
@@ -212,7 +212,7 @@ export default function App() {
       {/* 3. Main Workspace */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Map View */}
-        <div className="flex-1 h-full relative">
+        <div className={activeTab === 'agents' ? 'hidden' : 'flex-1 h-full relative'}>
           <Map
             riskZones={riskZones}
             selectedZone={selectedZone}
@@ -240,7 +240,7 @@ export default function App() {
         </div>
 
         {/* Tactical Control Sidebar */}
-        <div className="w-[27rem] max-w-[48vw] bg-[#111827] border-l border-slate-700 flex flex-col z-[400] h-full shadow-2xl">
+        <div className={`${activeTab === 'agents' ? 'w-full max-w-full border-l-0' : 'w-[27rem] max-w-[48vw] border-l'} bg-[#111827] border-slate-700 flex flex-col z-[400] h-full shadow-2xl`}>
           {/* Tabs */}
           <div className="flex border-b border-gray-800 bg-gray-900/60 p-1.5 gap-1 text-xs">
             <button
@@ -298,7 +298,7 @@ export default function App() {
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+          <div className={`flex-1 overflow-y-auto ${activeTab === 'agents' ? 'p-5' : 'p-3'} flex flex-col gap-3`}>
             {activeTab === 'zones' && (
               <div className="flex flex-col gap-3">
                 {selectedZone ? (
@@ -371,10 +371,10 @@ export default function App() {
             {activeTab === 'agents' && (
               <AgentPanel
                 status={agentStatus}
-                result={agentRun}
-                error={agentError}
-                loading={loadingAgents}
-                onRun={handleRunAgents}
+                results={agentResults}
+                errors={agentErrors}
+                loadingAgent={loadingAgent}
+                onRun={handleRunAgent}
                 onReviewPreparation={() => setActiveTab('preposition')}
                 riskZones={riskZones}
               />

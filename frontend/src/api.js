@@ -24,8 +24,8 @@ export async function fetchAgentStatus() {
   return res.json();
 }
 
-export async function runPredictPrepareAgents(confirmGoogleProcessing, language = 'en') {
-  const res = await fetch(`${API_BASE}/agents/run`, {
+export async function runAgent(agentId, confirmGoogleProcessing, language = 'en') {
+  const res = await fetch(`${API_BASE}/agents/run/${agentId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ confirm_google_processing: confirmGoogleProcessing, language })

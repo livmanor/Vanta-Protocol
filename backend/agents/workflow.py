@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from backend.agents.gemini import generate_structured
-from backend.agents.schemas import PredictAgentOutput, PrepareAgentOutput
+from backend.agents.schemas import PredictAgentOutput, PrepareAgentOutput, RespondAgentOutput
 from backend.config import settings
 from backend.models import PrepositionSuggestion, RiskZone
 from backend.services.prepositioning import generate_prepositioning_suggestions
@@ -49,6 +49,22 @@ async def _collect_source_status() -> Dict[str, Dict[str, Any]]:
         "name": "Open-Elevation",
         "status": elevation.get("status", "failed"),
         "last_updated": elevation.get("last_updated"),
+    }
+    return {
+        zone["id"]: {
+            "weather": {
+                "name": "Open-Meteo Weather",
+                "status": inputs[0].get("status", "failed"),
+                "last_updated": inputs[0].get("last_updated"),
+            },
+            "river": {
+                "name": "Open-Meteo GloFAS",
+                "status": inputs[1].get("status", "failed"),
+                "last_updated": inputs[1].get("last_updated"),
+            },
+            "elevation": elevation_status,
+        }
+        for zone, inputs in zip(REAL_ZONES_METADATA, zone_inputs)
     }
 
 
@@ -155,24 +171,6 @@ async def _collect_recent_rain_impacts(zones: List[RiskZone]) -> Dict[str, Any]:
         "zones": profile,
         "traffic_data_note": "Traffic impacts are limited to real logged blocked-road and flood/trapped incident reports. No traffic feed is connected; zero reports means none are recorded, not that roads were clear.",
     }
-    return {
-        zone["id"]: {
-            "weather": {
-                "name": "Open-Meteo Weather",
-                "status": inputs[0].get("status", "failed"),
-                "last_updated": inputs[0].get("last_updated"),
-            },
-            "river": {
-                "name": "Open-Meteo GloFAS",
-                "status": inputs[1].get("status", "failed"),
-                "last_updated": inputs[1].get("last_updated"),
-            },
-            "elevation": elevation_status,
-        }
-        for zone, inputs in zip(REAL_ZONES_METADATA, zone_inputs)
-    }
-
-
 class PredictAgent:
     async def run(self, zones: List[RiskZone], source_status: Dict[str, Dict[str, Any]], recent_rain_impacts: Dict[str, Any], language: str) -> PredictAgentOutput:
         allowed_ids = {zone.id for zone in zones}
@@ -209,7 +207,6 @@ class PrepareAgent:
         self,
         zones: List[RiskZone],
         suggestions: List[PrepositionSuggestion],
-        prediction: PredictAgentOutput,
         source_status: Dict[str, Dict[str, Any]],
         recent_rain_impacts: Dict[str, Any],
         language: str,
@@ -230,10 +227,9 @@ class PrepareAgent:
         ]
         context = json.dumps(
             {
-                "predict_summary": prediction.summary,
-                "focus_zone_ids": [item.zone_id for item in prediction.focus_zones],
                 "most_recent_observed_rain_event_and_logged_impacts": recent_rain_impacts,
                 "risk_zones": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
+                "zones_ordered_by_current_risk": [zone.id for zone in sorted(zones, key=lambda item: item.risk_level, reverse=True)],
                 "deterministic_positioning_recommendations": summarized_suggestions,
             },
             ensure_ascii=False,
@@ -260,6 +256,104 @@ class PrepareAgent:
         return output
 
 
+class RespondAgent:
+    async def run(self, zones: List[RiskZone], operational_context: Dict[str, Any], language: str) -> RespondAgentOutput:
+        allowed_ids = {zone.id for zone in zones}
+        context = json.dumps(operational_context, ensure_ascii=False)
+        output = await generate_structured(
+            system_instruction=(
+                "You are Vanta's Respond agent. Your separate goal is to help the control-room officer assess current active incidents and coordinate a safe, timely response. "
+                "Use only supplied active incident summaries, logged road-closure reports, current risk and aggregate unit availability. Road closures have no resolution status, so always recommend verifying whether a recorded closure remains active. Prioritize reported life-safety needs and areas with supporting evidence. "
+                "Do not invent incident details, traffic state, routes, facilities, unit capabilities, or instructions from authorities. Do not assign units, send messages, or dispatch. "
+                "Phrase all steps as recommendations for officer review and provide a check before action. If there are no recorded incidents, clearly say so rather than implying none exist in reality. "
+                f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}."
+            ),
+            context=context,
+            schema=RespondAgentOutput,
+        )
+        output.priorities = [item for item in output.priorities if not item.zone_id or item.zone_id in allowed_ids][:6]
+        output.immediate_checks = output.immediate_checks[:8]
+        output.data_gaps = output.data_gaps[:8]
+        return output
+
+
+async def _weather_and_history():
+    zones = await compute_real_risk_zones()
+    source_status = await _collect_source_status()
+    recent_rain_impacts = await _collect_recent_rain_impacts(zones)
+    return zones, source_status, recent_rain_impacts
+
+
+async def run_predict_agent(language: str = "en") -> Dict[str, Any]:
+    zones, source_status, recent_rain_impacts = await _weather_and_history()
+    prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language)
+    return {
+        "status": "complete", "agent": "predict", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
+        "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
+        "recent_rain_impacts": recent_rain_impacts, "predict": prediction.model_dump(mode="json"),
+    }
+
+
+async def run_prepare_agent(language: str = "en") -> Dict[str, Any]:
+    zones, source_status, recent_rain_impacts = await _weather_and_history()
+    units = await fetch_units()
+    suggestions = generate_prepositioning_suggestions(units, zones)
+    preparation = await PrepareAgent().run(zones, suggestions, source_status, recent_rain_impacts, language)
+    return {
+        "status": "complete", "agent": "prepare", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "risk_zone_count": len(zones), "available_unit_count": sum(1 for unit in units if unit.status == "available"),
+        "recent_rain_impacts": recent_rain_impacts, "prepare": preparation.model_dump(mode="json"),
+        "positioning_recommendations": [item.model_dump(mode="json") for item in suggestions],
+    }
+
+
+async def _collect_respond_context(zones: List[RiskZone], source_status: Dict[str, Any]) -> Dict[str, Any]:
+    incidents, roads, units = await asyncio.gather(fetch_incidents(), fetch_blocked_roads(), fetch_units())
+    active_incidents = [incident for incident in incidents if incident.status in ("new", "assigned")]
+    by_zone: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"active_incidents": 0, "incident_types": {}, "urgency_counts": {}, "people_reported": 0, "blocked_road_reports": 0, "latest_blocked_road_report_at": None})
+    for incident in active_incidents:
+        item = by_zone[_zone_for_point(incident.lng, incident.lat, zones)]
+        item["active_incidents"] += 1
+        item["incident_types"][incident.type] = item["incident_types"].get(incident.type, 0) + 1
+        item["urgency_counts"][str(incident.urgency)] = item["urgency_counts"].get(str(incident.urgency), 0) + 1
+        item["people_reported"] += incident.people
+    for road in roads:
+        coords = (road.geometry or {}).get("coordinates") or []
+        if coords:
+            point = coords[len(coords) // 2]
+            item = by_zone[_zone_for_point(float(point[0]), float(point[1]), zones)]
+            item["blocked_road_reports"] += 1
+            if not item["latest_blocked_road_report_at"] or road.timestamp > item["latest_blocked_road_report_at"]:
+                item["latest_blocked_road_report_at"] = road.timestamp
+    area_activity = []
+    for zone in zones:
+        item = by_zone.get(zone.id, {"active_incidents": 0, "incident_types": {}, "urgency_counts": {}, "people_reported": 0, "blocked_road_reports": 0, "latest_blocked_road_report_at": None})
+        area_activity.append({"zone_id": zone.id, "zone_name": zone.name, "risk_level": zone.risk_level, **item})
+    return {
+        "current_zone_risks_and_source_freshness": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
+        "active_incident_and_logged_road_closure_counts_by_zone": area_activity,
+        "registered_unit_availability_by_type_and_status": {
+            kind: {status: sum(1 for unit in units if unit.kind == kind and unit.status == status) for status in ("available", "assigned")}
+            for kind in ("patrol", "rescue_boat", "ambulance")
+        },
+        "incident_input_note": "Incident totals include records in new or assigned status. Only aggregated type, urgency and people counts are sent; no incident message, exact location, unit or officer identifier is sent.",
+        "traffic_input_note": "Road closure counts come from officer-entered blocked road records, which have no resolved/active status. Verify each closure before treating it as current. There is no live traffic feed; no records does not establish that roads are clear.",
+    }
+
+
+async def run_respond_agent(language: str = "en") -> Dict[str, Any]:
+    zones = await compute_real_risk_zones()
+    source_status = await _collect_source_status()
+    operational_context = await _collect_respond_context(zones, source_status)
+    response = await RespondAgent().run(zones, operational_context, language)
+    return {
+        "status": "complete", "agent": "respond", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
+        "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
+        "respond": response.model_dump(mode="json"), "operational_context": operational_context,
+    }
+
+
 async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
     """Run the deterministic risk/preposition tools, then Gemini's bounded analyses."""
     zones = await compute_real_risk_zones()
@@ -271,7 +365,7 @@ async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
     predict_agent = PredictAgent()
     prepare_agent = PrepareAgent()
     prediction = await predict_agent.run(zones, source_status, recent_rain_impacts, language)
-    preparation = await prepare_agent.run(zones, suggestions, prediction, source_status, recent_rain_impacts, language)
+    preparation = await prepare_agent.run(zones, suggestions, source_status, recent_rain_impacts, language)
 
     return {
         "status": "complete",

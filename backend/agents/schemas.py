@@ -33,3 +33,17 @@ class PrepareAgentOutput(BaseModel):
     zone_notes: List[ZonePreparationNote] = Field(description="Notes for zones that have supplied recommendations")
     readiness_actions: List[ReadinessAction] = Field(default_factory=list, description="Specific pre-event readiness tasks grounded in evidence; no automatic dispatch")
     readiness_gaps: List[str] = Field(description="Missing resources or facts explicitly evident in supplied data")
+
+
+class ResponsePriority(BaseModel):
+    zone_id: str = Field(description="An exact supplied zone ID, or the empty string for city-wide priorities")
+    situation: str = Field(description="A concise summary of reported active incidents and relevant risk facts")
+    recommended_steps: List[str] = Field(description="Suggested response coordination steps for an officer to review; never issue dispatch orders")
+    officer_check: str = Field(description="What the officer should verify before taking action")
+
+
+class RespondAgentOutput(BaseModel):
+    summary: str = Field(description="Situation summary grounded in supplied live risk and operational records")
+    priorities: List[ResponsePriority] = Field(description="Ordered response areas that have supplied incident or elevated risk evidence")
+    immediate_checks: List[str] = Field(description="Officer verification checks; not automated actions")
+    data_gaps: List[str] = Field(description="Missing or stale sources and operational information")
