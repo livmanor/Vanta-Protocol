@@ -18,16 +18,16 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
 
   const getRiskBadge = (lvl) => {
     switch (lvl) {
-      case 5: return <span className="px-2.5 py-1 rounded bg-red-950/80 text-red-400 border border-red-700 font-bold">LEVEL 5 — CRITICAL</span>;
-      case 4: return <span className="px-2.5 py-1 rounded bg-orange-950/80 text-orange-400 border border-orange-700 font-bold">LEVEL 4 — SEVERE</span>;
-      case 3: return <span className="px-2.5 py-1 rounded bg-amber-950/80 text-amber-400 border border-amber-700 font-bold">LEVEL 3 — MODERATE</span>;
-      case 2: return <span className="px-2.5 py-1 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-700 font-bold">LEVEL 2 — ELEVATED</span>;
-      default: return <span className="px-2.5 py-1 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-700 font-bold">LEVEL 1 — LOW</span>;
+      case 5: return <span className="px-2.5 py-1 rounded bg-white text-black border border-white font-bold">LEVEL 5 - CRITICAL</span>;
+      case 4: return <span className="px-2.5 py-1 rounded bg-neutral-200 text-black border border-neutral-200 font-bold">LEVEL 4 - SEVERE</span>;
+      case 3: return <span className="px-2.5 py-1 rounded bg-neutral-900/80 text-neutral-300 border border-neutral-600 font-bold">LEVEL 3 - MODERATE</span>;
+      case 2: return <span className="px-2.5 py-1 rounded bg-neutral-900/80 text-neutral-400 border border-neutral-700 font-bold">LEVEL 2 - ELEVATED</span>;
+      default: return <span className="px-2.5 py-1 rounded bg-transparent text-neutral-500 border border-neutral-800 font-bold">LEVEL 1 - LOW</span>;
     }
   };
 
   return (
-    <div className="bg-[#111827]/95 backdrop-blur border border-gray-800 rounded-xl p-4 text-xs shadow-2xl flex flex-col gap-3">
+    <div className="bg-[#111111]/95 backdrop-blur border border-gray-800 rounded-xl p-4 text-xs shadow-2xl flex flex-col gap-3">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
             <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Open-Meteo Weather</div>
             <div className="font-bold text-white mt-0.5">{current?.condition || (weather?.status === 'failed' ? 'Weather unavailable' : 'No current reading')}</div>
           </div>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded border font-bold ${weather?.status === 'live' ? 'text-emerald-400 border-emerald-800 bg-emerald-950/50' : weather?.status === 'stale' ? 'text-amber-300 border-amber-800 bg-amber-950/50' : 'text-rose-300 border-rose-800 bg-rose-950/50'}`}>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded border font-bold ${weather?.status === 'live' ? 'text-neutral-300 border-neutral-700 bg-neutral-900/50' : weather?.status === 'stale' ? 'text-neutral-200 border-neutral-700 bg-neutral-900/50' : 'text-neutral-200 border-neutral-700 bg-neutral-900/50'}`}>
             {(weather?.status || 'failed').toUpperCase()}
           </span>
         </div>
@@ -80,7 +80,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
       {/* Live metrics */}
       <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
         <div className="bg-gray-900/50 p-2 rounded border border-gray-800/60 flex items-center gap-2">
-          <CloudRain className="w-4 h-4 text-cyan-400" />
+          <CloudRain className="w-4 h-4 text-neutral-300" />
           <div>
             <div className="text-xs text-gray-300">{words[9]}</div>
             <div className="font-semibold text-white">{exp.rainfall_24h_mm?.toFixed(1) ?? '0.0'} mm</div>
@@ -88,7 +88,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
         </div>
 
         <div className="bg-gray-900/50 p-2 rounded border border-gray-800/60 flex items-center gap-2">
-          <Droplets className="w-4 h-4 text-blue-400" />
+          <Droplets className="w-4 h-4 text-neutral-300" />
           <div>
             <div className="text-xs text-gray-300">{words[10]}</div>
             <div className="font-semibold text-white">
@@ -100,7 +100,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
         </div>
 
         <div className="bg-gray-900/50 p-2 rounded border border-gray-800/60 flex items-center gap-2">
-          <Mountain className="w-4 h-4 text-emerald-400" />
+          <Mountain className="w-4 h-4 text-neutral-300" />
           <div>
             <div className="text-xs text-gray-300">{words[11]}</div>
             <div className="font-semibold text-white">
@@ -112,10 +112,10 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
         </div>
 
         <div className="bg-gray-900/50 p-2 rounded border border-gray-800/60 flex items-center gap-2">
-          <History className="w-4 h-4 text-amber-400" />
+          <History className="w-4 h-4 text-neutral-300" />
           <div>
             <div className="text-xs text-gray-300">{words[12]}</div>
-            <div className={`font-semibold ${exp.historical_flood_prone ? 'text-amber-400' : 'text-gray-400'}`}>
+            <div className={`font-semibold ${exp.historical_flood_prone ? 'text-neutral-300' : 'text-gray-400'}`}>
               {exp.historical_flood_prone ? (language === 'hi' ? 'HTP प्रमुख हॉटस्पॉट · अगस्त 2025' : language === 'te' ? 'HTP ప్రధాన హాట్‌స్పాట్ · ఆగస్టు 2025' : 'HTP major hotspot · Aug 2025') : (language === 'hi' ? 'कोई हॉटस्पॉट मैप नहीं' : language === 'te' ? 'హాట్‌స్పాట్ మ్యాప్‌లో లేదు' : 'No mapped hotspot')}
             </div>
           </div>
@@ -123,8 +123,8 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
       </div>
 
       {/* Why This Explanation */}
-      <div className="bg-cyan-950/30 border border-cyan-800/40 p-2.5 rounded-lg text-cyan-200">
-        <div className="font-bold text-cyan-400 text-[11px] mb-1 flex items-center gap-1.5">
+      <div className="bg-neutral-900/30 border border-neutral-700/40 p-2.5 rounded-lg text-neutral-100">
+        <div className="font-bold text-neutral-300 text-[11px] mb-1 flex items-center gap-1.5">
           <ShieldAlert className="w-3.5 h-3.5" />
           {words[13]}
         </div>
@@ -137,7 +137,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
       <button
         onClick={() => onGenerateRoute(zone)}
         disabled={loadingRoute}
-        className="w-full mt-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg shadow-cyan-900/20"
+        className="w-full mt-1 bg-gradient-to-r from-neutral-500 to-neutral-500 hover:from-neutral-400 hover:to-neutral-400 text-white font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg shadow-neutral-800/20"
       >
         <Navigation className={`w-4 h-4 ${loadingRoute ? 'animate-spin' : ''}`} />
         <span>{loadingRoute ? words[15] : words[14]}</span>

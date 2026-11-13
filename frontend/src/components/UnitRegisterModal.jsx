@@ -55,10 +55,10 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
 
   return (
     <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111827] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
+      <div className="bg-[#111111] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-cyan-400" />
+            <Shield className="w-4 h-4 text-neutral-300" />
             <h3 className="font-bold text-white text-sm">Register Emergency Unit</h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
@@ -74,7 +74,7 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
               placeholder="Auto-generated if blank"
               value={unitId}
               onChange={(e) => setUnitId(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-cyan-500"
+              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
             />
           </div>
 
@@ -84,7 +84,7 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-cyan-500"
+                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
               >
                 <option value="patrol">Patrol Vehicle</option>
                 <option value="rescue_boat">Rescue Boat (NDRF/SDRF)</option>
@@ -100,7 +100,7 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
                 max="20"
                 value={capacity}
                 onChange={(e) => setCapacity(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-cyan-500"
+                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
               />
             </div>
           </div>
@@ -112,21 +112,21 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
               required
               value={station}
               onChange={(e) => setStation(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-cyan-500"
+              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
             />
           </div>
 
           <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-800 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-gray-300 font-semibold flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                <MapPin className="w-3.5 h-3.5 text-neutral-300" />
                 Live Coordinates
               </span>
               <button
                 type="button"
                 onClick={handleGetLocation}
                 disabled={gettingLocation}
-                className="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 hover:bg-cyan-900 px-2 py-0.5 rounded flex items-center gap-1 transition"
+                className="text-[10px] bg-neutral-900 text-neutral-300 border border-neutral-700 hover:bg-neutral-800 px-2 py-0.5 rounded flex items-center gap-1 transition"
               >
                 <Navigation className={`w-3 h-3 ${gettingLocation ? 'animate-spin' : ''}`} />
                 <span>{gettingLocation ? 'Detecting...' : 'Use Device GPS'}</span>
@@ -142,7 +142,7 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
                   required
                   value={lat}
                   onChange={(e) => setLat(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-cyan-500 text-xs font-mono"
+                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
                 />
               </div>
               <div>
@@ -153,7 +153,7 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
                   required
                   value={lng}
                   onChange={(e) => setLng(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-cyan-500 text-xs font-mono"
+                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
                 />
               </div>
             </div>
@@ -170,7 +170,7 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded font-semibold transition disabled:opacity-50"
+              className="bg-white text-black hover:bg-neutral-200 px-4 py-2 rounded font-semibold transition disabled:opacity-50"
             >
               {submitting ? 'Registering...' : 'Confirm Registration'}
             </button>

@@ -41,10 +41,10 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
 
   return (
     <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111827] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
+      <div className="bg-[#111111] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500" />
+            <AlertCircle className="w-4 h-4 text-neutral-400" />
             <h3 className="font-bold text-white text-sm">Log Emergency Incident</h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
@@ -59,7 +59,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-rose-500"
+                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
               >
                 <option value="flood">Flood / Waterlogging</option>
                 <option value="trapped">Trapped Citizens</option>
@@ -74,7 +74,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
               <select
                 value={urgency}
                 onChange={(e) => setUrgency(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-rose-500 font-bold"
+                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400 font-bold"
               >
                 <option value="5">5 - Immediate Life Threat</option>
                 <option value="4">4 - High Urgency</option>
@@ -93,7 +93,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
               placeholder="e.g. Water ingress at ground floor, family stranded on rooftop"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-rose-500 resize-none"
+              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400 resize-none"
             />
           </div>
 
@@ -105,7 +105,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
                 min="0"
                 value={people}
                 onChange={(e) => setPeople(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-rose-500"
+                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
               />
             </div>
 
@@ -115,7 +115,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
                 id="vuln"
                 checked={vulnerable}
                 onChange={(e) => setVulnerable(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 bg-gray-900 border-gray-700 focus:ring-rose-500"
+                className="w-4 h-4 rounded text-neutral-500 bg-gray-900 border-gray-700 focus:ring-neutral-400"
               />
               <label htmlFor="vuln" className="text-gray-300 font-medium cursor-pointer">
                 Elderly / Infants Present
@@ -125,7 +125,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
 
           <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-800 flex flex-col gap-2">
             <span className="text-gray-300 font-semibold flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-rose-400" />
+              <MapPin className="w-3.5 h-3.5 text-neutral-300" />
               Incident Coordinates
             </span>
             <div className="grid grid-cols-2 gap-2">
@@ -137,7 +137,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
                   required
                   value={lat}
                   onChange={(e) => setLat(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-rose-500 text-xs font-mono"
+                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
                 />
               </div>
               <div>
@@ -148,7 +148,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
                   required
                   value={lng}
                   onChange={(e) => setLng(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-rose-500 text-xs font-mono"
+                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
                 />
               </div>
             </div>
@@ -165,7 +165,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded font-semibold transition disabled:opacity-50"
+              className="bg-white text-black hover:bg-neutral-200 px-4 py-2 rounded font-semibold transition disabled:opacity-50"
             >
               {submitting ? 'Logging...' : 'Confirm Incident'}
             </button>
