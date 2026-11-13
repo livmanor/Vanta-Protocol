@@ -14,8 +14,7 @@ from backend.models import PrepositionSuggestion, RiskZone
 from backend.services.prepositioning import generate_prepositioning_suggestions
 from backend.services.risk_engine import compute_real_risk_zones
 from backend.db import fetch_units, fetch_incidents, fetch_blocked_roads
-from backend.data_sources.elevation import get_real_elevations
-from backend.data_sources.open_meteo import get_real_river_discharge, get_real_weather_forecast, get_recent_historical_rain
+from backend.data_sources.open_meteo import get_recent_historical_rain
 from backend.services.risk_engine import REAL_ZONES_METADATA
 
 logger = logging.getLogger("vanta.agents.workflow")
@@ -59,38 +58,39 @@ def _predict_zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict
     }
 
 
-async def _collect_source_status() -> Dict[str, Dict[str, Any]]:
-    """Collect freshness metadata without exposing exact coordinates to Gemini."""
-    zone_inputs = await asyncio.gather(*[
-        asyncio.gather(
-            get_real_weather_forecast(*zone["centroid"]),
-            get_real_river_discharge(*zone["centroid"]),
-        )
-        for zone in REAL_ZONES_METADATA
-    ])
-    coordinates = [zone["centroid"] for zone in REAL_ZONES_METADATA]
-    elevation = await get_real_elevations(coordinates)
-    elevation_status = {
-        "name": "Open-Elevation",
-        "status": elevation.get("status", "failed"),
-        "last_updated": elevation.get("last_updated"),
-    }
-    return {
-        zone["id"]: {
+def _source_status_from_zones(zones: List[RiskZone]) -> Dict[str, Dict[str, Any]]:
+    """Derive per-zone source-freshness metadata from already-computed RiskZone objects.
+
+    This is a zero-extra-HTTP-call replacement for the old _collect_source_status().
+    The risk engine already fetched weather, flood, and elevation data; we surface
+    their status/timestamp from the RiskExplanation attached to each zone.
+    """
+    result: Dict[str, Dict[str, Any]] = {}
+    for zone in zones:
+        exp = zone.explanation
+        # When an explanation exists its fields tell us whether each source delivered data.
+        weather_ok = exp is not None and exp.rainfall_24h_mm is not None
+        river_ok = exp is not None and exp.river_discharge_m3s is not None
+        elev_ok = exp is not None and exp.mean_elevation_m is not None
+        ts = zone.computed_at  # ISO timestamp set by compute_real_risk_zones
+        result[zone.id] = {
             "weather": {
                 "name": "Open-Meteo Weather",
-                "status": inputs[0].get("status", "failed"),
-                "last_updated": inputs[0].get("last_updated"),
+                "status": "live" if weather_ok else "failed",
+                "last_updated": ts if weather_ok else None,
             },
             "river": {
                 "name": "Open-Meteo GloFAS",
-                "status": inputs[1].get("status", "failed"),
-                "last_updated": inputs[1].get("last_updated"),
+                "status": "live" if river_ok else "failed",
+                "last_updated": ts if river_ok else None,
             },
-            "elevation": elevation_status,
+            "elevation": {
+                "name": "Open-Elevation",
+                "status": "live" if elev_ok else "failed",
+                "last_updated": ts if elev_ok else None,
+            },
         }
-        for zone, inputs in zip(REAL_ZONES_METADATA, zone_inputs)
-    }
+    return result
 
 
 def _point_in_ring(lng: float, lat: float, ring: List[List[float]]) -> bool:
@@ -474,7 +474,7 @@ async def _weather_and_history(
     include_rule_score: bool = True,
 ):
     zones = await compute_real_risk_zones(include_rule_score=include_rule_score)
-    source_status = await _collect_source_status()
+    source_status = _source_status_from_zones(zones)
     recent_rain_impacts = await _collect_recent_rain_impacts(zones, start_date, end_date, zone_id)
     return zones, source_status, recent_rain_impacts
 
@@ -552,7 +552,7 @@ async def _collect_respond_context(zones: List[RiskZone], source_status: Dict[st
 
 async def run_respond_agent(language: str = "en") -> Dict[str, Any]:
     zones = await compute_real_risk_zones()
-    source_status = await _collect_source_status()
+    source_status = _source_status_from_zones(zones)
     operational_context = await _collect_respond_context(zones, source_status)
     response = await RespondAgent().run(zones, operational_context, language)
     return {
@@ -571,7 +571,7 @@ async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
         fetch_units(),
     )
     suggestions = generate_prepositioning_suggestions(units, prepare_zones)
-    source_status = await _collect_source_status()
+    source_status = _source_status_from_zones(predict_zones)
     recent_rain_impacts = await _collect_recent_rain_impacts(predict_zones)
 
     predict_agent = PredictAgent()
