@@ -7,8 +7,8 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
   const [people, setPeople] = useState(2);
   const [vulnerable, setVulnerable] = useState(false);
   const [message, setMessage] = useState('');
-  const [lat, setLat] = useState('13.010');
-  const [lng, setLng] = useState('80.240');
+  const [lat, setLat] = useState('17.3914');
+  const [lng, setLng] = useState('78.4702');
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -40,26 +40,31 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111111] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-neutral-400" />
-            <h3 className="font-bold text-white text-sm">Log Emergency Incident</h3>
+    <div className="fixed inset-0 z-[1000] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 text-xs shadow-2xl flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <AlertCircle className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-sm">Log Emergency Incident</h3>
+              <p className="text-[11px] text-slate-400">Hyderabad Metropolitan Police Intake</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-gray-400 font-medium">Incident Category</label>
+              <label className="text-slate-700 font-bold text-xs">Incident Category</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
+                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
               >
                 <option value="flood">Flood / Waterlogging</option>
                 <option value="trapped">Trapped Citizens</option>
@@ -70,11 +75,11 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
             </div>
 
             <div>
-              <label className="text-gray-400 font-medium">Urgency Rating (1–5)</label>
+              <label className="text-slate-700 font-bold text-xs">Urgency Rating (1–5)</label>
               <select
                 value={urgency}
                 onChange={(e) => setUrgency(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400 font-bold"
+                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-bold"
               >
                 <option value="5">5 - Immediate Life Threat</option>
                 <option value="4">4 - High Urgency</option>
@@ -86,26 +91,26 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
           </div>
 
           <div>
-            <label className="text-gray-400 font-medium">Description / Caller Message</label>
+            <label className="text-slate-700 font-bold text-xs">Description / Caller Message</label>
             <textarea
               required
               rows={2}
-              placeholder="e.g. Water ingress at ground floor, family stranded on rooftop"
+              placeholder="e.g. Water ingress at underpass, vehicle stranded"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400 resize-none"
+              className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 resize-none font-medium text-xs"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3 items-center">
             <div>
-              <label className="text-gray-400 font-medium">People Affected</label>
+              <label className="text-slate-700 font-bold text-xs">People Affected</label>
               <input
                 type="number"
                 min="0"
                 value={people}
                 onChange={(e) => setPeople(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
+                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
               />
             </div>
 
@@ -115,57 +120,57 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
                 id="vuln"
                 checked={vulnerable}
                 onChange={(e) => setVulnerable(e.target.checked)}
-                className="w-4 h-4 rounded text-neutral-500 bg-gray-900 border-gray-700 focus:ring-neutral-400"
+                className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 focus:ring-indigo-400"
               />
-              <label htmlFor="vuln" className="text-gray-300 font-medium cursor-pointer">
+              <label htmlFor="vuln" className="text-slate-700 font-semibold cursor-pointer text-xs">
                 Elderly / Infants Present
               </label>
             </div>
           </div>
 
-          <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-800 flex flex-col gap-2">
-            <span className="text-gray-300 font-semibold flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-neutral-300" />
-              Incident Coordinates
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
+            <span className="text-slate-700 font-bold text-xs flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+              Incident Coordinates (Hyderabad)
             </span>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-gray-500">Latitude</label>
+                <label className="text-[10px] text-slate-400 font-medium">Latitude</label>
                 <input
                   type="number"
                   step="0.0001"
                   required
                   value={lat}
                   onChange={(e) => setLat(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-indigo-500 text-xs font-mono"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500">Longitude</label>
+                <label className="text-[10px] text-slate-400 font-medium">Longitude</label>
                 <input
                   type="number"
                   step="0.0001"
                   required
                   value={lng}
                   onChange={(e) => setLng(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-indigo-500 text-xs font-mono"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-2">
+          <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded font-medium transition"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="bg-white text-black hover:bg-neutral-200 px-4 py-2 rounded font-semibold transition disabled:opacity-50"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-extrabold transition disabled:opacity-50 shadow-sm text-xs"
             >
               {submitting ? 'Logging...' : 'Confirm Incident'}
             </button>
@@ -175,4 +180,3 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
     </div>
   );
 }
-

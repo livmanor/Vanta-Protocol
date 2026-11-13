@@ -20,7 +20,7 @@ IMD_ENDPOINTS = [
     "https://mausam.imd.gov.in/rss.php",
 ]
 
-STATE_CODE = "Tamil Nadu"
+STATE_CODE = "Telangana"
 
 
 async def get_real_imd_alerts(city_name: str = None) -> Dict[str, Any]:
