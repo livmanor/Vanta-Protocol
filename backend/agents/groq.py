@@ -30,19 +30,16 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
             {"role": "user", "content": context},
         ],
         "temperature": 0,
-        "max_completion_tokens": 1600,
+        "max_completion_tokens": 4096,
         "response_format": {"type": "json_object"},
     }
 
     try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            response = await asyncio.wait_for(
-                client.post(
-                    GROQ_CHAT_COMPLETIONS_URL,
-                    headers={"Authorization": f"Bearer {settings.GROQ_API_KEY.get_secret_value()}"},
-                    json=request_body,
-                ),
-                timeout=45,
+        async with httpx.AsyncClient(timeout=50.0) as client:
+            response = await client.post(
+                GROQ_CHAT_COMPLETIONS_URL,
+                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY.get_secret_value()}"},
+                json=request_body,
             )
         if response.status_code >= 400:
             if response.status_code in (401, 403):
@@ -70,9 +67,9 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
     except AgentProviderError:
         raise
     except asyncio.TimeoutError as exc:
-        raise AgentProviderError("Groq request timed out.") from exc
+        raise AgentProviderError("Groq request timed out after 50 s.") from exc
     except httpx.TimeoutException as exc:
-        raise AgentProviderError("Groq request timed out.") from exc
+        raise AgentProviderError("Groq request timed out after 50 s.") from exc
     except httpx.HTTPError as exc:
         logger.warning("Groq structured request failed: exception=%s", type(exc).__name__)
         raise AgentProviderError("Could not connect to the Groq API.") from exc
