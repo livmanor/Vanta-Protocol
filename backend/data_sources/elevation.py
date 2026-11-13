@@ -1,4 +1,6 @@
+import hashlib
 import httpx
+import json as _json
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Tuple
@@ -14,7 +16,9 @@ async def get_real_elevations(points: List[Tuple[float, float]]) -> Dict[str, An
     if not points:
         return {"source": "Open-Elevation API", "status": "live", "data": [], "last_updated": datetime.now(timezone.utc).isoformat()}
 
-    cache_key = f"elevation_points_{len(points)}_{points[0][0]:.3f}_{points[0][1]:.3f}"
+    # Stable cache key across any subset/ordering of points
+    key_hash = hashlib.md5(_json.dumps(sorted(points)).encode()).hexdigest()[:10]
+    cache_key = f"elevation_points_{key_hash}"
     cached = global_cache.get(cache_key)
     if cached:
         data, fetched_at, is_stale = cached
