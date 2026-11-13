@@ -33,6 +33,17 @@
   --vp-shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
   --vp-shadow-md:   0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
   --vp-shadow-lg:   0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+
+  /* Legacy variables mapped to new light theme */
+  --vanta-bg:          var(--vp-bg);
+  --vanta-panel:       var(--vp-surface);
+  --vanta-panel-2:     var(--vp-surface-2);
+  --vanta-border:      var(--vp-border);
+  --vanta-border-hi:   var(--vp-border-hi);
+  --vanta-text:        var(--vp-text);
+  --vanta-text-dim:    var(--vp-text-muted);
+  --vanta-text-faint:  var(--vp-text-faint);
+  --vanta-radius:      var(--vp-radius);
 }
 
 html, body, #root {
