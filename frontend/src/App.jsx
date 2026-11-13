@@ -166,13 +166,6 @@ export default function App() {
     setPrepositionSuggestions(prep);
   };
 
-  /* Highest risk zone drives the header alert state */
-  const maxRisk = riskZones.reduce((m, z) => Math.max(m, z.risk_level || 0), 0);
-  const alertTone =
-    maxRisk >= 4 ? { dot: 'bg-white', text: 'text-white', label: 'CRITICAL' } :
-    maxRisk === 3 ? { dot: 'bg-neutral-300', text: 'text-neutral-300', label: 'ELEVATED' } :
-    { dot: 'bg-neutral-600', text: 'text-neutral-400', label: 'NOMINAL' };
-
   const pendingApprovals = prepositionSuggestions.length;
 
   if (!entered) return <Landing onEnter={() => setEntered(true)} />;
@@ -191,34 +184,6 @@ export default function App() {
           <div className="leading-tight">
             <div className="font-extrabold tracking-tight text-slate-900 text-[14px]">Vanta Protocol</div>
             <div className="text-[11px] text-slate-500 font-medium">{t('area')}</div>
-          </div>
-        </div>
-
-        <div className="h-6 w-px bg-slate-200 mx-1" />
-
-        {/* Threat level indicator */}
-        <div className="hidden md:flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${maxRisk >= 4 ? 'bg-red-500 vp-dot' : maxRisk === 3 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={maxRisk >= 4 ? { color: '#ef4444' } : {}} />
-          <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">Threat</span>
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-            maxRisk >= 4 ? 'bg-red-50 text-red-700 border border-red-200' :
-            maxRisk === 3 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-            'bg-emerald-50 text-emerald-700 border border-emerald-200'
-          }`}>{alertTone.label}</span>
-        </div>
-
-        {/* Central Search / Quick Status */}
-        <div className="hidden lg:flex items-center flex-1 max-w-md mx-4">
-          <div className="relative w-full">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-              <Activity className="w-4 h-4" />
-            </span>
-            <input
-              type="text"
-              readOnly
-              value={`Hyderabad Ops · ${riskZones.length} hotspots monitored · ${units.length} units registered`}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-600 focus:outline-none cursor-default"
-            />
           </div>
         </div>
 
