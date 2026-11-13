@@ -9,6 +9,11 @@ from backend.config import settings
 T = TypeVar("T", bound=BaseModel)
 logger = logging.getLogger("vanta.agents.gemini")
 
+# Transient HTTP status codes that are safe to retry
+_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+# Seconds to wait before each retry (attempt 1 → 3 s, attempt 2 → 7 s)
+_RETRY_DELAYS = (3.0, 7.0)
+
 
 class AgentConfigurationError(RuntimeError):
     pass
@@ -25,97 +30,91 @@ def is_configured() -> bool:
 
 async def generate_structured(system_instruction: str, context: str, schema: Type[T]) -> T:
     if not is_configured():
-        raise AgentConfigurationError("Gemini API is not configured. Set GEMINI_API_KEY in the backend .env and restart the server.")
+        raise AgentConfigurationError(
+            "Gemini API is not configured. Set GEMINI_API_KEY in the backend .env and restart the server."
+        )
 
-    try:
-        from google import genai
-        from google.genai import types
+    from google import genai
+    from google.genai import types
 
-        api_key = settings.GEMINI_API_KEY.get_secret_value()
-        async with genai.Client(api_key=api_key).aio as client:
-            response = await asyncio.wait_for(
-                client.models.generate_content(
-                    model=settings.GEMINI_MODEL,
-                    contents=context,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        temperature=0.2,
-                        max_output_tokens=4096,
-                        response_mime_type="application/json",
-                        response_json_schema=schema.model_json_schema(),
+    api_key = settings.GEMINI_API_KEY.get_secret_value()
+    max_attempts = len(_RETRY_DELAYS) + 1  # 3 total attempts
+
+    last_exc: Exception | None = None
+    for attempt in range(max_attempts):
+        try:
+            async with genai.Client(api_key=api_key).aio as client:
+                response = await asyncio.wait_for(
+                    client.models.generate_content(
+                        model=settings.GEMINI_MODEL,
+                        contents=context,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            temperature=0.2,
+                            max_output_tokens=4096,
+                            response_mime_type="application/json",
+                            response_json_schema=schema.model_json_schema(),
+                        ),
                     ),
-                ),
-                timeout=45,
-            )
-        if not response.text:
-            # #region agent log
+                    timeout=50,
+                )
+
+            if not response.text:
+                raise AgentProviderError("Gemini returned an empty response.")
+
             try:
-                import json as _json
-                from datetime import datetime, timezone
-                open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"E","location":"gemini.py:generate_structured","message":"empty gemini text","data":{"model":settings.GEMINI_MODEL,"schema":schema.__name__},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-            except Exception:
-                pass
-            # #endregion
-            raise AgentProviderError("Gemini returned an empty response.")
-        # #region agent log
-        try:
-            import json as _json
-            from datetime import datetime, timezone
-            open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"E","location":"gemini.py:generate_structured","message":"gemini structured ok","data":{"model":settings.GEMINI_MODEL,"schema":schema.__name__,"text_len":len(response.text)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-        except Exception:
-            pass
-        # #endregion
-        try:
-            return schema.model_validate_json(response.text)
-        except Exception as parse_exc:
-            if type(parse_exc).__name__ == "ValidationError":
-                # #region agent log
-                try:
-                    import json as _json
-                    from datetime import datetime, timezone
-                    open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"E","location":"gemini.py:model_validate_json","message":"schema mismatch details","data":{"schema":schema.__name__,"error":str(parse_exc)[:1200],"text_preview":(response.text or "")[:800]},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-                except Exception:
-                    pass
-                # #endregion
+                return schema.model_validate_json(response.text)
+            except Exception as parse_exc:
+                raise AgentProviderError(
+                    "Gemini returned data that did not match the agent response format."
+                ) from parse_exc
+
+        except AgentConfigurationError:
             raise
-    except AgentConfigurationError:
-        raise
-    except AgentProviderError:
-        raise
-    except asyncio.TimeoutError as exc:
-        raise AgentProviderError("Gemini request timed out.") from exc
-    except Exception as exc:
-        # Log only the provider exception class and status. Never log request data or credentials.
-        status_code = getattr(exc, "code", None)
-        logger.warning("Gemini structured request failed: exception=%s status=%s", type(exc).__name__, status_code)
-        # #region agent log
-        try:
-            import json as _json
-            from datetime import datetime, timezone
-            open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"E","location":"gemini.py:generate_structured","message":"gemini structured failed","data":{"model":settings.GEMINI_MODEL,"schema":schema.__name__,"exc":type(exc).__name__,"status":status_code},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-        except Exception:
-            pass
-        # #endregion
-        if isinstance(status_code, int):
-            if status_code in (401, 403):
-                message = "Gemini rejected the API credentials or project access (HTTP %s). Check the configured key and API access." % status_code
-            elif status_code == 404:
-                message = "The configured Gemini model was not found or is unavailable to this project (HTTP 404)."
-            elif status_code == 429:
-                message = "Gemini rate or quota limit reached (HTTP 429). Wait, then retry or check project quota."
-            elif status_code == 400:
-                message = "Gemini rejected the request or structured-output schema (HTTP 400)."
-            else:
-                message = "Gemini request failed (HTTP %s)." % status_code
-            raise AgentProviderError(message) from exc
-        if type(exc).__name__ == "ValidationError":
-            # #region agent log
-            try:
-                import json as _json
-                from datetime import datetime, timezone
-                open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"E","location":"gemini.py:ValidationError","message":"schema mismatch details","data":{"schema":schema.__name__,"error":str(exc)[:1200]},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-            except Exception:
-                pass
-            # #endregion
-            raise AgentProviderError("Gemini returned data that did not match the agent response format.") from exc
-        raise AgentProviderError("Gemini could not produce a valid agent result.") from exc
+        except AgentProviderError:
+            raise
+        except asyncio.TimeoutError as exc:
+            last_exc = exc
+            logger.warning(
+                "Gemini request timed out (attempt %d/%d).", attempt + 1, max_attempts
+            )
+        except Exception as exc:
+            status_code = getattr(exc, "code", None)
+            logger.warning(
+                "Gemini structured request failed: exception=%s status=%s (attempt %d/%d)",
+                type(exc).__name__, status_code, attempt + 1, max_attempts,
+            )
+
+            # Map well-known status codes to clear messages
+            if isinstance(status_code, int) and status_code not in _RETRYABLE_STATUS_CODES:
+                if status_code in (401, 403):
+                    raise AgentProviderError(
+                        "Gemini rejected the API credentials or project access (HTTP %s). "
+                        "Check the configured key and API access." % status_code
+                    ) from exc
+                if status_code == 404:
+                    raise AgentProviderError(
+                        "The configured Gemini model was not found or is unavailable to this project (HTTP 404)."
+                    ) from exc
+                if status_code == 400:
+                    raise AgentProviderError(
+                        "Gemini rejected the request or structured-output schema (HTTP 400)."
+                    ) from exc
+                raise AgentProviderError("Gemini request failed (HTTP %s)." % status_code) from exc
+
+            last_exc = exc
+
+        # Back off before retrying (no sleep after the last attempt)
+        if attempt < max_attempts - 1:
+            delay = _RETRY_DELAYS[attempt]
+            logger.info("Retrying Gemini call in %.0f s (attempt %d/%d).", delay, attempt + 1, max_attempts)
+            await asyncio.sleep(delay)
+
+    # All attempts exhausted
+    if isinstance(last_exc, asyncio.TimeoutError):
+        raise AgentProviderError(
+            "Gemini request timed out after %d attempts." % max_attempts
+        ) from last_exc
+    raise AgentProviderError(
+        "Gemini could not produce a valid agent result after %d attempts." % max_attempts
+    ) from last_exc
