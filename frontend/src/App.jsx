@@ -3,7 +3,6 @@ import {
   Activity, Bot, CheckCircle2, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
   ShieldAlert, Siren
 } from 'lucide-react';
-import SourceStatusBar from './components/SourceStatusBar';
 import Landing from './components/Landing';
 import Map from './components/Map';
 import AgentPanel from './components/AgentPanel';
@@ -268,9 +267,6 @@ export default function App() {
           </button>
         </div>
       </header>
-
-      {/* ── Feed integrity strip ────────────────────────── */}
-      <SourceStatusBar sources={sources} onRefresh={loadData} loading={loadingSources} />
 
       {/* ── Body: rail + main ───────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
