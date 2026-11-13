@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Optional
 
 from backend.agents.gemini import AgentConfigurationError, AgentProviderError, is_configured
 from backend.agents.groq import is_configured as is_groq_configured
@@ -65,9 +65,13 @@ async def run_single_agent(agent_id: Literal["predict", "prepare", "respond"], a
         raise HTTPException(status_code=503, detail=f"{provider_name} is not configured. Set {key_name} in backend .env and restart the server.")
     if not confirmed:
         raise HTTPException(status_code=403, detail=f"Confirm processing of this agent's summarized operational inputs by {provider_name} for this run.")
-    runners = {"predict": run_predict_agent, "prepare": run_prepare_agent, "respond": run_respond_agent}
     try:
-        return await runners[agent_id](approval.language)
+        if agent_id == "predict":
+            return await run_predict_agent(approval.language, officer_query=approval.officer_query)
+        elif agent_id == "prepare":
+            return await run_prepare_agent(approval.language)
+        else:
+            return await run_respond_agent(approval.language)
     except AgentConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except AgentProviderError as exc:
