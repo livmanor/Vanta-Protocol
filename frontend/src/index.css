@@ -22,6 +22,46 @@
   --vanta-radius: 10px;
 }
 
+/* Light operations dashboard palette inspired by the supplied admin reference. */
+.vanta-light {
+  --vanta-bg: #f5f6f8;
+  --vanta-panel: #ffffff;
+  --vanta-panel-2: #ffffff;
+  --vanta-border: #e5e7eb;
+  --vanta-border-hi: #cbd5e1;
+  --vanta-text: #172033;
+  --vanta-text-dim: #64748b;
+  --vanta-text-faint: #94a3b8;
+  color: #172033;
+}
+.vanta-light .bg-slate-950,
+.vanta-light .bg-slate-950\/70,
+.vanta-light .bg-slate-950\/80,
+.vanta-light .bg-slate-900,
+.vanta-light .bg-slate-900\/70,
+.vanta-light .bg-slate-900\/80,
+.vanta-light .bg-slate-900\/95,
+.vanta-light .bg-\[\#111827\]\/95 { background-color: #fff !important; }
+.vanta-light .border-slate-700,
+.vanta-light .border-slate-800,
+.vanta-light .border-slate-600 { border-color: #e5e7eb !important; }
+.vanta-light .text-white { color: #172033 !important; }
+.vanta-light .text-slate-100,
+.vanta-light .text-slate-200 { color: #334155 !important; }
+.vanta-light .text-slate-300 { color: #475569 !important; }
+.vanta-light .text-slate-400,
+.vanta-light .text-slate-500 { color: #64748b !important; }
+.vanta-light .placeholder\:text-slate-500::placeholder { color: #94a3b8 !important; }
+.vanta-light .hover\:bg-slate-800:hover,
+.vanta-light .hover\:bg-white\/5:hover { background-color: #f1f5f9 !important; }
+.vanta-light .v-panel,
+.vanta-light .v-card { background: #fff; border-color: #e5e7eb; box-shadow: 0 1px 2px rgba(15, 23, 42, .035); }
+.vanta-light input:not([type=checkbox]),
+.vanta-light select,
+.vanta-light textarea { color: #172033; }
+.vanta-light ::-webkit-scrollbar-thumb { background: #cbd5e1; border-color: #f5f6f8; }
+.vanta-light .v-card-hover:hover { border-color: #c7d2fe; box-shadow: 0 4px 14px rgba(15, 23, 42, .06); }
+
 html, body, #root {
   height: 100%;
   width: 100%;

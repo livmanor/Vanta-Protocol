@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Bot, CheckCircle2, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
+  Activity, Bot, CheckCircle2, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
   ShieldAlert, Siren
 } from 'lucide-react';
 import SourceStatusBar from './components/SourceStatusBar';
@@ -22,8 +22,8 @@ import {
 
 /* Left-rail navigation items */
 const NAV = [
+  { id: 'agents', label: 'AI Agents', Icon: Bot },
   { id: 'map', label: 'Tactical Map', Icon: MapIcon },
-  { id: 'agents', label: 'Agent Command', Icon: Bot },
 ];
 
 export default function App() {
@@ -175,20 +175,20 @@ export default function App() {
   const pendingApprovals = prepositionSuggestions.length;
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: 'var(--vanta-bg)' }}>
+    <div className="vanta-light flex flex-col h-screen w-screen overflow-hidden" style={{ background: 'var(--vanta-bg)' }}>
       {/* ── Command bar ─────────────────────────────────── */}
       <header
-        className="flex items-center gap-4 px-4 h-14 border-b shrink-0 z-[700]"
+        className="flex items-center gap-4 px-5 h-[68px] border-b shrink-0 z-[700]"
         style={{ borderColor: 'var(--vanta-border)', background: 'var(--vanta-panel)' }}
       >
         {/* Brand */}
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center shadow-lg shadow-cyan-900/40">
-            <Siren className="w-4.5 h-4.5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-sm">
+            <Siren className="w-[18px] h-[18px] text-white" />
           </div>
           <div className="leading-tight">
-            <div className="font-extrabold tracking-widest text-white text-[13px]">{t('controlRoom')}</div>
-            <div className="text-[10px]" style={{ color: 'var(--vanta-text-faint)' }}>{t('area')}</div>
+            <div className="font-extrabold tracking-tight text-slate-900 text-[14px]">Vanta Protocol</div>
+            <div className="text-[11px]" style={{ color: 'var(--vanta-text-faint)' }}>{t('area')}</div>
           </div>
         </div>
 
@@ -210,7 +210,7 @@ export default function App() {
           {/* Language switcher */}
           <div
             className="flex items-center gap-0.5 rounded-lg border p-0.5"
-            style={{ borderColor: 'var(--vanta-border-hi)', background: 'rgba(8,13,23,0.8)' }}
+            style={{ borderColor: 'var(--vanta-border-hi)', background: '#f8fafc' }}
             aria-label={t('langLabel')}
           >
             {[['en', 'EN'], ['hi', 'हिं'], ['te', 'తె']].map(([code, label]) => (
@@ -219,7 +219,7 @@ export default function App() {
                 onClick={() => setLanguage(code)}
                 aria-pressed={language === code}
                 className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${
-                  language === code ? 'bg-cyan-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
+                    language === code ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {label}
@@ -255,21 +255,22 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left nav rail */}
         <nav
-          className="w-16 flex flex-col items-center gap-1 py-3 border-r shrink-0 z-[600]"
+          className="w-[220px] flex flex-col items-stretch gap-1 px-3 py-5 border-r shrink-0 z-[600]"
           style={{ borderColor: 'var(--vanta-border)', background: 'var(--vanta-panel)' }}
         >
+          <div className="px-3 pb-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Operations</div>
           {NAV.map(({ id, label, Icon }) => (
             <button
               key={id}
               onClick={() => setView(id)}
               title={label}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition ${
-                view === id ? 'bg-cyan-400/10 text-cyan-300' : 'hover:bg-white/5'
+              className={`relative w-full h-11 rounded-lg px-3 flex items-center gap-3 transition text-left ${
+                view === id ? 'bg-indigo-50 text-indigo-700 font-bold' : 'hover:bg-slate-100'
               }`}
               style={view !== id ? { color: 'var(--vanta-text-dim)' } : {}}
             >
               {view === id && <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-full bg-cyan-400" />}
-              <Icon className="w-5 h-5" />
+              <Icon className="w-[18px] h-[18px]" /><span className="text-[13px]">{label}</span>
             </button>
           ))}
 
@@ -278,7 +279,7 @@ export default function App() {
             <button
               onClick={() => { setView('map'); setActiveTab('preposition'); }}
               title={`${pendingApprovals} approvals pending`}
-              className="mt-1 w-11 h-11 rounded-xl flex items-center justify-center relative text-amber-300 hover:bg-amber-500/10 transition"
+              className="mt-1 w-full h-11 rounded-lg flex items-center gap-3 px-3 relative text-amber-700 hover:bg-amber-50 transition"
             >
               <span
                 className="absolute top-1.5 right-1.5 w-4 h-4 bg-amber-400 text-black text-[9px] font-extrabold rounded-full flex items-center justify-center border-2"
@@ -286,7 +287,7 @@ export default function App() {
               >
                 {pendingApprovals}
               </span>
-              <Compass className="w-5 h-5" />
+              <Compass className="w-5 h-5" /><span className="text-[13px]">Pending preparation</span>
             </button>
           )}
         </nav>
@@ -501,7 +502,11 @@ export default function App() {
           {/* AGENT COMMAND VIEW — real Gemini agent workbench */}
           {view === 'agents' && (
             <div className="absolute inset-0 z-[450] overflow-y-auto" style={{ background: 'var(--vanta-bg)' }}>
-              <div className="max-w-5xl mx-auto p-6">
+              <div className="max-w-[1420px] mx-auto p-7 lg:p-9">
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                  <div><div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-indigo-600"><Activity className="h-4 w-4"/> Police operations</div><h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Agent command</h1><p className="mt-1 text-sm text-slate-500">Operational intelligence for Greater Chennai Metropolitan Area</p></div>
+                  <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm"><span className={`h-2 w-2 rounded-full ${alertTone.dot}`}/>{alertTone.label} · Live risk status</div>
+                </div>
                 <AgentPanel
                   status={agentStatus}
                   results={agentResults}
