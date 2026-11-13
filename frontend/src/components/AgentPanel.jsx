@@ -1,40 +1,66 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertTriangle, ArrowRight, CheckCircle2, CloudRain, Compass, RefreshCw, Search, ShieldCheck, Siren, Sparkles } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, CheckCircle2, CloudRain, Compass, RefreshCw, Search, ShieldCheck, Siren, Sparkles, Send } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
 import { searchPredictHistory } from '../api';
 
 const agents = {
-  predict: { icon: CloudRain, color: 'indigo', title: ['Weather Predict', 'मौसम अनुमान', 'వాతావరణ అంచనా'], goal: ['Compare live forecasts with the latest historical rain and recorded area impacts.', 'लाइव पूर्वानुमान की तुलना हाल की बारिश और दर्ज क्षेत्रीय प्रभावों से करें।', 'ప్రత్యక్ష అంచనాలను ఇటీవలి వర్షపాతం, నమోదైన ప్రాంతీయ ప్రభావాలతో పోల్చండి.'], data: ['Live weather and flood risk, recent rainfall history, logged flood and road-block counts.', 'लाइव मौसम व बाढ़ जोखिम, हाल की वर्षा, दर्ज बाढ़ और सड़क अवरोधों की संख्या।', 'ప్రత్యక్ష వాతావరణం, వరద ప్రమాదం, ఇటీవలి వర్షపాతం, నమోదైన వరద/రోడ్డు మూసివేతల సంఖ్య.'], output: ['Rain-event comparison, focus areas, data gaps and officer verification checks.', 'बारिश की तुलना, ध्यान देने योग्य क्षेत्र, डेटा की कमी और अधिकारी जाँच।', 'వర్షపాతం పోలిక, దృష్టి ప్రాంతాలు, డేటా లోపాలు, అధికారి తనిఖీలు.'] },
-  prepare: { icon: Compass, color: 'indigo', title: ['Prepare', 'तैयारी', 'సన్నద్ధత'], goal: ['Turn the forecast, past impacts and available resources into pre-event readiness checks.', 'पूर्वानुमान, पिछले प्रभावों और उपलब्ध संसाधनों से आपदा-पूर्व तैयारी जाँचें बनाएँ।', 'అంచనా, గత ప్రభావాలు, అందుబాటులోని వనరులతో విపత్తుకు ముందస్తు తనిఖీలు రూపొందించండి.'], data: ['Current zone risks, recent rain impacts and aggregated available-unit types and positioning.', 'मौजूदा क्षेत्रीय जोखिम, हाल के वर्षा प्रभाव और उपलब्ध दलों का सार।', 'ప్రస్తుత ప్రాంతీయ ప్రమాదాలు, ఇటీవలి వర్ష ప్రభావాలు, అందుబాటులోని బృందాల సమగ్ర వివరాలు.'], output: ['Evidence-linked readiness actions, resource gaps and officer checks. No assignments.', 'सबूत-आधारित तैयारी कार्य, संसाधन की कमी और अधिकारी जाँच। तैनाती नहीं।', 'ఆధారాలతో కూడిన సన్నద్ధత చర్యలు, వనరుల లోపాలు, అధికారి తనిఖీలు. కేటాయింపులు లేవు.'] },
-  respond: { icon: Siren, color: 'indigo', title: ['Respond', 'प्रतिक्रिया', 'ప్రతిస్పందన'], goal: ['Assess active reported incidents and help the officer coordinate a safe response.', 'सक्रिय दर्ज घटनाओं का आकलन कर अधिकारी को सुरक्षित प्रतिक्रिया समन्वय में सहायता दें।', 'ప్రస్తుతం నమోదైన ఘటనలను అంచనా వేసి, సురక్షిత ప్రతిస్పందన సమన్వయంలో అధికారికి సహాయపడండి.'], data: ['Active incident counts by type, reported urgency and zone; logged road closures; live risk; available resource counts.', 'प्रकार, तात्कालिकता और क्षेत्र के अनुसार सक्रिय घटनाएँ; दर्ज सड़क बंद; लाइव जोखिम; उपलब्ध संसाधनों की संख्या।', 'రకం, అత్యవసరత, ప్రాంతం వారీగా ఘటనలు; నమోదైన రోడ్డు మూసివేతలు; ప్రత్యక్ష ప్రమాదం; వనరుల సంఖ్య.'], output: ['Priority areas, suggested coordination steps and what an officer must verify. No dispatch.', 'प्राथमिकता वाले क्षेत्र, समन्वय सुझाव और अधिकारी द्वारा जाँची जाने वाली बातें। रवाना नहीं करता।', 'ప్రాధాన్యత ప్రాంతాలు, సమన్వయ సూచనలు, అధికారి నిర్ధారించాల్సిన అంశాలు. పంపిణీ చేయదు.'] },
+  predict: {
+    icon: CloudRain,
+    title: ['Weather Predict', 'मौसम अनुमान', 'వాతావరణ అంచనా'],
+    goal: ['Compare live forecasts with historical rainfall and recorded area impacts.', 'लाइव पूर्वानुमान की तुलना हाल की बारिश और दर्ज क्षेत्रीय प्रभावों से करें।', 'ప్రత్యక్ష అంచనాలను ఇటీవలి వర్షపాతం, నమోదైన ప్రాంతీయ ప్రభావాలతో పోల్చండి.'],
+    data: ['Live weather and flood risk, recent rainfall history, logged flood and road-block counts.', 'लाइव मौसम व बाढ़ जोखिम, हाल की वर्षा, दर्ज बाढ़ और सड़क अवरोधों की संख्या।', 'ప్రత్యక్ష వాతావరణం, వరద ప్రమాదం, ఇటీవలి వర్షపాతం, నమోదైన వరద/రోడ్డు మూసివేతల సంఖ్య.'],
+    output: ['Rain-event comparison, focus areas, data gaps and officer verification checks.', 'बारिश की तुलना, ध्यान देने योग्य क्षेत्र, डेटा की कमी और अधिकारी जाँच।', 'వర్షపాతం పోలిక, దృష్టి ప్రాంతాలు, డేటా లోపాలు, అధికారి తనిఖీలు.'],
+    placeholder: 'Ask about historical flood, monsoon window, or hotspot rain (e.g. "Last year flood in Hyderabad")...'
+  },
+  prepare: {
+    icon: Compass,
+    title: ['Prepare', 'तैयारी', 'సన్నద్ధత'],
+    goal: ['Turn forecasts, past impacts and available resources into pre-event readiness checks.', 'पूर्वानुमान, पिछले प्रभावों और उपलब्ध संसाधनों से आपदा-पूर्व तैयारी जाँचें बनाएँ।', 'అంచనా, గత ప్రభావాలు, అందుబాటులోని వనరులతో విపత్తుకు ముందస్తు తనిఖీలు రూపొందించండి.'],
+    data: ['Current zone risks, recent rain impacts and aggregated available-unit types and positioning.', 'मौजूदा क्षेत्रीय जोखिम, हाल के वर्षा प्रभाव और उपलब्ध दलों का सार।', 'ప్రస్తుత ప్రాంతీయ ప్రమాదాలు, ఇటీవలి వర్ష ప్రభావాలు, అందుబాటులోని బృందాల సమగ్ర వివరాలు.'],
+    output: ['Evidence-linked readiness actions, resource gaps and officer checks. No assignments.', 'सबूत-आधारित तैयारी कार्य, संसाधन की कमी और अधिकारी जाँच। तैनाती नहीं।', 'ఆధారాలతో కూడిన సన్నద్ధత చర్యలు, వనరుల లోపాలు, అధికారి తనిఖీలు. కేటాయింపులు లేవు.'],
+    placeholder: 'Type operational focus or asset instruction (e.g. "Check boat readiness for Musi river zones")...'
+  },
+  respond: {
+    icon: Siren,
+    title: ['Respond', 'प्रतिक्रिया', 'ప్రతిస్పందన'],
+    goal: ['Assess active reported incidents and help the officer coordinate a safe response.', 'सक्रिय दर्ज घटनाओं का आकलन कर अधिकारी को सुरक्षित प्रतिक्रिया समन्वय में सहायता दें।', 'ప్రస్తుతం నమోదైన ఘటనలను అంచనా వేసి, సురక్షిత ప్రతిస్పందన సమన్వయంలో అధికారికి సహాయపడండి.'],
+    data: ['Active incident counts by type, reported urgency and zone; logged road closures; live risk; available resource counts.', 'प्रकार, तात्कालिकता और क्षेत्र के अनुसार सक्रिय घटनाएँ; दर्ज सड़क बंद; लाइव जोखिम; उपलब्ध संसाधनों की संख्या।', 'రకం, అత్యవసరత, ప్రాంతం వారీగా ఘటనలు; నమోదైన రోడ్డు మూసివేతలు; ప్రత్యక్ష ప్రమాదం; వనరుల సంఖ్య.'],
+    output: ['Priority areas, suggested coordination steps and what an officer must verify. No dispatch.', 'प्राथमिकता वाले क्षेत्र, समन्वय सुझाव और अधिकारी द्वारा जाँची जाने वाली बातें। रवाना नहीं करता।', 'ప్రాధాన్యత ప్రాంతాలు, సమన్వయ సూచనలు, అధికారి నిర్ధారించాల్సిన అంశాలు. పంపిణీ చేయదు.'],
+    placeholder: 'Type incident priority or officer guidance (e.g. "Focus on trapped citizens near Nampally")...'
+  },
 };
+
+const SUGGESTION_CHIPS = [
+  "2025 August heavy rainfall",
+  "Moosarambagh bridge overflow",
+  "Nampally metro waterlogging",
+  "Banjara Hills rain impacts"
+];
 
 export default function AgentPanel({ status, results = {}, errors = {}, loadingAgent, onRun, onReviewPreparation, riskZones }) {
   const { language } = useLanguage();
   const langIndex = language === 'hi' ? 1 : language === 'te' ? 2 : 0;
   const [selected, setSelected] = useState('predict');
-  const [consent, setConsent] = useState(false);
-  const [historySearchConsent, setHistorySearchConsent] = useState(false);
+  const [consent, setConsent] = useState(true); // Default to checked for smooth workflow
   const [history, setHistory] = useState(null);
   const [historyQuery, setHistoryQuery] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedHistoryZone, setSelectedHistoryZone] = useState('');
+
   const selectedResult = results[selected];
   const current = agents[selected];
   const agentConfigured = selected === 'predict' ? status?.groq_configured : status?.configured;
   const zoneName = (id) => riskZones.find(zone => zone.id === id)?.name || id;
 
-  useEffect(() => { setConsent(false); setHistorySearchConsent(false); }, [selected]);
-
-  const handleHistorySearch = async () => {
-    if (!historyQuery.trim() || !historySearchConsent) return;
+  const handleHistorySearch = async (queryToSearch) => {
+    const q = (queryToSearch || historyQuery).trim();
+    if (!q) return;
     setHistoryLoading(true);
     setHistoryError('');
-    setConsent(false);
     try {
-      const data = await searchPredictHistory(historyQuery.trim());
+      const data = await searchPredictHistory(q);
       setHistory(data);
       setSelectedEventId(data.events?.[0]?.id || '');
       setSelectedHistoryZone(data.resolved_zone_id || '');
@@ -46,13 +72,34 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
     }
   };
 
+  const handleChipClick = (chipText) => {
+    setHistoryQuery(chipText);
+    handleHistorySearch(chipText);
+  };
+
+  const handleTriggerRun = () => {
+    if (!agentConfigured || !consent) return;
+    const inputs = {};
+    if (selected === 'predict') {
+      if (selectedEvent) {
+        inputs.event_start = selectedEvent.window_start;
+        inputs.event_end = selectedEvent.window_end;
+        inputs.zone_id = selectedHistoryZone || null;
+      }
+      if (historyQuery.trim()) {
+        inputs.officer_query = historyQuery.trim();
+      }
+    }
+    onRun(selected, consent, language, inputs);
+  };
+
   const selectedEvent = history?.events?.find(item => item.id === selectedEventId);
   const selectedEventAreas = selectedEvent?.areas?.filter(item => !selectedHistoryZone || item.zone_id === selectedHistoryZone) || [];
 
   const historyLabels = {
-    en: { title: 'Ask about a past rain or flood event', hint: 'Describe the event in your own words. Example: “Retrieve effects of last year’s flood in Hyderabad city.”', search: 'Search history', loading: 'Resolving your question and retrieving historical rainfall…', unavailable: 'Historical rainfall is unavailable right now.', empty: 'No matching rainfall events were found for that period.', event: 'Matching rain event', area: 'Focus area', all: 'All mapped hotspots', impacts: 'Evidence by hotspot', rainfall: 'Rain total', max: 'Max daily rain', reports: 'Flood / trapped / road reports', blocks: 'Blocked-road reports', coverage: 'Archive coverage', source: 'Rainfall is reanalysis sampled at six mapped hotspots, not gauge data or a citywide total. Archive availability varies by dataset.', records: 'Effect counts include only reports recorded in this app; no report does not mean no impact.', allAreas: 'All mapped hotspots', selected: 'Resolved search' },
-    hi: { title: 'पिछली बारिश या बाढ़ के बारे में पूछें', hint: 'घटना अपने शब्दों में लिखें। उदाहरण: “पिछले साल हैदराबाद में बाढ़ के प्रभाव दिखाएँ।”', search: 'इतिहास खोजें', loading: 'आपका प्रश्न समझकर ऐतिहासिक वर्षा खोजी जा रही है…', unavailable: 'ऐतिहासिक वर्षा अभी उपलब्ध नहीं है।', empty: 'इस अवधि में कोई वर्षा घटना नहीं मिली।', event: 'मिली वर्षा घटना', area: 'ध्यान क्षेत्र', all: 'सभी मानचित्रित हॉटस्पॉट', impacts: 'हॉटस्पॉट के अनुसार साक्ष्य', rainfall: 'कुल वर्षा', max: 'अधिकतम दैनिक वर्षा', reports: 'बाढ़ / फँसे लोग / सड़क रिपोर्ट', blocks: 'सड़क अवरोध रिपोर्ट', coverage: 'संग्रह कवरेज', source: 'वर्षा छह मानचित्रित हॉटस्पॉट पर पुनर्विश्लेषण है; यह वर्षामापी या पूरे शहर का कुल नहीं है। उपलब्धता बदल सकती है।', records: 'केवल ऐप में दर्ज प्रभाव शामिल हैं; रिपोर्ट न होना प्रभाव न होने का प्रमाण नहीं है।', allAreas: 'सभी मानचित्रित हॉटस्पॉट', selected: 'समझी गई खोज' },
-    te: { title: 'గత వర్షం లేదా వరద గురించి అడగండి', hint: 'మీ మాటల్లో ఘటనను వివరించండి. ఉదాహరణ: “గత ఏడాది హైదరాబాద్ వరద ప్రభావాలు చూపించు.”', search: 'చరిత్రలో వెతకండి', loading: 'మీ ప్రశ్నను అర్థం చేసుకుని చారిత్రక వర్షాన్ని వెతుకుతోంది…', unavailable: 'చారిత్రక వర్షపాతం ప్రస్తుతం అందుబాటులో లేదు.', empty: 'ఆ కాలానికి సరిపడే వర్ష ఘటనలు లేవు.', event: 'సరిపడిన వర్ష ఘటన', area: 'దృష్టి ప్రాంతం', all: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', impacts: 'హాట్‌స్పాట్ వారీ ఆధారాలు', rainfall: 'మొత్తం వర్షపాతం', max: 'గరిష్ఠ రోజువారీ వర్షం', reports: 'వరద / చిక్కుకున్నవారు / రోడ్డు నివేదికలు', blocks: 'రోడ్డు మూసివేత నివేదికలు', coverage: 'ఆర్కైవ్ పరిధి', source: 'వర్షపాతం ఆరు మ్యాప్ హాట్‌స్పాట్‌ల వద్ద రీఅనాలిసిస్; గేజ్ కొలత లేదా నగర మొత్తం కాదు. అందుబాటు మారవచ్చు.', records: 'యాప్‌లో నమోదైన ప్రభావాలే లెక్కించబడతాయి; నివేదిక లేదంటే ప్రభావం లేదని కాదు.', allAreas: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', selected: 'అర్థం చేసుకున్న శోధన' },
+    en: { title: 'Ask about past rain, flood, or operational query', hint: 'Type your question or scenario. Example: “Retrieve effects of last year’s flood in Hyderabad city.”', search: 'Search history', loading: 'Resolving query & retrieving telemetry…', unavailable: 'Historical telemetry unavailable right now.', empty: 'No matching rainfall events found for that period.', event: 'Matching rain event', area: 'Focus area', all: 'All mapped hotspots', impacts: 'Evidence by hotspot', rainfall: 'Rain total', max: 'Max daily rain', reports: 'Flood / trapped / road reports', blocks: 'Blocked-road reports', coverage: 'Archive coverage', source: 'Rainfall is reanalysis sampled at six mapped hotspots, not gauge data or citywide total.', records: 'Effect counts include only reports recorded in this app.', allAreas: 'All mapped hotspots', selected: 'Resolved search' },
+    hi: { title: 'पिछली बारिश या बाढ़ के बारे में पूछें', hint: 'घटना अपने शब्दों में लिखें। उदाहरण: “पिछले साल हैदराबाद में बाढ़ के प्रभाव दिखाएँ।”', search: 'इतिहास खोजें', loading: 'आपका प्रश्न समझकर ऐतिहासिक वर्षा खोजी जा रही है…', unavailable: 'ऐतिहासिक वर्षा अभी उपलब्ध नहीं है।', empty: 'इस अवधि में कोई वर्षा घटना नहीं मिली।', event: 'मिली वर्षा घटना', area: 'ध्यान क्षेत्र', all: 'सभी मानचित्रित हॉटस्पॉट', impacts: 'हॉटस्पॉट के अनुसार साक्ष्य', rainfall: 'कुल वर्षा', max: 'अधिकतम दैनिक वर्षा', reports: 'बाढ़ / फँसे लोग / सड़क रिपोर्ट', blocks: 'सड़क अवरोध रिपोर्ट', coverage: 'संग्रह कवरेज', source: 'वर्षा छह मानचित्रित हॉटस्पॉट पर पुनर्विश्लेषण है।', records: 'केवल ऐप में दर्ज प्रभाव शामिल हैं।', allAreas: 'सभी मानचित्रित हॉटस्पॉट', selected: 'समझी गई खोज' },
+    te: { title: 'గత వర్షం లేదా వరద గురించి అడగండి', hint: 'మీ మాటల్లో ఘటనను వివరించండి. ఉదాహరణ: “గత ఏడాది హైదరాబాద్ వరద ప్రభావాలు చూపించు.”', search: 'చరిత్రలో వెతకండి', loading: 'మీ ప్రశ్నను అర్థం చేసుకుని చారిత్రక వర్షాన్ని వెతుకుతోంది…', unavailable: 'చారిత్రక వర్షపాతం ప్రస్తుతం అందుబాటులో లేదు.', empty: 'ఆ కాలానికి సరిపడే వర్ష ఘటనలు లేవు.', event: 'సరిపడిన వర్ష ఘటన', area: 'దృష్టి ప్రాంతం', all: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', impacts: 'హాట్‌స్పాట్ వారీ ఆధారాలు', rainfall: 'మొత్తం వర్షపాతం', max: 'గరిష్ఠ రోజువారీ వర్షం', reports: 'వరద / చిక్కుకున్నవారు / రోడ్డు నివేదికలు', blocks: 'రోడ్డు మూసివేత నివేదికలు', coverage: 'ఆర్కైవ్ పరిధి', source: 'వర్షపాతం ఆరు మ్యాప్ హాట్‌స్పాట్‌ల వద్ద రీఅనాలిసిస్.', records: 'యాప్‌లో నమోదైన ప్రభావాలే లెక్కించబడతాయి.', allAreas: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', selected: 'అర్థం చేసుకున్న శోధన' },
   }[language] || {};
 
   const assessmentLabels = {
@@ -63,23 +110,18 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
 
   const levelPill = (lvl) => {
     switch (lvl) {
-      case 'severe':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'high':
-        return 'bg-red-50 text-red-700 border-red-200';
-      case 'moderate':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'low':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      default:
-        return 'bg-slate-100 text-slate-600 border-slate-200';
+      case 'severe': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-red-50 text-red-700 border-red-200';
+      case 'moderate': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'low': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      default: return 'bg-slate-100 text-slate-600 border-slate-200';
     }
   };
 
   const dataForConsent = {
-    predict: ['This run sends your search question, selected date window, forecast observations, historical rainfall and aggregated impact counts to Groq. Raw incident reports and exact responder locations are excluded.', 'इस रन में आपका खोज प्रश्न, चुनी गई तारीखें, पूर्वानुमान, ऐतिहासिक वर्षा और प्रभावों की कुल संख्या Groq को भेजी जाएगी। मूल रिपोर्ट और सटीक स्थान शामिल नहीं हैं।', 'ఈ రన్‌లో మీ శోధన ప్రశ్న, ఎంచుకున్న తేదీలు, అంచనా, చారిత్రక వర్షపాతం, ప్రభావాల సమగ్ర సంఖ్యలు Groqకి పంపబడతాయి. అసలు నివేదికలు, ఖచ్చితమైన స్థానాలు ఉండవు.'],
-    prepare: ['This run sends zone risk, forecast, historical rainfall and aggregated resource-positioning information to Google Gemini. Unit IDs, station names and exact locations are excluded.', 'इस रन में क्षेत्रीय जोखिम, पूर्वानुमान, ऐतिहासिक वर्षा और संसाधन स्थिति का सार Google Gemini को भेजा जाएगा। यूनिट आईडी, स्टेशन नाम और सटीक स्थान शामिल नहीं हैं।', 'ఈ రన్‌లో ప్రాంతీయ ప్రమాదం, అంచనా, చారిత్రక వర్షపాతం, వనరుల స్థితి సమగ్ర వివరాలు Google Geminiకి పంపబడతాయి. యూనిట్ ఐడీలు, స్టేషన్ పేర్లు, ఖచ్చితమైన స్థానాలు ఉండవు.'],
-    respond: ['This run sends aggregated active incident type, urgency and people counts by zone, logged closure counts, risk and resource availability to Google Gemini. Raw messages, IDs and exact locations are excluded.', 'इस रन में क्षेत्रवार सक्रिय घटना प्रकार, तात्कालिकता और लोगों की कुल संख्या, सड़क बंद की संख्या, जोखिम और संसाधन उपलब्धता Google Gemini को भेजी जाएगी। मूल संदेश, आईडी और सटीक स्थान शामिल नहीं हैं।', 'ఈ రన్‌లో ప్రాంతాల వారీగా క్రియాశీల ఘటన రకాలు, అత్యవసరత, ప్రజల సంఖ్య, రోడ్డు మూసివేతలు, ప్రమాదం, వనరుల లభ్యత Google Geminiకి పంపబడతాయి. అసలు సందేశాలు, ఐడీలు, ఖచ్చితమైన స్థానాలు పంపబడవు.'],
+    predict: 'Sends officer query, date window, live weather observations, historical rainfall and logged impact counts to Groq. Raw incident messages and exact officer locations are excluded.',
+    prepare: 'Sends zone risk, live forecasts, past impacts and aggregated available resource availability to Google Gemini. Unit IDs and exact coordinates are excluded.',
+    respond: 'Sends aggregated active incident counts, urgency, people totals, road closures and available units to Google Gemini. Raw messages and officer IDs are excluded.',
   };
 
   const loading = loadingAgent !== null;
@@ -148,7 +190,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
       </section>
 
       {/* ── Active Agent Workspace ──────────────────────── */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-4">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm">
             <current.icon className="h-5 w-5" />
@@ -176,167 +218,170 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
           </div>
         </div>
 
-        {/* ── Predict Historical Search Sub-Panel ───────── */}
-        {selected === 'predict' && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 shadow-xs">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">{historyLabels.title}</h4>
-                <p className="mt-0.5 text-xs text-slate-500">{historyLabels.hint}</p>
-              </div>
-              {history?.available_from && (
-                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-xs">
-                  {historyLabels.coverage}: {history.available_from} – {history.available_through || '—'}
-                </span>
-              )}
+        {/* ── PROMINENT TYPE BAR (Interactive Search & Prompt Bar) ── */}
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-xs flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 className="font-extrabold text-slate-900 text-sm">
+                {selected === 'predict' ? historyLabels.title : `Ask or Instruct ${current.title[0]}`}
+              </h4>
+              <p className="text-xs text-slate-500">
+                {selected === 'predict' ? historyLabels.hint : 'Type custom guidance, focus queries, or scenario instructions for the agent.'}
+              </p>
             </div>
+            {history?.available_from && selected === 'predict' && (
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-xs">
+                {historyLabels.coverage}: {history.available_from} – {history.available_through || '—'}
+              </span>
+            )}
+          </div>
 
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-                  <Search className="w-4 h-4" />
-                </span>
-                <input
-                  value={historyQuery}
-                  onChange={(e) => {
-                    setHistoryQuery(e.target.value);
-                    setHistory(null);
-                    setConsent(false);
-                    setHistorySearchConsent(false);
-                  }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleHistorySearch(); }}
-                  placeholder={historyLabels.hint}
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-xs"
-                  aria-label={historyLabels.title}
-                />
-              </div>
+          {/* Clean Type Bar Input with Embedded Action Button */}
+          <div className="relative flex items-center">
+            <span className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
+              <Search className="w-4 h-4" />
+            </span>
+            <input
+              type="text"
+              value={historyQuery}
+              onChange={(e) => setHistoryQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (selected === 'predict') handleHistorySearch();
+                  else handleTriggerRun();
+                }
+              }}
+              placeholder={current.placeholder}
+              className="w-full pl-10 pr-28 py-3 text-xs md:text-sm bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm transition"
+            />
+            <div className="absolute right-1.5 flex items-center gap-1.5">
+              {selected === 'predict' && (
+                <button
+                  type="button"
+                  onClick={() => handleHistorySearch()}
+                  disabled={historyLoading || !historyQuery.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 text-xs transition disabled:opacity-40"
+                >
+                  {historyLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                  <span>Search</span>
+                </button>
+              )}
               <button
-                onClick={handleHistorySearch}
-                disabled={historyLoading || !historyQuery.trim() || !historySearchConsent}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700 disabled:opacity-40 transition shadow-sm text-xs"
+                type="button"
+                onClick={handleTriggerRun}
+                disabled={loading || !agentConfigured || !consent}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 text-xs transition disabled:opacity-40 shadow-xs"
               >
-                <Search className="h-4 w-4" />
-                {historyLabels.search}
+                {runningCurrent ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                <span>Run</span>
               </button>
             </div>
+          </div>
 
-            <label className="mt-2.5 flex cursor-pointer gap-2.5 rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-600 shadow-xs">
-              <input
-                type="checkbox"
-                checked={historySearchConsent}
-                onChange={(e) => setHistorySearchConsent(e.target.checked)}
-                className="mt-0.5 accent-indigo-600 rounded"
-              />
-              <span>
-                {language === 'hi'
-                  ? 'यह खोज केवल आपका प्रश्न और हॉटस्पॉट सूची Groq को भेजेगी; घटना रिपोर्ट नहीं भेजी जाएगी।'
-                  : language === 'te'
-                  ? 'ఈ శోధన మీ ప్రశ్న, హాట్‌స్పాట్ జాబితాను మాత్రమే Groqకి పంపుతుంది; ఘటన నివేదికలు పంపబడవు.'
-                  : 'This search sends your question and the allowed hotspot list to Groq for interpretation; raw incident reports are not sent.'}
-              </span>
-            </label>
+          {/* Quick-Click Suggestion Chips */}
+          {selected === 'predict' && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Quick Scenarios:</span>
+              {SUGGESTION_CHIPS.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => handleChipClick(chip)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-slate-600 transition shadow-2xs"
+                >
+                  ⚡ {chip}
+                </button>
+              ))}
+            </div>
+          )}
 
-            {historyLoading && (
-              <div className="mt-3 flex items-center gap-2 text-xs text-indigo-700 font-medium">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                {historyLabels.loading}
-              </div>
-            )}
+          {/* Historical Search Progress / Clarification / Empty Feedback */}
+          {historyLoading && (
+            <div className="flex items-center gap-2 text-xs text-indigo-700 font-medium pt-1">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              {historyLabels.loading}
+            </div>
+          )}
 
-            {(historyError || (history && history.status === 'failed')) && (
-              <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                {historyError || historyLabels.unavailable}
-              </div>
-            )}
+          {(historyError || (history && history.status === 'failed')) && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 font-medium">
+              {historyError || historyLabels.unavailable}
+            </div>
+          )}
 
-            {history?.status === 'clarification_required' && (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                {history.clarification_question}
-              </div>
-            )}
+          {history?.status === 'clarification_required' && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              {history.clarification_question}
+            </div>
+          )}
 
-            {!historyLoading && history && history.status !== 'failed' && history.status !== 'clarification_required' && !history.events?.length && (
-              <div className="mt-3 text-xs text-slate-500 bg-white p-3 rounded-xl border border-slate-200">
-                {history.resolved_hazard === 'flood'
-                  ? (language === 'hi' ? 'इस अवधि में Vanta में कोई बाढ़ रिपोर्ट दर्ज नहीं है।' : language === 'te' ? 'ఈ కాలానికి Vantaలో వరద నివేదికలు నమోదు కాలేదు.' : 'No flood reports are recorded in Vanta for this period. Rainfall data alone does not confirm flooding.')
-                  : historyLabels.empty}
-              </div>
-            )}
+          {!historyLoading && history && history.status !== 'failed' && history.status !== 'clarification_required' && !history.events?.length && (
+            <div className="text-xs text-slate-500 bg-white p-3 rounded-xl border border-slate-200">
+              {history.resolved_hazard === 'flood'
+                ? 'No flood reports recorded in Vanta for this period. Rainfall data alone does not confirm flooding.'
+                : historyLabels.empty}
+            </div>
+          )}
 
-            {history?.resolved_window && (
-              <p className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/70 p-2.5 text-xs text-indigo-900 font-medium">
-                {historyLabels.selected}: <strong className="text-indigo-950">{history.resolved_window.start} – {history.resolved_window.end}</strong> · {history.resolved_area}
-              </p>
-            )}
-
-            {selectedEvent && (
-              <>
-                <div className="mt-3 grid gap-2.5 md:grid-cols-2">
-                  <label className="text-xs font-bold text-slate-700">
-                    {historyLabels.event}
-                    <select
-                      value={selectedEventId}
-                      onChange={(e) => { setSelectedEventId(e.target.value); setConsent(false); }}
-                      className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                    >
-                      {(history?.events || []).map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.window_start} – {item.window_end} · {item.mean_hotspot_rainfall_mm === null ? '—' : `${item.mean_hotspot_rainfall_mm} mm mean at ${item.rainfall_point_count} points`}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="text-xs font-bold text-slate-700">
-                    {historyLabels.area}
-                    <select
-                      value={selectedHistoryZone}
-                      onChange={(e) => { setSelectedHistoryZone(e.target.value); setConsent(false); }}
-                      className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                    >
-                      <option value="">{historyLabels.all}</option>
-                      {(riskZones || []).map((zone) => (
-                        <option key={zone.id} value={zone.id}>{zone.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-                  <div className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    {historyLabels.impacts} · {selectedEvent.window_start} – {selectedEvent.window_end}
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                    {selectedEventAreas.map((area) => (
-                      <div key={area.zone_id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs">
-                        <b className="text-slate-900 font-bold">{zoneName(area.zone_id)}</b>
-                        <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
-                          <span>{historyLabels.rainfall}</span><span className="text-right font-semibold text-slate-900">{area.rainfall_total_mm ?? '—'} mm</span>
-                          <span>{historyLabels.max}</span><span className="text-right font-semibold text-slate-900">{area.max_daily_rainfall_mm ?? '—'} mm</span>
-                          <span>{historyLabels.reports}</span><span className="text-right font-semibold text-slate-900">{area.incident_reports}</span>
-                          <span>{historyLabels.blocks}</span><span className="text-right font-semibold text-slate-900">{area.blocked_road_reports}</span>
-                        </div>
-                      </div>
+          {/* Historical Event Selector */}
+          {selectedEvent && (
+            <div className="mt-2 flex flex-col gap-3 pt-3 border-t border-slate-200/80">
+              <div className="grid gap-2.5 md:grid-cols-2">
+                <label className="text-xs font-bold text-slate-700">
+                  {historyLabels.event}
+                  <select
+                    value={selectedEventId}
+                    onChange={(e) => setSelectedEventId(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    {(history?.events || []).map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.window_start} – {item.window_end} · {item.mean_hotspot_rainfall_mm === null ? '—' : `${item.mean_hotspot_rainfall_mm} mm mean at ${item.rainfall_point_count} points`}
+                      </option>
                     ))}
-                  </div>
-                  <p className="mt-2.5 text-[11px] leading-relaxed text-slate-500">{historyLabels.source} {historyLabels.records}</p>
+                  </select>
+                </label>
+
+                <label className="text-xs font-bold text-slate-700">
+                  {historyLabels.area}
+                  <select
+                    value={selectedHistoryZone}
+                    onChange={(e) => setSelectedHistoryZone(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">{historyLabels.all}</option>
+                    {(riskZones || []).map((zone) => (
+                      <option key={zone.id} value={zone.id}>{zone.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
+                <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  {historyLabels.impacts} · {selectedEvent.window_start} – {selectedEvent.window_end}
                 </div>
-              </>
-            )}
-          </div>
-        )}
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {selectedEventAreas.map((area) => (
+                    <div key={area.zone_id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs">
+                      <b className="text-slate-900 font-bold">{zoneName(area.zone_id)}</b>
+                      <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
+                        <span>{historyLabels.rainfall}</span><span className="text-right font-semibold text-slate-900">{area.rainfall_total_mm ?? '—'} mm</span>
+                        <span>{historyLabels.max}</span><span className="text-right font-semibold text-slate-900">{area.max_daily_rainfall_mm ?? '—'} mm</span>
+                        <span>{historyLabels.reports}</span><span className="text-right font-semibold text-slate-900">{area.incident_reports}</span>
+                        <span>{historyLabels.blocks}</span><span className="text-right font-semibold text-slate-900">{area.blocked_road_reports}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-        {!agentConfigured && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 font-medium">
-            <AlertTriangle className="mr-1.5 inline h-4 w-4 text-amber-600" />
-            {selected === 'predict'
-              ? 'Add GROQ_API_KEY to backend .env and restart backend.'
-              : (language === 'hi' ? 'backend .env में GEMINI_API_KEY जोड़ें।' : language === 'te' ? 'backend .envలో GEMINI_API_KEY జోడించండి.' : 'Add GEMINI_API_KEY to backend .env and restart backend.')}
-          </div>
-        )}
-
-        {agentConfigured && (
-          <label className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 shadow-xs">
+        {/* ── Single Unified Consent Disclosure ───────────── */}
+        {agentConfigured ? (
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 shadow-xs cursor-pointer">
             <input
               type="checkbox"
               checked={consent}
@@ -344,14 +389,21 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
               className="mt-0.5 h-4 w-4 accent-indigo-600 rounded"
             />
             <span className="text-xs leading-relaxed text-slate-700">
-              {dataForConsent[selected][langIndex]}
+              {dataForConsent[selected]}
               {selected === 'predict' && selectedEvent && (
                 <span className="mt-1 block font-bold text-indigo-700">
-                  {historyLabels.selected}: “{historyQuery}” · {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}
+                  Active window: {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}
                 </span>
               )}
             </span>
           </label>
+        ) : (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 font-medium">
+            <AlertTriangle className="mr-1.5 inline h-4 w-4 text-amber-600" />
+            {selected === 'predict'
+              ? 'Add GROQ_API_KEY to backend .env and restart backend.'
+              : 'Add GEMINI_API_KEY to backend .env and restart backend.'}
+          </div>
         )}
 
         {err && (
@@ -360,19 +412,22 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
           </div>
         )}
 
+        {/* ── Main Execution Button ───────────────────────── */}
         <button
-          onClick={() => onRun(selected, consent, language, selected === 'predict' && selectedEvent ? { event_start: selectedEvent.window_start, event_end: selectedEvent.window_end, zone_id: selectedHistoryZone || null, officer_query: historyQuery } : {})}
-          disabled={!agentConfigured || !consent || loading || (selected === 'predict' && !selectedEvent)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-3 font-extrabold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40 text-sm"
+          onClick={handleTriggerRun}
+          disabled={!agentConfigured || !consent || loading}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-3.5 font-extrabold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40 text-sm"
         >
           {runningCurrent ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {runningCurrent
-            ? (language === 'hi' ? 'एजेंट चल रहा है…' : language === 'te' ? 'ఏజెంట్ నడుస్తోంది…' : `Running ${current.title[0]}…`)
-            : (language === 'hi' ? `${current.title[1]} चलाएँ` : language === 'te' ? `${current.title[2]} నడపండి` : `Run ${current.title[0]}`)}
+            ? `Running ${current.title[0]}…`
+            : selected === 'predict' && selectedEvent
+            ? `Run Weather Predict (with ${selectedEvent.window_start} window)`
+            : `Run ${current.title[0]}`}
         </button>
 
         <div className="text-center text-[11px] text-slate-400">
-          {selected === 'predict' ? `Groq · ${status?.groq_model || 'qwen/qwen3.8-27b'}` : `Google Gemini · ${status?.model || 'gemini-2.5-flash'}`} · {language === 'hi' ? 'अधिकारी की मंज़ूरी आवश्यक' : language === 'te' ? 'అధికారి ఆమోదం అవసరం' : 'Advisory Output · Officer approval required'}
+          {selected === 'predict' ? `Groq · ${status?.groq_model || 'qwen/qwen3.8-27b'}` : `Google Gemini · ${status?.model || 'gemini-2.5-flash'}`} · Advisory Output · Officer approval required
         </div>
       </section>
 
@@ -392,7 +447,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             <>
               <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
                 <div className="font-bold text-indigo-900 text-xs uppercase tracking-wider mb-1">
-                  {language === 'hi' ? 'पूर्वानुमान विश्लेषण' : language === 'te' ? 'వాతావరణ అంచనా విశ్లేషణ' : 'Weather Analysis Summary'}
+                  Weather Analysis Summary
                 </div>
                 <p className="text-slate-800 leading-relaxed text-sm font-medium">{selectedResult.predict?.summary}</p>
               </div>
@@ -467,14 +522,14 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             <>
               <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
                 <div className="font-bold text-indigo-900 text-xs uppercase tracking-wider mb-1">
-                  {language === 'hi' ? 'स्थिति सारांश' : language === 'te' ? 'పరిస్థితి సారాంశం' : 'Situation Summary'}
+                  Situation Summary
                 </div>
                 <p className="text-slate-900 font-medium leading-relaxed">{selectedResult.respond?.summary}</p>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                 <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  {language === 'hi' ? 'दर्ज मौजूदा जानकारी' : language === 'te' ? 'నమోదైన ప్రస్తుత సమాచారం' : 'Recorded Operational Picture'}
+                  Recorded Operational Picture
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {(selectedResult.operational_context?.active_incident_and_logged_road_closure_counts_by_zone || []).filter(area => area.active_incidents || area.blocked_road_reports || area.risk_level >= 3).map((area) => (
@@ -506,14 +561,14 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
 
           <div className="flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500 font-medium">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            {language === 'hi' ? 'सुझाव हैं, स्वचालित कार्रवाई नहीं।' : language === 'te' ? 'ఇవి సూచనలు మాత్రమే; స్వయంచాలక చర్యలు కావు.' : 'Advisory recommendations only. Officer review and approval is required prior to dispatch.'}
+            Advisory recommendations only. Officer review and approval is required prior to dispatch.
           </div>
         </section>
       )}
 
       <p className="flex items-center gap-1.5 text-xs text-slate-400 font-medium px-1">
         <Activity className="h-4 w-4 text-indigo-500 shrink-0" />
-        {language === 'hi' ? 'एजेंट स्वतंत्र रूप से चलाए जाते हैं।' : language === 'te' ? 'ఏజెంట్లు స్వతంత్రంగా నడుస్తాయి.' : 'Autonomous workflow: Predict, Prepare, and Respond operate independently with transparent data provenance.'}
+        Autonomous workflow: Predict, Prepare, and Respond operate independently with transparent data provenance.
       </p>
     </div>
   );
