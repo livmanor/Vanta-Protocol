@@ -26,6 +26,8 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: Optional[SecretStr] = None
     GEMINI_MODEL: str = "gemini-2.5-flash"
+    GROQ_API_KEY: Optional[SecretStr] = None
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
 
     PORT: int = 8000
     HOST: str = "0.0.0.0"

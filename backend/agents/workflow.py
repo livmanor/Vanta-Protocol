@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from backend.agents.gemini import generate_structured
+from backend.agents.groq import generate_structured as generate_groq_structured
 from backend.agents.schemas import PredictAgentOutput, PrepareAgentOutput, RespondAgentOutput
 from backend.config import settings
 from backend.models import PrepositionSuggestion, RiskZone
@@ -27,11 +28,31 @@ def _zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, An
         "metrics": {
             "rainfall_24h_mm": explanation.rainfall_24h_mm,
             "max_precipitation_probability": explanation.max_precipitation_probability,
+            "wind_max_kmh": explanation.wind_max_kmh,
             "river_discharge_m3s": explanation.river_discharge_m3s,
             "mean_elevation_m": explanation.mean_elevation_m,
         } if explanation else None,
         "risk_model_note": "The score includes a mapped major waterlogging hotspot from the Hyderabad Traffic Police list dated 2025-08-06. This indicates historical vulnerability, not current flooding.",
         "source_status": source_status,
+    }
+
+
+def _predict_zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, Any]:
+    """Pass observations to the Predict LLM without the legacy weighted risk score."""
+    explanation = zone.explanation
+    return {
+        "zone_id": zone.id,
+        "zone_name": zone.name,
+        "observed_forecast_metrics": {
+            "forecast_precipitation_mm": explanation.rainfall_24h_mm,
+            "precipitation_probability_percent": explanation.max_precipitation_probability,
+            "forecast_max_wind_kmh": explanation.wind_max_kmh,
+            "river_discharge_m3s": explanation.river_discharge_m3s,
+            "elevation_m": explanation.mean_elevation_m,
+            "historically_mapped_waterlogging_hotspot": explanation.historical_flood_prone,
+        } if explanation else None,
+        "source_status": source_status,
+        "risk_score_note": "No precomputed weighted risk score is supplied to the Predict LLM. Assess observations qualitatively and mark insufficient_data when needed.",
     }
 
 
@@ -305,15 +326,6 @@ async def list_rain_history_events(
     statuses = [item.get("status") for item in source_status.values()]
     healthy_sources = sum(status in ("live", "stale") for status in statuses)
     history_status = "live" if statuses and all(status == "live" for status in statuses) else "partial" if healthy_sources else "failed"
-    # #region agent log
-    try:
-        import json as _json
-        _peak = max(events, key=lambda item: item.get("mean_hotspot_rainfall_mm") or 0) if events else None
-        _long = [item for item in events if (datetime.fromisoformat(item["window_end"]).date() - datetime.fromisoformat(item["window_start"]).date()).days > 14]
-        open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"A","location":"workflow.py:list_rain_history_events","message":"history events ranked","data":{"event_count":len(events),"wet_day_count":len(wet_days),"first_event":events[0] if events else None,"peak_event":{"id":(_peak or {}).get("id"),"mean_mm":(_peak or {}).get("mean_hotspot_rainfall_mm")},"events_over_14_days":[{"id":item["id"],"mean_mm":item["mean_hotspot_rainfall_mm"]} for item in _long],"history_status":history_status,"available_from":available_days[0] if available_days else None,"available_through":available_days[-1] if available_days else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-    except Exception:
-        pass
-    # #endregion
     return {
         "source": "Open-Meteo Historical Weather API",
         "status": history_status,
@@ -330,26 +342,25 @@ class PredictAgent:
     async def run(self, zones: List[RiskZone], source_status: Dict[str, Dict[str, Any]], recent_rain_impacts: Dict[str, Any], language: str, officer_query: str | None = None) -> PredictAgentOutput:
         allowed_ids = {zone.id for zone in zones}
         context = json.dumps({
-            "current_risk_zones": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
+            "current_zone_observations": [_predict_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
             "officer_history_question": officer_query,
             "selected_historical_rain_event_and_logged_impacts": recent_rain_impacts,
         }, ensure_ascii=False)
-        output = await generate_structured(
+        output = await generate_groq_structured(
             system_instruction=(
-                "You are Vanta's Predict analyst. Compare the supplied live forecast/risk data with the officer-selected historical rain window and the locally logged impacts during that window. "
-                "Use historical rainfall values and incident/blocked-road report counts by zone only when supplied. Clearly state when no impacts were recorded and distinguish that from roads being clear. "
-                "Historical rainfall is reanalysis, not a rain gauge; local traffic evidence is incomplete officer-entered logs, not a live traffic feed. Interpret only supplied data. "
+                "You are Vanta's Predict analyst. Independently interpret the supplied live forecast observations, source freshness, the officer-selected historical rainfall window, and app-recorded impacts. "
+                "Do not copy or calculate any fixed weighted risk score. Produce qualitative per-zone assessments as low, moderate, high, severe, or insufficient_data, grounded in the values and provenance supplied. Do not invent a numeric probability or claim model calibration. "
+                "Use incident and blocked-road counts only when supplied. Zero reports means no matching report was recorded in this app, not that no impact occurred or roads are clear. "
+                "Historical rainfall is reanalysis at mapped points, not a rain-gauge observation; local traffic evidence is incomplete officer-entered logs, not a live traffic feed. Interpret only supplied facts. "
                 f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}. "
-                "Do not calculate or change risk scores, invent measurements, infer missing values, "
-                "or claim a live source is healthy unless the input says so. Highlight the most "
-                "important zones and give a verification check to the watch officer. This is advisory, "
-                "not an alert or dispatch order. Treat mapped hotspot status as historical vulnerability, "
-                "not current flooding. Use only exact supplied zone IDs."
+                "Do not invent measurements, infer missing values, or claim a source is healthy unless the input says so. If weather or river inputs are failed/stale or unavailable, use insufficient_data where that prevents a sound assessment and explain the gap. "
+                "Highlight up to three zones needing review and give practical verification checks. This is advisory, not an alert or dispatch order. Treat mapped hotspot status as historical vulnerability, not current flooding. Use only exact supplied zone IDs."
             ),
             context=context,
             schema=PredictAgentOutput,
         )
         output.focus_zones = [item for item in output.focus_zones if item.zone_id in allowed_ids][:3]
+        output.zone_assessments = [item for item in output.zone_assessments if item.zone_id in allowed_ids][:6]
         source_gaps = []
         for zone in zones:
             for source in source_status.get(zone.id, {}).values():
@@ -440,8 +451,9 @@ async def _weather_and_history(
     start_date: str | None = None,
     end_date: str | None = None,
     zone_id: str | None = None,
+    include_rule_score: bool = True,
 ):
-    zones = await compute_real_risk_zones()
+    zones = await compute_real_risk_zones(include_rule_score=include_rule_score)
     source_status = await _collect_source_status()
     recent_rain_impacts = await _collect_recent_rain_impacts(zones, start_date, end_date, zone_id)
     return zones, source_status, recent_rain_impacts
@@ -454,17 +466,15 @@ async def run_predict_agent(
     zone_id: str | None = None,
     officer_query: str | None = None,
 ) -> Dict[str, Any]:
-    zones, source_status, recent_rain_impacts = await _weather_and_history(event_start, event_end, zone_id)
-    # #region agent log
-    try:
-        import json as _json
-        open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"D","location":"workflow.py:run_predict_agent","message":"predict inputs","data":{"event_start":event_start,"event_end":event_end,"zone_id":zone_id,"history_status":recent_rain_impacts.get("status"),"zone_profiles":[{"zone_id":item.get("zone_id"),"rain_mm":item.get("event_precipitation_total_mm"),"incidents":item.get("incident_count"),"roads":item.get("blocked_road_reports")} for item in recent_rain_impacts.get("zones") or []],"live_risk":[{"id":z.id,"level":z.risk_level,"rain24":getattr(z.explanation,"rainfall_24h_mm",None)} for z in zones]},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-    except Exception:
-        pass
-    # #endregion
+    zones, source_status, recent_rain_impacts = await _weather_and_history(
+        event_start,
+        event_end,
+        zone_id,
+        include_rule_score=False,
+    )
     prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language, officer_query)
     return {
-        "status": "complete", "agent": "predict", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
+        "status": "complete", "agent": "predict", "provider": "Groq", "model": settings.GROQ_MODEL,
         "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
         "history_selection": {"query": officer_query, "start": event_start, "end": event_end, "zone_id": zone_id},
         "recent_rain_impacts": recent_rain_impacts, "predict": prediction.model_dump(mode="json"),
@@ -546,8 +556,8 @@ async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
 
     return {
         "status": "complete",
-        "provider": "Google Gemini",
-        "model": settings.GEMINI_MODEL,
+        "provider": "Groq + Google Gemini",
+        "model": {"predict": settings.GROQ_MODEL, "prepare": settings.GEMINI_MODEL},
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "risk_zone_count": len(zones),
         "available_unit_count": sum(1 for unit in units if unit.status == "available"),

@@ -126,6 +126,7 @@ def calculate_zone_risk(
     explanation = RiskExplanation(
         rainfall_24h_mm=rainfall_24h,
         max_precipitation_probability=precip_prob_max,
+        wind_max_kmh=wind_max_kmh,
         river_discharge_m3s=river_discharge,
         mean_elevation_m=elevation_m,
         historical_flood_prone=historical_flood,
@@ -133,8 +134,8 @@ def calculate_zone_risk(
     )
     return final_level, explanation
 
-async def compute_real_risk_zones() -> List[RiskZone]:
-    """Derives RiskZones dynamically from live external APIs."""
+async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZone]:
+    """Collect live zone observations, optionally applying the shared map score rules."""
     now_iso = datetime.now(timezone.utc).isoformat()
     risk_zones: List[RiskZone] = []
 
@@ -171,14 +172,26 @@ async def compute_real_risk_zones() -> List[RiskZone]:
         if i < len(elevations) and elevations[i]:
             elev_m = elevations[i].get("elevation")
 
-        risk_level, explanation = calculate_zone_risk(
-            rainfall_24h=rainfall_24h,
-            precip_prob_max=precip_prob_max,
-            wind_max_kmh=wind_max,
-            river_discharge=river_discharge,
-            elevation_m=elev_m,
-            historical_flood=zone_meta["historical_flood_prone"]
-        )
+        if include_rule_score:
+            risk_level, explanation = calculate_zone_risk(
+                rainfall_24h=rainfall_24h,
+                precip_prob_max=precip_prob_max,
+                wind_max_kmh=wind_max,
+                river_discharge=river_discharge,
+                elevation_m=elev_m,
+                historical_flood=zone_meta["historical_flood_prone"]
+            )
+        else:
+            risk_level = None
+            explanation = RiskExplanation(
+                rainfall_24h_mm=rainfall_24h,
+                max_precipitation_probability=precip_prob_max,
+                wind_max_kmh=wind_max,
+                river_discharge_m3s=river_discharge,
+                mean_elevation_m=elev_m,
+                historical_flood_prone=zone_meta["historical_flood_prone"],
+                why_this="Raw live observations only; no weighted map score calculated for Predict.",
+            )
 
         sources = ["Open-Meteo Weather API", "Open-Meteo GloFAS Flood API"]
         if elev_m is not None:

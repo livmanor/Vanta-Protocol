@@ -61,6 +61,7 @@ class BlockedRoadCreate(BaseModel):
 class RiskExplanation(BaseModel):
     rainfall_24h_mm: Optional[float] = None
     max_precipitation_probability: Optional[float] = None
+    wind_max_kmh: Optional[float] = None
     river_discharge_m3s: Optional[float] = None
     mean_elevation_m: Optional[float] = None
     historical_flood_prone: bool = False
@@ -69,7 +70,7 @@ class RiskExplanation(BaseModel):
 class RiskZone(BaseModel):
     id: str
     name: str
-    risk_level: int = Field(ge=1, le=5)
+    risk_level: Optional[int] = Field(default=None, ge=1, le=5)
     polygon: Dict[str, Any]  # GeoJSON Point (hotspot) or Polygon / MultiPolygon
     population: Optional[int] = None
     derived_from: List[str]
