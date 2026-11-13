@@ -56,7 +56,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
     te: { title: 'Groq గుణాత్మక అంచనా · స్థిర స్కోరు లేదు', insufficient_data: 'సరిపడా డేటా లేదు', low: 'తక్కువ', moderate: 'మధ్యస్థం', high: 'ఎక్కువ', severe: 'తీవ్రం' },
   }[language] || {};
 
-  const colors = { cyan: 'border-cyan-700 bg-cyan-950/40 text-cyan-200', amber: 'border-amber-700 bg-amber-950/40 text-amber-200', rose: 'border-rose-700 bg-rose-950/40 text-rose-200' };
+  const colors = { cyan: 'border-neutral-200 bg-neutral-800 text-white', amber: 'border-neutral-200 bg-neutral-800 text-white', rose: 'border-neutral-200 bg-neutral-800 text-white' };
   const dataForConsent = {
     predict: ['This run sends your search question, selected date window, forecast observations, historical rainfall and aggregated impact counts to Groq. Raw incident reports and exact responder locations are excluded.', 'इस रन में आपका खोज प्रश्न, चुनी गई तारीखें, पूर्वानुमान, ऐतिहासिक वर्षा और प्रभावों की कुल संख्या Groq को भेजी जाएगी। मूल रिपोर्ट और सटीक स्थान शामिल नहीं हैं।', 'ఈ రన్‌లో మీ శోధన ప్రశ్న, ఎంచుకున్న తేదీలు, అంచనా, చారిత్రక వర్షపాతం, ప్రభావాల సమగ్ర సంఖ్యలు Groqకి పంపబడతాయి. అసలు నివేదికలు, ఖచ్చితమైన స్థానాలు ఉండవు.'],
     prepare: ['This run sends zone risk, forecast, historical rainfall and aggregated resource-positioning information to Google Gemini. Unit IDs, station names and exact locations are excluded.', 'इस रन में क्षेत्रीय जोखिम, पूर्वानुमान, ऐतिहासिक वर्षा और संसाधन स्थिति का सार Google Gemini को भेजा जाएगा। यूनिट आईडी, स्टेशन नाम और सटीक स्थान शामिल नहीं हैं।', 'ఈ రన్‌లో ప్రాంతీయ ప్రమాదం, అంచనా, చారిత్రక వర్షపాతం, వనరుల స్థితి సమగ్ర వివరాలు Google Geminiకి పంపబడతాయి. యూనిట్ ఐడీలు, స్టేషన్ పేర్లు, ఖచ్చితమైన స్థానాలు ఉండవు.'],
@@ -86,15 +86,15 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
               className={`rounded-xl border p-3 text-left transition ${active ? colors[item.color] : 'border-slate-700 bg-slate-950/70 text-slate-300 hover:border-slate-500'}`}>
               <div className="flex items-center gap-2 font-bold"><Icon className="h-5 w-5" />{item.title[langIndex]}</div>
               <p className="mt-2 text-xs leading-relaxed text-slate-300">{item.goal[langIndex]}</p>
-              <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-white">{results[id] ? (language === 'hi' ? 'परिणाम उपलब्ध' : language === 'te' ? 'ఫలితం సిద్ధం' : 'Result available') : (language === 'hi' ? 'अभी नहीं चलाया' : language === 'te' ? 'ఇంకా నడపలేదు' : 'Not run yet')} {results[id] && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}</div>
+              <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-white">{results[id] ? (language === 'hi' ? 'परिणाम उपलब्ध' : language === 'te' ? 'ఫలితం సిద్ధం' : 'Result available') : (language === 'hi' ? 'अभी नहीं चलाया' : language === 'te' ? 'ఇంకా నడపలేదు' : 'Not run yet')} {results[id] && <CheckCircle2 className="h-3.5 w-3.5 text-neutral-300" />}</div>
             </button>;
           })}
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-700 bg-[#111827]/95 p-4">
+      <section className="rounded-xl border border-slate-700 bg-[#111111]/95 p-4">
         <div className="flex items-center gap-2">
-          <current.icon className={`h-5 w-5 ${selected === 'predict' ? 'text-cyan-300' : selected === 'prepare' ? 'text-amber-300' : 'text-rose-300'}`} />
+          <current.icon className={`h-5 w-5 ${selected === 'predict' ? 'text-neutral-200' : selected === 'prepare' ? 'text-neutral-200' : 'text-neutral-200'}`} />
           <h3 className="text-base font-extrabold text-white">{current.title[langIndex]} · {language === 'hi' ? 'उद्देश्य' : language === 'te' ? 'లక్ష్యం' : 'Goal'}</h3>
         </div>
         <p className="mt-2 leading-relaxed text-slate-200">{current.goal[langIndex]}</p>
@@ -103,9 +103,9 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
           <div className="rounded-lg bg-slate-950/80 p-3"><div className="text-xs font-bold uppercase text-slate-400">{language === 'hi' ? 'आपको क्या मिलेगा' : language === 'te' ? 'మీకు లభించేది' : 'Output'}</div><p className="mt-1 text-xs leading-relaxed text-slate-200">{current.output[langIndex]}</p></div>
         </div>
 
-        {selected === 'predict' && <div className="mt-3 rounded-xl border border-cyan-900/80 bg-slate-950/70 p-3">
+        {selected === 'predict' && <div className="mt-3 rounded-xl border border-neutral-800/80 bg-slate-950/70 p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <div><h4 className="font-bold text-cyan-100">{historyLabels.title}</h4><p className="mt-1 text-xs text-slate-300">{historyLabels.hint}</p></div>
+            <div><h4 className="font-bold text-neutral-50">{historyLabels.title}</h4><p className="mt-1 text-xs text-slate-300">{historyLabels.hint}</p></div>
             {history?.available_from && <span className="rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-300">{historyLabels.coverage}: {history.available_from} – {history.available_through || '—'}</span>}
           </div>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
@@ -149,8 +149,8 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
                   </div>
                 </div>)}
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-amber-200">{historyLabels.source} {historyLabels.records}</p>
-              <p className="mt-2 text-[11px] font-semibold text-cyan-100">{historyLabels.selected}: {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}</p>
+              <p className="mt-2 text-[11px] leading-relaxed text-neutral-100">{historyLabels.source} {historyLabels.records}</p>
+              <p className="mt-2 text-[11px] font-semibold text-neutral-50">{historyLabels.selected}: {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}</p>
             </div>
           </>}
         </div>}
@@ -181,26 +181,26 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             <b className="text-white">{area.zone_name}</b>
             <div className="mt-1 text-slate-200">{language === 'hi' ? 'कुल वर्षा' : language === 'te' ? 'మొత్తం వర్షపాతం' : 'Rain total'}: {area.event_precipitation_total_mm ?? '—'} mm · {language === 'hi' ? 'बाढ़/फँसे लोग' : language === 'te' ? 'వరద/చిక్కుకున్నవారు' : 'Flood/trapped reports'}: {area.incident_count} · {language === 'hi' ? 'सड़क रिपोर्ट' : language === 'te' ? 'రోడ్డు నివేదికలు' : 'Road reports'}: {area.blocked_road_reports}</div>
           </div>)}
-          <p className="text-xs text-amber-200">{language === 'hi' ? 'प्रभावों में केवल इस ऐप में दर्ज रिपोर्टें शामिल हैं; दर्ज नहीं होना, सड़क साफ होने का प्रमाण नहीं है।' : language === 'te' ? 'ప్రభావాల్లో ఈ యాప్‌లో నమోదు చేసిన నివేదికలే ఉంటాయి; నమోదు కాలేదని రోడ్డు స్పష్టంగా ఉందని కాదు.' : selectedResult.recent_rain_impacts?.traffic_data_note}</p>
-          {(selectedResult.predict?.focus_zones || []).map((item, index) => <div key={`${item.zone_id}-${index}`} className="rounded-lg border border-slate-700 bg-slate-950/70 p-3"><b className="text-white">{zoneName(item.zone_id)}</b><p className="mt-1 text-slate-200">{item.observation}</p><p className="mt-1 text-xs text-cyan-100">Officer check: {item.officer_check}</p></div>)}
-          {selectedResult.predict?.data_gaps?.map((gap, index) => <p key={index} className="text-xs text-amber-200">{gap}</p>)}
+          <p className="text-xs text-neutral-100">{language === 'hi' ? 'प्रभावों में केवल इस ऐप में दर्ज रिपोर्टें शामिल हैं; दर्ज नहीं होना, सड़क साफ होने का प्रमाण नहीं है।' : language === 'te' ? 'ప్రభావాల్లో ఈ యాప్‌లో నమోదు చేసిన నివేదికలే ఉంటాయి; నమోదు కాలేదని రోడ్డు స్పష్టంగా ఉందని కాదు.' : selectedResult.recent_rain_impacts?.traffic_data_note}</p>
+          {(selectedResult.predict?.focus_zones || []).map((item, index) => <div key={`${item.zone_id}-${index}`} className="rounded-lg border border-slate-700 bg-slate-950/70 p-3"><b className="text-white">{zoneName(item.zone_id)}</b><p className="mt-1 text-slate-200">{item.observation}</p><p className="mt-1 text-xs text-neutral-50">Officer check: {item.officer_check}</p></div>)}
+          {selectedResult.predict?.data_gaps?.map((gap, index) => <p key={index} className="text-xs text-neutral-100">{gap}</p>)}
         </>}
         {selected === 'prepare' && <>
           <p className="text-slate-100">{selectedResult.prepare?.summary}</p>
-          {(selectedResult.prepare?.readiness_actions || []).map((item, index) => <div key={index} className="rounded-lg border border-amber-900 bg-amber-950/20 p-3"><b className="text-amber-100">{item.zone_id ? zoneName(item.zone_id) : 'City-wide'} · {item.action}</b><p className="mt-1 text-slate-200">{item.reason}</p><p className="mt-1 text-xs text-amber-100">Officer check: {item.officer_check}</p></div>)}
-          {(selectedResult.prepare?.readiness_gaps || []).map((gap, index) => <p key={index} className="text-xs text-amber-200">{gap}</p>)}
-          <button onClick={onReviewPreparation} className="flex items-center gap-1 self-start text-xs font-bold text-amber-300 hover:text-white">Review positioning recommendations <ArrowRight className="h-4 w-4" /></button>
+          {(selectedResult.prepare?.readiness_actions || []).map((item, index) => <div key={index} className="rounded-lg border border-neutral-800 bg-neutral-900/20 p-3"><b className="text-neutral-50">{item.zone_id ? zoneName(item.zone_id) : 'City-wide'} · {item.action}</b><p className="mt-1 text-slate-200">{item.reason}</p><p className="mt-1 text-xs text-neutral-50">Officer check: {item.officer_check}</p></div>)}
+          {(selectedResult.prepare?.readiness_gaps || []).map((gap, index) => <p key={index} className="text-xs text-neutral-100">{gap}</p>)}
+          <button onClick={onReviewPreparation} className="flex items-center gap-1 self-start text-xs font-bold text-neutral-200 hover:text-white">Review positioning recommendations <ArrowRight className="h-4 w-4" /></button>
         </>}
         {selected === 'respond' && <>
-          <div className="rounded-lg border border-rose-900 bg-rose-950/20 p-3"><div className="font-bold text-rose-200">{language === 'hi' ? 'स्थिति सारांश' : language === 'te' ? 'పరిస్థితి సారాంశం' : 'Situation summary'}</div><p className="mt-1 text-slate-100">{selectedResult.respond?.summary}</p></div>
+          <div className="rounded-lg border border-neutral-800 bg-neutral-900/20 p-3"><div className="font-bold text-neutral-100">{language === 'hi' ? 'स्थिति सारांश' : language === 'te' ? 'పరిస్థితి సారాంశం' : 'Situation summary'}</div><p className="mt-1 text-slate-100">{selectedResult.respond?.summary}</p></div>
           <div className="rounded-lg border border-slate-700 bg-slate-950/70 p-3">
             <div className="mb-2 text-xs font-bold uppercase text-slate-400">{language === 'hi' ? 'दर्ज मौजूदा जानकारी' : language === 'te' ? 'నమోదైన ప్రస్తుత సమాచారం' : 'Recorded operational picture'}</div>
             {(selectedResult.operational_context?.active_incident_and_logged_road_closure_counts_by_zone || []).filter(area => area.active_incidents || area.blocked_road_reports || area.risk_level >= 3).map(area => <div key={area.zone_id} className="flex flex-wrap justify-between gap-2 border-b border-slate-800 py-1.5 text-xs last:border-0"><b className="text-white">{area.zone_name}</b><span className="text-slate-200">Risk {area.risk_level} · {language === 'hi' ? 'घटनाएँ' : language === 'te' ? 'ఘటనలు' : 'incidents'} {area.active_incidents} · {language === 'hi' ? 'सड़क बंद रिपोर्ट' : language === 'te' ? 'రోడ్డు మూసివేత నివేదికలు' : 'road closure reports'} {area.blocked_road_reports}</span></div>)}
-            <p className="mt-2 text-xs text-amber-200">{selectedResult.operational_context?.traffic_input_note}</p>
+            <p className="mt-2 text-xs text-neutral-100">{selectedResult.operational_context?.traffic_input_note}</p>
           </div>
-          {(selectedResult.respond?.priorities || []).map((item, index) => <div key={index} className="rounded-lg border border-slate-700 bg-slate-950/70 p-3"><b className="text-white">{item.zone_id ? zoneName(item.zone_id) : 'City-wide'} · {item.situation}</b><ul className="mt-2 list-disc pl-5 text-slate-200">{item.recommended_steps?.map((step, i) => <li key={i}>{step}</li>)}</ul><p className="mt-2 text-xs text-rose-100">Officer check: {item.officer_check}</p></div>)}
-          {(selectedResult.respond?.immediate_checks || []).map((item, index) => <p key={index} className="text-xs text-rose-100">✓ {item}</p>)}
-          {(selectedResult.respond?.data_gaps || []).map((gap, index) => <p key={index} className="text-xs text-amber-200">{gap}</p>)}
+          {(selectedResult.respond?.priorities || []).map((item, index) => <div key={index} className="rounded-lg border border-slate-700 bg-slate-950/70 p-3"><b className="text-white">{item.zone_id ? zoneName(item.zone_id) : 'City-wide'} · {item.situation}</b><ul className="mt-2 list-disc pl-5 text-slate-200">{item.recommended_steps?.map((step, i) => <li key={i}>{step}</li>)}</ul><p className="mt-2 text-xs text-neutral-50">Officer check: {item.officer_check}</p></div>)}
+          {(selectedResult.respond?.immediate_checks || []).map((item, index) => <p key={index} className="text-xs text-neutral-50">✓ {item}</p>)}
+          {(selectedResult.respond?.data_gaps || []).map((gap, index) => <p key={index} className="text-xs text-neutral-100">{gap}</p>)}
         </>}
         {selected === 'prepare' && selectedResult.positioning_recommendations?.length > 0 && <div className="text-xs text-slate-300">{selectedResult.positioning_recommendations.length} deterministic positioning recommendation(s) ready for officer review.</div>}
         <div className="flex items-center gap-1 border-t border-slate-700 pt-2 text-xs text-slate-400"><ShieldCheck className="h-4 w-4" />{language === 'hi' ? 'सुझाव हैं, स्वचालित कार्रवाई नहीं।' : language === 'te' ? 'ఇవి సూచనలు మాత్రమే; స్వయంచాలక చర్యలు కావు.' : 'Recommendations only; no automatic action.'}</div>

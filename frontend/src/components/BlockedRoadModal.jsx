@@ -38,10 +38,10 @@ export default function BlockedRoadModal({ isOpen, onClose, onReport }) {
 
   return (
     <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111827] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
+      <div className="bg-[#111111] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex items-center gap-2">
-            <AlertOctagon className="w-4 h-4 text-amber-500" />
+            <AlertOctagon className="w-4 h-4 text-neutral-400" />
             <h3 className="font-bold text-white text-sm">Report Road Blockage / Diversion</h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
@@ -57,7 +57,7 @@ export default function BlockedRoadModal({ isOpen, onClose, onReport }) {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-amber-500"
+              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
             />
           </div>
 
@@ -68,7 +68,7 @@ export default function BlockedRoadModal({ isOpen, onClose, onReport }) {
               required
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-amber-500"
+              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
             />
           </div>
 
@@ -127,7 +127,7 @@ export default function BlockedRoadModal({ isOpen, onClose, onReport }) {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded font-semibold transition disabled:opacity-50"
+              className="bg-white text-black hover:bg-neutral-200 px-4 py-2 rounded font-semibold transition disabled:opacity-50"
             >
               {submitting ? 'Submitting...' : 'Register Road Diversion'}
             </button>

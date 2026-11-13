@@ -21,13 +21,13 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
   };
 
   return (
-    <div className="bg-[#111827]/95 backdrop-blur border border-gray-800 rounded-xl p-4 text-xs shadow-2xl flex flex-col gap-3">
+    <div className="bg-[#111111]/95 backdrop-blur border border-gray-800 rounded-xl p-4 text-xs shadow-2xl flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Compass className="w-4 h-4 text-amber-400" />
+          <Compass className="w-4 h-4 text-neutral-300" />
           <span className="font-bold text-white text-sm">{words[0]}</span>
         </div>
-        <span className="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800 text-[10px] font-semibold">
+        <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-300 border border-neutral-700 text-[10px] font-semibold">
           {words[1]}
         </span>
       </div>
@@ -39,25 +39,25 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
       {suggestions && suggestions.length > 0 ? (
         <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto pr-1">
           {suggestions.map((s) => (
-            <div 
+            <div
               key={s.id}
               className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex flex-col gap-2 hover:border-gray-700 transition"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    s.unit_kind === 'rescue_boat' 
-                      ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' 
+                    s.unit_kind === 'rescue_boat'
+                      ? 'bg-neutral-900 text-neutral-300 border border-neutral-700'
                       : s.unit_kind === 'ambulance'
-                      ? 'bg-rose-950 text-rose-400 border border-rose-800'
-                      : 'bg-blue-950 text-blue-400 border border-blue-800'
+                      ? 'bg-neutral-900 text-neutral-300 border border-neutral-700'
+                      : 'bg-neutral-900 text-neutral-300 border border-neutral-700'
                   }`}>
                     {s.unit_kind.replace('_', ' ')}
                   </span>
                   <span className="font-bold text-white text-xs">{s.unit_id}</span>
                 </div>
                 <div className="text-[10px] text-gray-400 font-mono">
-                  ETA: <span className="text-amber-400 font-bold">{s.eta_minutes} min</span> ({s.distance_km} km)
+                  ETA: <span className="text-neutral-300 font-bold">{s.eta_minutes} min</span> ({s.distance_km} km)
                 </div>
               </div>
 
@@ -65,7 +65,7 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
                 <span className="text-gray-400">{s.station}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
                 <span className="font-semibold text-white">{s.target_zone_name}</span>
-                <span className="ml-auto text-amber-400 font-bold">Lvl {s.risk_level}</span>
+                <span className="ml-auto text-neutral-300 font-bold">Lvl {s.risk_level}</span>
               </div>
 
               <div className="bg-gray-950/50 p-2 rounded text-[10px] text-gray-400">
@@ -76,7 +76,7 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
               <button
                 onClick={() => handleApprove(s)}
                 disabled={approvingId === s.id}
-                className="w-full mt-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-1.5 px-3 rounded flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+                className="w-full mt-1 bg-white text-black hover:bg-neutral-200 font-semibold py-1.5 px-3 rounded flex items-center justify-center gap-1.5 transition disabled:opacity-50"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>{approvingId === s.id ? words[6] : words[5]}</span>
