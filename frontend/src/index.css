@@ -2,73 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════
+   Vanta Protocol – Light Admin Design System
+   Inspired by the Shopster reference theme:
+   white cards · #f5f6f8 canvas · indigo-600 accent
+═══════════════════════════════════════════════════════ */
 :root {
-  /* ── Vanta design tokens (monochrome) ──────────────── */
-  --vanta-bg: #050505;            /* app background            */
-  --vanta-panel: #0d0d0d;         /* raised panels             */
-  --vanta-panel-2: #141414;       /* cards / elevated          */
-  --vanta-border: #262626;        /* hairline borders          */
-  --vanta-border-hi: #404040;     /* hover borders             */
-  --vanta-text: #f5f5f5;          /* primary text              */
-  --vanta-text-dim: #a3a3a3;      /* secondary text            */
-  --vanta-text-faint: #6b6b6b;    /* tertiary text             */
+  --vp-bg:          #f5f6f8;   /* page canvas             */
+  --vp-surface:     #ffffff;   /* cards / panels          */
+  --vp-surface-2:   #f9fafb;   /* inner recessed areas    */
+  --vp-border:      #e5e7eb;   /* default border          */
+  --vp-border-hi:   #d1d5db;   /* hover / focus border    */
+  --vp-text:        #111827;   /* primary text            */
+  --vp-text-2:      #374151;   /* secondary text          */
+  --vp-text-muted:  #6b7280;   /* muted / labels          */
+  --vp-text-faint:  #9ca3af;   /* placeholders            */
 
-  --vanta-predict: #ffffff;       /* PREDICT  agent            */
-  --vanta-prepare: #d4d4d4;       /* PREPARE  agent            */
-  --vanta-respond: #a3a3a3;       /* RESPOND  agent            */
-  --vanta-ok: #ffffff;
-  --vanta-danger: #ffffff;
+  --vp-accent:      #4f46e5;   /* indigo-600 primary      */
+  --vp-accent-bg:   #eef2ff;   /* indigo-50 tint          */
+  --vp-accent-text: #4f46e5;
 
-  --vanta-radius: 10px;
+  --vp-green:       #16a34a;
+  --vp-green-bg:    #dcfce7;
+  --vp-amber:       #d97706;
+  --vp-amber-bg:    #fef3c7;
+  --vp-red:         #dc2626;
+  --vp-red-bg:      #fee2e2;
+
+  --vp-radius:      10px;
+  --vp-shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --vp-shadow-md:   0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+  --vp-shadow-lg:   0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
 }
-
-/* Light operations dashboard palette inspired by the supplied admin reference. */
-.vanta-light {
-  --vanta-bg: #f5f6f8;
-  --vanta-panel: #ffffff;
-  --vanta-panel-2: #ffffff;
-  --vanta-border: #e5e7eb;
-  --vanta-border-hi: #cbd5e1;
-  --vanta-text: #172033;
-  --vanta-text-dim: #64748b;
-  --vanta-text-faint: #94a3b8;
-  color: #172033;
-}
-.vanta-light .bg-slate-950,
-.vanta-light .bg-slate-950\/70,
-.vanta-light .bg-slate-950\/80,
-.vanta-light .bg-slate-900,
-.vanta-light .bg-slate-900\/70,
-.vanta-light .bg-slate-900\/80,
-.vanta-light .bg-slate-900\/95,
-.vanta-light .bg-\[\#111827\]\/95 { background-color: #fff !important; }
-.vanta-light .border-slate-700,
-.vanta-light .border-slate-800,
-.vanta-light .border-slate-600 { border-color: #e5e7eb !important; }
-.vanta-light .text-white { color: #172033 !important; }
-.vanta-light .text-slate-100,
-.vanta-light .text-slate-200 { color: #334155 !important; }
-.vanta-light .text-slate-300 { color: #475569 !important; }
-.vanta-light .text-slate-400,
-.vanta-light .text-slate-500 { color: #64748b !important; }
-.vanta-light .placeholder\:text-slate-500::placeholder { color: #94a3b8 !important; }
-.vanta-light .hover\:bg-slate-800:hover,
-.vanta-light .hover\:bg-white\/5:hover { background-color: #f1f5f9 !important; }
-.vanta-light .v-panel,
-.vanta-light .v-card { background: #fff; border-color: #e5e7eb; box-shadow: 0 1px 2px rgba(15, 23, 42, .035); }
-.vanta-light input:not([type=checkbox]),
-.vanta-light select,
-.vanta-light textarea { color: #172033; }
-.vanta-light ::-webkit-scrollbar-thumb { background: #cbd5e1; border-color: #f5f6f8; }
-.vanta-light .v-card-hover:hover { border-color: #c7d2fe; box-shadow: 0 4px 14px rgba(15, 23, 42, .06); }
 
 html, body, #root {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: var(--vanta-bg);
-  color: var(--vanta-text);
+  background-color: var(--vp-bg);
+  color: var(--vp-text);
 }
 
 body {
@@ -76,97 +49,185 @@ body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: "tnum" 1; /* tabular numerals for metrics */
+  font-feature-settings: "tnum" 1;
 }
 
 button, input, select, textarea { font: inherit; }
 
-/* ── Scrollbars ────────────────────────────────────── */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+/* ── Scrollbars ─────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #2e2e2e;
-  border-radius: 4px;
-  border: 2px solid var(--vanta-bg);
+  background: #d1d5db;
+  border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
-/* ── Reusable primitives ───────────────────────────── */
-.v-panel {
-  background: var(--vanta-panel);
-  border: 1px solid var(--vanta-border);
-  border-radius: var(--vanta-radius);
+/* ── Core primitives ────────────────────── */
+.vp-panel {
+  background: var(--vp-surface);
+  border: 1px solid var(--vp-border);
+  border-radius: var(--vp-radius);
+  box-shadow: var(--vp-shadow);
 }
-.v-card {
-  background: linear-gradient(180deg, var(--vanta-panel-2) 0%, var(--vanta-panel) 100%);
-  border: 1px solid var(--vanta-border);
-  border-radius: var(--vanta-radius);
+.vp-card {
+  background: var(--vp-surface);
+  border: 1px solid var(--vp-border);
+  border-radius: var(--vp-radius);
+  box-shadow: var(--vp-shadow);
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
-.v-card-hover:hover { border-color: var(--vanta-border-hi); }
+.vp-card:hover {
+  border-color: var(--vp-border-hi);
+  box-shadow: var(--vp-shadow-md);
+}
+.vp-card-active {
+  border-color: var(--vp-accent);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+}
 
-/* Ambient scanline for the command bar */
-.v-scanbar {
-  background:
-    linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 40%),
-    var(--vanta-panel);
+/* ── Section label ──────────────────────── */
+.vp-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vp-text-muted);
 }
 
-/* Mono digits for ETAs / metrics */
-.v-mono {
+/* ── Badge helpers ──────────────────────── */
+.vp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.vp-badge-green  { background: var(--vp-green-bg);  color: var(--vp-green);  }
+.vp-badge-amber  { background: var(--vp-amber-bg);  color: var(--vp-amber);  }
+.vp-badge-red    { background: var(--vp-red-bg);    color: var(--vp-red);    }
+.vp-badge-gray   { background: #f3f4f6; color: var(--vp-text-muted); }
+.vp-badge-indigo { background: var(--vp-accent-bg); color: var(--vp-accent); }
+
+/* ── Mono digits ────────────────────────── */
+.vp-mono {
   font-family: "JetBrains Mono", "Cascadia Mono", ui-monospace, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* Status dot with pulse ring */
-.v-dot { position: relative; }
-.v-dot::after {
+/* ── Status dot with pulse ──────────────── */
+.vp-dot { position: relative; }
+.vp-dot::after {
   content: "";
   position: absolute;
   inset: -3px;
   border-radius: 9999px;
   border: 1px solid currentColor;
   opacity: 0.4;
-  animation: v-pulse 2s ease-out infinite;
+  animation: vp-pulse 2s ease-out infinite;
 }
-@keyframes v-pulse {
+@keyframes vp-pulse {
   0%   { transform: scale(0.6); opacity: 0.5; }
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-/* Section label */
-.v-label {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--vanta-text-faint);
-  font-weight: 700;
-}
-
-/* Fade-in for view swaps */
-.v-view-enter { animation: v-fade 220ms ease-out; }
-@keyframes v-fade {
-  from { opacity: 0; transform: translateY(4px); }
+/* ── View fade-in ───────────────────────── */
+.vp-enter { animation: vp-fade 180ms ease-out; }
+@keyframes vp-fade {
+  from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: none; }
 }
 
-/* Small screens: stack the map and dock vertically */
-@media (max-width: 900px) {
-  body { font-size: 13px; }
+/* ── Input / Select base ────────────────── */
+.vp-input {
+  background: var(--vp-surface);
+  border: 1px solid var(--vp-border);
+  border-radius: 8px;
+  color: var(--vp-text);
+  padding: 7px 11px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.vp-input:focus {
+  border-color: var(--vp-accent);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+}
+.vp-input::placeholder { color: var(--vp-text-faint); }
+
+/* ── Button variants ────────────────────── */
+.vp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+  border: none;
+  outline: none;
+}
+.vp-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.vp-btn-primary { background: var(--vp-accent); color: #fff; box-shadow: 0 1px 3px rgba(79,70,229,0.3); }
+.vp-btn-primary:hover:not(:disabled) { background: #4338ca; }
+.vp-btn-ghost { background: transparent; color: var(--vp-text-2); border: 1px solid var(--vp-border); }
+.vp-btn-ghost:hover:not(:disabled) { background: #f3f4f6; }
+.vp-btn-danger { background: var(--vp-red-bg); color: var(--vp-red); border: 1px solid #fecaca; }
+.vp-btn-danger:hover:not(:disabled) { background: #fee2e2; }
+
+/* ── Tab underline style ────────────────── */
+.vp-tab {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vp-text-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  white-space: nowrap;
+}
+.vp-tab:hover { color: var(--vp-text-2); }
+.vp-tab-active {
+  color: var(--vp-accent);
+  border-bottom-color: var(--vp-accent);
+  font-weight: 600;
 }
 
-/* Leaflet desaturated theme map overrides (pure black & white) */
+/* ── Leaflet map — natural color palette ── */
 .leaflet-container {
-  background-color: #0a0a0a !important;
+  background-color: #e8edf2 !important;
   font-family: inherit;
 }
 .leaflet-tile {
-  filter: brightness(0.55) invert(1) contrast(2.2) saturate(0) brightness(0.85);
+  /* natural color — no dark filter */
+  filter: saturate(0.85) brightness(1.02);
 }
 .leaflet-popup-content-wrapper {
-  background: var(--vanta-panel) !important;
-  color: var(--vanta-text) !important;
-  border: 1px solid var(--vanta-border);
-  border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+  background: var(--vp-surface) !important;
+  color: var(--vp-text) !important;
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  box-shadow: var(--vp-shadow-lg);
 }
-.leaflet-popup-tip { background: var(--vanta-panel) !important; }
+.leaflet-popup-tip { background: var(--vp-surface) !important; }
+
+/* Legacy compat — keep old class names working during transition */
+.v-panel { background: var(--vp-surface); border: 1px solid var(--vp-border); border-radius: var(--vp-radius); }
+.v-card  { background: var(--vp-surface); border: 1px solid var(--vp-border); border-radius: var(--vp-radius); box-shadow: var(--vp-shadow); }
+.v-card-hover:hover { border-color: var(--vp-border-hi); box-shadow: var(--vp-shadow-md); }
+.v-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--vp-text-muted); }
+.v-mono  { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.v-scanbar { background: var(--vp-surface); }
+.v-dot  { position: relative; }
+.v-dot::after { content: ""; position: absolute; inset: -3px; border-radius: 9999px; border: 1px solid currentColor; opacity: 0.4; animation: vp-pulse 2s ease-out infinite; }
+.v-view-enter { animation: vp-fade 180ms ease-out; }
+.vanta-light { /* no-op — light is now default */ }
