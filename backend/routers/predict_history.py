@@ -116,8 +116,8 @@ async def run_predict_for_selected_history(selection: PredictHistoryRun):
         raise HTTPException(status_code=422, detail="Choose a completed historical event.")
     if selection.event_start < today - timedelta(days=1825):
         raise HTTPException(status_code=422, detail="Choose an event from the available five-year history.")
-    if (selection.event_end - selection.event_start).days > 14:
-        raise HTTPException(status_code=422, detail="A selected rainfall event cannot exceed 14 days.")
+    if (selection.event_end - selection.event_start).days > 90:
+        raise HTTPException(status_code=422, detail="A selected rainfall event window cannot exceed 90 days.")
     if selection.zone_id and selection.zone_id not in {zone["id"] for zone in REAL_ZONES_METADATA}:
         raise HTTPException(status_code=422, detail="Choose one of the mapped Hyderabad hotspots.")
 

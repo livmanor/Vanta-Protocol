@@ -1,11 +1,12 @@
 import asyncio
 import json
+import logging
 import math
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from backend.agents.gemini import generate_structured
+from backend.agents.gemini import generate_structured, AgentProviderError
 from backend.agents.groq import generate_structured as generate_groq_structured
 from backend.agents.schemas import PredictAgentOutput, PrepareAgentOutput, RespondAgentOutput
 from backend.config import settings
@@ -16,6 +17,8 @@ from backend.db import fetch_units, fetch_incidents, fetch_blocked_roads
 from backend.data_sources.elevation import get_real_elevations
 from backend.data_sources.open_meteo import get_real_river_discharge, get_real_weather_forecast, get_recent_historical_rain
 from backend.services.risk_engine import REAL_ZONES_METADATA
+
+logger = logging.getLogger("vanta.agents.workflow")
 
 
 def _zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, Any]:
@@ -490,8 +493,9 @@ async def run_predict_agent(
         include_rule_score=False,
     )
     prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language, officer_query)
+    predict_provider = prediction.__dict__.get("_provider_used", settings.GROQ_MODEL)
     return {
-        "status": "complete", "agent": "predict", "provider": "Groq", "model": settings.GROQ_MODEL,
+        "status": "complete", "agent": "predict", "provider": predict_provider, "model": predict_provider,
         "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
         "history_selection": {"query": officer_query, "start": event_start, "end": event_end, "zone_id": zone_id},
         "recent_rain_impacts": recent_rain_impacts, "predict": prediction.model_dump(mode="json"),
@@ -559,24 +563,32 @@ async def run_respond_agent(language: str = "en") -> Dict[str, Any]:
 
 
 async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
-    """Run the deterministic risk/preposition tools, then Gemini's bounded analyses."""
-    zones = await compute_real_risk_zones()
-    units = await fetch_units()
-    suggestions = generate_prepositioning_suggestions(units, zones)
+    """Run the deterministic risk/preposition tools, then the bounded LLM analyses in parallel."""
+    # PrepareAgent needs the weighted map score; PredictAgent must NOT receive it.
+    predict_zones, prepare_zones, units = await asyncio.gather(
+        compute_real_risk_zones(include_rule_score=False),
+        compute_real_risk_zones(include_rule_score=True),
+        fetch_units(),
+    )
+    suggestions = generate_prepositioning_suggestions(units, prepare_zones)
     source_status = await _collect_source_status()
-    recent_rain_impacts = await _collect_recent_rain_impacts(zones)
+    recent_rain_impacts = await _collect_recent_rain_impacts(predict_zones)
 
     predict_agent = PredictAgent()
     prepare_agent = PrepareAgent()
-    prediction = await predict_agent.run(zones, source_status, recent_rain_impacts, language)
-    preparation = await prepare_agent.run(zones, suggestions, source_status, recent_rain_impacts, language)
+    # Run both agents in parallel — they are independent of each other
+    prediction, preparation = await asyncio.gather(
+        predict_agent.run(predict_zones, source_status, recent_rain_impacts, language),
+        prepare_agent.run(prepare_zones, suggestions, source_status, recent_rain_impacts, language),
+    )
 
+    predict_provider = prediction.__dict__.get("_provider_used", settings.GROQ_MODEL)
     return {
         "status": "complete",
-        "provider": "Groq + Google Gemini",
-        "model": {"predict": settings.GROQ_MODEL, "prepare": settings.GEMINI_MODEL},
+        "provider": f"{predict_provider} + Google Gemini",
+        "model": {"predict": predict_provider, "prepare": settings.GEMINI_MODEL},
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "risk_zone_count": len(zones),
+        "risk_zone_count": len(predict_zones),
         "available_unit_count": sum(1 for unit in units if unit.status == "available"),
         "recent_rain_impacts": recent_rain_impacts,
         "predict": prediction.model_dump(mode="json"),
