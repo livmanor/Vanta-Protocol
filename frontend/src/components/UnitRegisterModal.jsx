@@ -4,9 +4,9 @@ import { Shield, X, MapPin, Navigation } from 'lucide-react';
 export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
   const [unitId, setUnitId] = useState('');
   const [kind, setKind] = useState('patrol');
-  const [station, setStation] = useState('Mylapore Police Station');
-  const [lat, setLat] = useState('13.033');
-  const [lng, setLng] = useState('80.267');
+  const [station, setStation] = useState('Banjara Hills Police Station');
+  const [lat, setLat] = useState('17.4115');
+  const [lng, setLng] = useState('78.4353');
   const [capacity, setCapacity] = useState(4);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -54,37 +54,42 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111111] border border-gray-800 rounded-xl w-full max-w-md p-5 text-xs shadow-2xl flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-neutral-300" />
-            <h3 className="font-bold text-white text-sm">Register Emergency Unit</h3>
+    <div className="fixed inset-0 z-[1000] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 text-xs shadow-2xl flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Shield className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-sm">Register Emergency Unit</h3>
+              <p className="text-[11px] text-slate-400">Hyderabad Patrol & Rescue Roster</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <div>
-            <label className="text-gray-400 font-medium">Unit Identifier (e.g. PATROL-104)</label>
+            <label className="text-slate-700 font-bold text-xs">Unit Identifier (e.g. PATROL-104)</label>
             <input
               type="text"
               placeholder="Auto-generated if blank"
               value={unitId}
               onChange={(e) => setUnitId(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
+              className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-gray-400 font-medium">Unit Asset Kind</label>
+              <label className="text-slate-700 font-bold text-xs">Unit Asset Kind</label>
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
+                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
               >
                 <option value="patrol">Patrol Vehicle</option>
                 <option value="rescue_boat">Rescue Boat (NDRF/SDRF)</option>
@@ -93,40 +98,40 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
             </div>
 
             <div>
-              <label className="text-gray-400 font-medium">Capacity (Personnel)</label>
+              <label className="text-slate-700 font-bold text-xs">Capacity (Personnel)</label>
               <input
                 type="number"
                 min="1"
                 max="20"
                 value={capacity}
                 onChange={(e) => setCapacity(e.target.value)}
-                className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
+                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-gray-400 font-medium">Station / Base Deployment</label>
+            <label className="text-slate-700 font-bold text-xs">Station / Base Deployment</label>
             <input
               type="text"
               required
               value={station}
               onChange={(e) => setStation(e.target.value)}
-              className="w-full mt-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white outline-none focus:border-neutral-400"
+              className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
             />
           </div>
 
-          <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-800 flex flex-col gap-2">
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-gray-300 font-semibold flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-neutral-300" />
-                Live Coordinates
+              <span className="text-slate-700 font-bold text-xs flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+                Base Coordinates
               </span>
               <button
                 type="button"
                 onClick={handleGetLocation}
                 disabled={gettingLocation}
-                className="text-[10px] bg-neutral-900 text-neutral-300 border border-neutral-700 hover:bg-neutral-800 px-2 py-0.5 rounded flex items-center gap-1 transition"
+                className="text-[10px] font-bold bg-white text-indigo-600 border border-slate-200 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-xs"
               >
                 <Navigation className={`w-3 h-3 ${gettingLocation ? 'animate-spin' : ''}`} />
                 <span>{gettingLocation ? 'Detecting...' : 'Use Device GPS'}</span>
@@ -135,42 +140,42 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-gray-500">Latitude</label>
+                <label className="text-[10px] text-slate-400 font-medium">Latitude</label>
                 <input
                   type="number"
                   step="0.0001"
                   required
                   value={lat}
                   onChange={(e) => setLat(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-indigo-500 text-xs font-mono"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500">Longitude</label>
+                <label className="text-[10px] text-slate-400 font-medium">Longitude</label>
                 <input
                   type="number"
                   step="0.0001"
                   required
                   value={lng}
                   onChange={(e) => setLng(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-white outline-none focus:border-neutral-400 text-xs font-mono"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-indigo-500 text-xs font-mono"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-2">
+          <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded font-medium transition"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="bg-white text-black hover:bg-neutral-200 px-4 py-2 rounded font-semibold transition disabled:opacity-50"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-extrabold transition disabled:opacity-50 shadow-sm text-xs"
             >
               {submitting ? 'Registering...' : 'Confirm Registration'}
             </button>
@@ -180,4 +185,3 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
     </div>
   );
 }
-
