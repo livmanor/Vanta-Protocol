@@ -42,7 +42,10 @@ export async function searchPredictHistory(query) {
 }
 
 export async function runAgent(agentId, confirmGoogleProcessing, language = 'en', inputs = {}) {
-  const endpoint = agentId === 'predict' ? `${API_BASE}/agents/predict/run` : `${API_BASE}/agents/run/${agentId}`;
+  const hasHistoryDates = Boolean(inputs.event_start && inputs.event_end);
+  const endpoint = agentId === 'predict' && hasHistoryDates
+    ? `${API_BASE}/agents/predict/run`
+    : `${API_BASE}/agents/run/${agentId}`;
   const approval = agentId === 'predict'
     ? { confirm_groq_processing: confirmGoogleProcessing }
     : { confirm_google_processing: confirmGoogleProcessing };

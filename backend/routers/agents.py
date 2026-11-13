@@ -14,6 +14,7 @@ class AgentRunApproval(BaseModel):
     confirm_google_processing: bool = False
     confirm_groq_processing: bool = False
     language: Literal["en", "hi", "te"] = "en"
+    officer_query: Optional[str] = None
 
 
 @router.get("/status")
