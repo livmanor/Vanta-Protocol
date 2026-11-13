@@ -17,15 +17,15 @@ export default function SourceStatusBar({ sources = [], onRefresh, loading }) {
   const pillFor = (source) => {
     const status = (source.status || '').toLowerCase();
     const map = {
-      live: { cls: 'bg-white text-black border border-white font-bold', Icon: CheckCircle2, label: copy[2] },
-      stale: { cls: 'text-neutral-200 border border-neutral-600 border-dashed bg-transparent', Icon: AlertTriangle, label: copy[3] },
-      unreachable: { cls: 'text-neutral-400 border border-neutral-800 bg-transparent line-through decoration-neutral-600', Icon: XCircle, label: copy[4] },
-    }[status] || { cls: 'text-slate-400 border-slate-700 bg-slate-900/40', Icon: XCircle, label: status || copy[3] };
+      live: { cls: 'bg-gray-100 text-gray-900 border-gray-200 font-bold', Icon: CheckCircle2, label: copy[2] },
+      stale: { cls: 'text-gray-800 border border-gray-300 border-dashed bg-transparent', Icon: AlertTriangle, label: copy[3] },
+      unreachable: { cls: 'text-gray-600 border border-gray-200 bg-transparent line-through decoration-gray-400', Icon: XCircle, label: copy[4] },
+    }[status] || { cls: 'text-gray-600 border-gray-200 bg-gray-100/40', Icon: XCircle, label: status || copy[3] };
 
     return (
       <div key={source.name} className={`flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-md border text-[10.5px] font-semibold whitespace-nowrap ${map.cls}`}>
         <map.Icon className="w-3 h-3 shrink-0" />
-        <span className="text-slate-200 font-medium">{source.name}</span>
+        <span className="text-gray-800 font-medium">{source.name}</span>
         <span className="uppercase tracking-wider">{map.label}</span>
         {source.updated_at && (
           <span className="v-mono font-normal opacity-60">
@@ -41,24 +41,24 @@ export default function SourceStatusBar({ sources = [], onRefresh, loading }) {
       {/* Summary chip */}
       <div className="flex items-center gap-2 shrink-0">
         <span
-          className={`w-2 h-2 rounded-full ${allOk ? 'bg-neutral-300 v-dot' : 'bg-neutral-300'}`}
+          className={`w-2 h-2 rounded-full ${allOk ? 'bg-gray-50 v-dot' : 'bg-gray-50'}`}
           style={allOk ? { color: '#ffffff' } : { color: '#a3a3a3' }}
         />
-        <span className="text-[11px] font-bold tracking-widest text-slate-200">{copy[0].toUpperCase()}</span>
+        <span className="text-[11px] font-bold tracking-widest text-gray-800">{copy[0].toUpperCase()}</span>
         <span className="v-mono text-[10.5px]" style={{ color: 'var(--vanta-text-faint)' }}>
           {live}/{sources.length || '–'} {copy[2]}
         </span>
       </div>
 
-      <div className="h-4 w-px bg-slate-800 shrink-0" />
+      <div className="h-4 w-px bg-gray-50 shrink-0" />
 
-      {sources.length === 0 && <span className="text-[11px] text-slate-500">{copy[1]}</span>}
+      {sources.length === 0 && <span className="text-[11px] text-gray-500">{copy[1]}</span>}
       {sources.map((s) => pillFor(s))}
 
       <button
         onClick={onRefresh}
         disabled={loading}
-        className="ml-auto shrink-0 flex items-center gap-1.5 text-[11px] text-neutral-300 hover:text-neutral-200 transition disabled:opacity-40"
+        className="ml-auto shrink-0 flex items-center gap-1.5 text-[11px] text-gray-700 hover:text-gray-800 transition disabled:opacity-40"
       >
         <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
         Refresh

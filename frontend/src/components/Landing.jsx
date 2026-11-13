@@ -19,7 +19,7 @@ export default function Landing({ onEnter }) {
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+            'linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)',
           backgroundSize: '56px 56px',
           maskImage: 'radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)',
           WebkitMaskImage: 'radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)',
@@ -29,10 +29,10 @@ export default function Landing({ onEnter }) {
       {/* Top bar */}
       <header className="relative flex items-center justify-between px-6 h-16 border-b shrink-0" style={{ borderColor: 'var(--vanta-border)' }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-            <Siren className="w-4.5 h-4.5 text-black" />
+          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+            <Siren className="w-4.5 h-4.5 text-white" />
           </div>
-          <div className="font-extrabold tracking-[0.25em] text-white text-[12px]">VANTA PROTOCOL</div>
+          <div className="font-extrabold tracking-[0.25em] text-gray-900 text-[12px]">VANTA PROTOCOL</div>
         </div>
         <div className="flex items-center gap-3">
           <div
@@ -46,7 +46,7 @@ export default function Landing({ onEnter }) {
                 onClick={() => setLanguage(code)}
                 aria-pressed={language === code}
                 className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${
-                  language === code ? 'bg-white text-black' : 'text-neutral-400 hover:bg-neutral-800'
+                  language === code ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 {label}
@@ -60,7 +60,7 @@ export default function Landing({ onEnter }) {
       <main className="relative flex-1 overflow-y-auto flex items-center justify-center px-6">
         <div className="w-full max-w-3xl py-10 flex flex-col items-center text-center">
           <div className="v-label mb-5">{t('landingKicker')}</div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.05]">
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 leading-[1.05]">
             {t('landingTitle')}
           </h1>
           <p className="mt-5 max-w-xl text-[14px] leading-relaxed" style={{ color: 'var(--vanta-text-dim)' }}>
@@ -69,7 +69,7 @@ export default function Landing({ onEnter }) {
 
           <button
             onClick={onEnter}
-            className="group mt-9 inline-flex items-center gap-2.5 rounded-xl bg-white text-black px-7 py-3.5 text-sm font-extrabold tracking-wide shadow-xl shadow-black/60 hover:bg-neutral-200 transition"
+            className="group mt-9 inline-flex items-center gap-2.5 rounded-xl bg-gray-900 text-white px-7 py-3.5 text-sm font-extrabold tracking-wide shadow-xl shadow-gray-400/60 hover:bg-gray-50 transition"
           >
             {t('enterApp')}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
@@ -86,10 +86,10 @@ export default function Landing({ onEnter }) {
             {agents.map(({ id, Icon, step, desc }) => (
               <div key={id} className="v-card v-card-hover p-4 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <Icon className="w-4.5 h-4.5 text-white" />
+                  <Icon className="w-4.5 h-4.5 text-gray-900" />
                   <span className="v-mono text-[10px] tracking-widest" style={{ color: 'var(--vanta-text-faint)' }}>{step}</span>
                 </div>
-                <div className="font-extrabold text-white text-[13px] uppercase tracking-wider">{t(id)}</div>
+                <div className="font-extrabold text-gray-900 text-[13px] uppercase tracking-wider">{t(id)}</div>
                 <p className="text-[11px] leading-relaxed" style={{ color: 'var(--vanta-text-dim)' }}>{desc}</p>
               </div>
             ))}

@@ -21,19 +21,19 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
   };
 
   return (
-    <div className="bg-[#111111]/95 backdrop-blur border border-gray-800 rounded-xl p-4 text-xs shadow-2xl flex flex-col gap-3">
+    <div className="bg-white/95 backdrop-blur border border-gray-200 rounded-xl p-4 text-xs shadow-2xl flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Compass className="w-4 h-4 text-neutral-300" />
-          <span className="font-bold text-white text-sm">{words[0]}</span>
+          <Compass className="w-4 h-4 text-gray-700" />
+          <span className="font-bold text-gray-900 text-sm">{words[0]}</span>
         </div>
-        <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-300 border border-neutral-700 text-[10px] font-semibold">
+        <span className="px-1.5 py-0.5 rounded bg-gray-100/80 text-gray-700 border border-gray-200 text-[10px] font-semibold">
           {words[1]}
         </span>
       </div>
 
-      <div className="text-gray-400 text-[11px] leading-relaxed">
-        {words[2]} <strong className="text-gray-100">{words[3]}</strong>
+      <div className="text-gray-600 text-[11px] leading-relaxed">
+        {words[2]} <strong className="text-gray-800">{words[3]}</strong>
       </div>
 
       {suggestions && suggestions.length > 0 ? (
@@ -41,42 +41,42 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
           {suggestions.map((s) => (
             <div 
               key={s.id}
-              className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex flex-col gap-2 hover:border-gray-700 transition"
+              className="bg-gray-100/80 border border-gray-200 rounded-lg p-3 flex flex-col gap-2 hover:border-gray-200 transition"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                     s.unit_kind === 'rescue_boat' 
-                      ? 'bg-neutral-900 text-neutral-300 border border-neutral-700' 
+                      ? 'bg-gray-100 text-gray-700 border border-gray-200' 
                       : s.unit_kind === 'ambulance'
-                      ? 'bg-neutral-900 text-neutral-300 border border-neutral-700'
-                      : 'bg-neutral-900 text-neutral-300 border border-neutral-700'
+                      ? 'bg-gray-100 text-gray-700 border border-gray-200'
+                      : 'bg-gray-100 text-gray-700 border border-gray-200'
                   }`}>
                     {s.unit_kind.replace('_', ' ')}
                   </span>
-                  <span className="font-bold text-white text-xs">{s.unit_id}</span>
+                  <span className="font-bold text-gray-900 text-xs">{s.unit_id}</span>
                 </div>
-                <div className="text-[10px] text-gray-400 font-mono">
-                  ETA: <span className="text-neutral-300 font-bold">{s.eta_minutes} min</span> ({s.distance_km} km)
+                <div className="text-[10px] text-gray-600 font-mono">
+                  ETA: <span className="text-gray-700 font-bold">{s.eta_minutes} min</span> ({s.distance_km} km)
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-gray-300">
-                <span className="text-gray-400">{s.station}</span>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span className="text-gray-600">{s.station}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
-                <span className="font-semibold text-white">{s.target_zone_name}</span>
-                <span className="ml-auto text-neutral-300 font-bold">Lvl {s.risk_level}</span>
+                <span className="font-semibold text-gray-900">{s.target_zone_name}</span>
+                <span className="ml-auto text-gray-700 font-bold">Lvl {s.risk_level}</span>
               </div>
 
-              <div className="bg-gray-950/50 p-2 rounded text-[10px] text-gray-400">
-                <span className="text-gray-200 font-semibold">{words[4]} </span>
+              <div className="bg-gray-100/50 p-2 rounded text-[10px] text-gray-600">
+                <span className="text-gray-800 font-semibold">{words[4]} </span>
                 {s.why_this}
               </div>
 
               <button
                 onClick={() => handleApprove(s)}
                 disabled={approvingId === s.id}
-                className="w-full mt-1 bg-white text-black hover:bg-neutral-200 font-semibold py-1.5 px-3 rounded flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+                className="w-full mt-1 bg-gray-900 text-white hover:bg-gray-50 font-semibold py-1.5 px-3 rounded flex items-center justify-center gap-1.5 transition disabled:opacity-50"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>{approvingId === s.id ? words[6] : words[5]}</span>
@@ -85,9 +85,9 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
           ))}
         </div>
       ) : (
-        <div className="bg-gray-900/50 border border-gray-800/80 rounded-lg p-4 text-center">
+        <div className="bg-gray-100/50 border border-gray-200/80 rounded-lg p-4 text-center">
           <AlertCircle className="w-6 h-6 text-gray-500 mx-auto mb-1.5" />
-          <div className="text-gray-200 font-medium">{words[7]}</div>
+          <div className="text-gray-800 font-medium">{words[7]}</div>
           <p className="text-[10px] text-gray-500 mt-1 max-w-[240px] mx-auto">
             {words[8]}
           </p>

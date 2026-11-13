@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  /* ── Vanta design tokens (monochrome) ──────────────── */
-  --vanta-bg: #050505;            /* app background            */
-  --vanta-panel: #0d0d0d;         /* raised panels             */
-  --vanta-panel-2: #141414;       /* cards / elevated          */
-  --vanta-border: #262626;        /* hairline borders          */
-  --vanta-border-hi: #404040;     /* hover borders             */
-  --vanta-text: #f5f5f5;          /* primary text              */
-  --vanta-text-dim: #a3a3a3;      /* secondary text            */
-  --vanta-text-faint: #6b6b6b;    /* tertiary text             */
+  /* ── Vanta design tokens (light, professional) ─────── */
+  --vanta-bg: #f5f5f5;            /* app background            */
+  --vanta-panel: #ffffff;         /* raised panels             */
+  --vanta-panel-2: #fafafa;       /* cards / elevated          */
+  --vanta-border: #e5e5e5;        /* hairline borders          */
+  --vanta-border-hi: #d4d4d4;     /* hover borders             */
+  --vanta-text: #171717;          /* primary text              */
+  --vanta-text-dim: #525252;      /* secondary text            */
+  --vanta-text-faint: #a3a3a3;    /* tertiary text             */
 
-  --vanta-predict: #ffffff;       /* PREDICT  agent            */
-  --vanta-prepare: #d4d4d4;       /* PREPARE  agent            */
-  --vanta-respond: #a3a3a3;       /* RESPOND  agent            */
-  --vanta-ok: #ffffff;
-  --vanta-danger: #ffffff;
+  --vanta-predict: #171717;       /* PREDICT  agent            */
+  --vanta-prepare: #404040;       /* PREPARE  agent            */
+  --vanta-respond: #737373;       /* RESPOND  agent            */
+  --vanta-ok: #171717;
+  --vanta-danger: #171717;
 
   --vanta-radius: 10px;
 }
@@ -45,11 +45,11 @@ button, input, select, textarea { font: inherit; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #2e2e2e;
+  background: #d4d4d4;
   border-radius: 4px;
   border: 2px solid var(--vanta-bg);
 }
-::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
 
 /* ── Reusable primitives ───────────────────────────── */
 .v-panel {
@@ -67,7 +67,7 @@ button, input, select, textarea { font: inherit; }
 /* Ambient scanline for the command bar */
 .v-scanbar {
   background:
-    linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 40%),
+    linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0) 40%),
     var(--vanta-panel);
 }
 
@@ -114,13 +114,13 @@ button, input, select, textarea { font: inherit; }
   body { font-size: 13px; }
 }
 
-/* Leaflet desaturated theme map overrides (pure black & white) */
+/* Leaflet light theme map overrides (grayscale on white) */
 .leaflet-container {
-  background-color: #0a0a0a !important;
+  background-color: #fafafa !important;
   font-family: inherit;
 }
 .leaflet-tile {
-  filter: brightness(0.55) invert(1) contrast(2.2) saturate(0) brightness(0.85);
+  filter: saturate(0) contrast(0.95) brightness(1.02);
 }
 .leaflet-popup-content-wrapper {
   background: var(--vanta-panel) !important;
@@ -130,3 +130,12 @@ button, input, select, textarea { font: inherit; }
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
 }
 .leaflet-popup-tip { background: var(--vanta-panel) !important; }
+
+/* Light tooltips on the grayscale map */
+.leaflet-tooltip-dark {
+  background: #ffffff !important;
+  color: #171717 !important;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.25);
+}
+.leaflet-tooltip-dark::before { border-top-color: #ffffff !important; }

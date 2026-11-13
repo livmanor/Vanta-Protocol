@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Bot, CheckCircle2, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
+  Bot, CheckCircle2, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Search, Shield,
   ShieldAlert, Siren
 } from 'lucide-react';
 import SourceStatusBar from './components/SourceStatusBar';
@@ -170,9 +170,9 @@ export default function App() {
   /* Highest risk zone drives the header alert state */
   const maxRisk = riskZones.reduce((m, z) => Math.max(m, z.risk_level || 0), 0);
   const alertTone =
-    maxRisk >= 4 ? { dot: 'bg-white', text: 'text-white', label: 'CRITICAL' } :
-    maxRisk === 3 ? { dot: 'bg-neutral-300', text: 'text-neutral-300', label: 'ELEVATED' } :
-    { dot: 'bg-neutral-600', text: 'text-neutral-400', label: 'NOMINAL' };
+    maxRisk >= 4 ? { dot: 'bg-gray-900', text: 'text-gray-900', label: 'CRITICAL' } :
+    maxRisk === 3 ? { dot: 'bg-gray-50', text: 'text-gray-700', label: 'ELEVATED' } :
+    { dot: 'bg-gray-300', text: 'text-gray-600', label: 'NOMINAL' };
 
   const pendingApprovals = prepositionSuggestions.length;
 
@@ -185,14 +185,11 @@ export default function App() {
         className="flex items-center gap-4 px-4 h-14 border-b shrink-0 z-[700]"
         style={{ borderColor: 'var(--vanta-border)', background: 'var(--vanta-panel)' }}
       >
-        {/* Brand */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-lg shadow-black/50">
-            <Siren className="w-4.5 h-4.5 text-black" />
-          </div>
-          <div className="leading-tight">
-            <div className="font-extrabold tracking-widest text-white text-[13px]">{t('controlRoom')}</div>
-            <div className="text-[10px]" style={{ color: 'var(--vanta-text-faint)' }}>{t('area')}</div>
+        {/* Search / command */}
+        <div className="flex items-center gap-2 flex-1 max-w-md">
+          <div className="flex items-center gap-2 w-full h-9 px-3 rounded-lg border bg-white" style={{ borderColor: 'var(--vanta-border)' }}>
+            <Search className="w-3.5 h-3.5" style={{ color: 'var(--vanta-text-faint)' }} />
+            <span className="text-[12px]" style={{ color: 'var(--vanta-text-faint)' }}>{t('controlRoom')}</span>
           </div>
         </div>
 
@@ -200,7 +197,7 @@ export default function App() {
 
         {/* Threat level */}
         <div className="hidden md:flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${alertTone.dot} ${maxRisk >= 4 ? 'v-dot' : ''}`} style={maxRisk >= 4 ? { color: '#ffffff' } : {}} />
+          <span className={`w-2 h-2 rounded-full ${alertTone.dot} ${maxRisk >= 4 ? 'v-dot' : ''}`} style={maxRisk >= 4 ? { color: '#111111' } : {}} />
           <span className="text-[11px] font-bold tracking-wider">THREAT</span>
           <span className={`text-[11px] font-extrabold ${alertTone.text}`}>{alertTone.label}</span>
         </div>
@@ -223,7 +220,7 @@ export default function App() {
                 onClick={() => setLanguage(code)}
                 aria-pressed={language === code}
                 className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${
-                  language === code ? 'bg-white text-black' : 'text-neutral-300 hover:bg-neutral-800'
+                  language === code ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 {label}
@@ -233,19 +230,19 @@ export default function App() {
 
           <button
             onClick={() => setIsIncidentModalOpen(true)}
-            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-neutral-800/70 bg-neutral-900/40 text-neutral-200 hover:bg-neutral-800/50 hover:text-neutral-100 transition"
+            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-gray-200/70 bg-gray-100/40 text-gray-800 hover:bg-gray-50/50 hover:text-gray-800 transition"
           >
             <Plus className="w-3.5 h-3.5" /> {t('logIncident')} <span className="v-mono opacity-70">{incidents.length}</span>
           </button>
           <button
             onClick={() => setIsUnitModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-neutral-800/70 bg-neutral-900/40 text-neutral-200 hover:bg-neutral-800/50 hover:text-neutral-100 transition"
+            className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-gray-200/70 bg-gray-100/40 text-gray-800 hover:bg-gray-50/50 hover:text-gray-800 transition"
           >
             <Shield className="w-3.5 h-3.5" /> {t('registerUnit')} <span className="v-mono opacity-70">{units.length}</span>
           </button>
           <button
             onClick={() => setIsRoadModalOpen(true)}
-            className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-neutral-800/70 bg-neutral-900/40 text-neutral-200 hover:bg-neutral-800/50 hover:text-neutral-100 transition"
+            className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-gray-200/70 bg-gray-100/40 text-gray-800 hover:bg-gray-50/50 hover:text-gray-800 transition"
           >
             <Route className="w-3.5 h-3.5" /> {t('roadBlock')} <span className="v-mono opacity-70">{blockedRoads.length}</span>
           </button>
@@ -257,23 +254,33 @@ export default function App() {
 
       {/* ── Body: rail + main ───────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left nav rail */}
+        {/* Left sidebar (labeled navigation) */}
         <nav
-          className="w-16 flex flex-col items-center gap-1 py-3 border-r shrink-0 z-[600]"
+          className="w-56 flex flex-col py-4 px-3 border-r shrink-0 z-[600] gap-1"
           style={{ borderColor: 'var(--vanta-border)', background: 'var(--vanta-panel)' }}
         >
+          <div className="flex items-center gap-2.5 px-2 pb-4">
+            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center shrink-0">
+              <Siren className="w-4 h-4 text-white" />
+            </div>
+            <div className="leading-tight min-w-0">
+              <div className="font-extrabold tracking-widest text-gray-900 text-[12px]">VANTA</div>
+              <div className="text-[10px] truncate" style={{ color: 'var(--vanta-text-faint)' }}>{t('area')}</div>
+            </div>
+          </div>
+
+          <div className="v-label px-2 pb-1">Operations</div>
           {NAV.map(({ id, label, Icon }) => (
             <button
               key={id}
               onClick={() => setView(id)}
-              title={label}
-              className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition ${
-                view === id ? 'bg-white text-black shadow-lg shadow-black/40' : 'hover:bg-white/5'
+              className={`relative flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] font-semibold transition ${
+                view === id ? 'bg-gray-900 text-white shadow-md shadow-gray-400/40' : 'hover:bg-gray-100'
               }`}
               style={view !== id ? { color: 'var(--vanta-text-dim)' } : {}}
             >
-              {view === id && <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-full bg-white" />}
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4.5 h-4.5 shrink-0" />
+              {label}
             </button>
           ))}
 
@@ -281,16 +288,15 @@ export default function App() {
           {pendingApprovals > 0 && (
             <button
               onClick={() => { setView('map'); setActiveTab('preposition'); }}
-              title={`${pendingApprovals} approvals pending`}
-              className="mt-1 w-11 h-11 rounded-xl flex items-center justify-center relative text-neutral-200 hover:bg-neutral-400/10 transition"
+              className="flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] font-semibold text-gray-800 hover:bg-gray-100 transition"
             >
+              <Compass className="w-4.5 h-4.5 shrink-0" />
+              <span className="flex-1 text-left">Approvals</span>
               <span
-                className="absolute top-1.5 right-1.5 w-4 h-4 bg-neutral-300 text-black text-[9px] font-extrabold rounded-full flex items-center justify-center border-2"
-                style={{ borderColor: 'var(--vanta-panel)' }}
+                className="w-5 h-5 bg-gray-900 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center"
               >
                 {pendingApprovals}
               </span>
-              <Compass className="w-5 h-5" />
             </button>
           )}
         </nav>
@@ -332,22 +338,22 @@ export default function App() {
             >
               <div className="flex border-b p-1.5 gap-1 text-[11px] shrink-0" style={{ borderColor: 'var(--vanta-border)' }}>
                 {[
-                  { id: 'zones', label: t('zones'), Icon: ShieldAlert, active: 'bg-white text-black' },
-                  { id: 'preposition', label: t('prepare'), Icon: Compass, active: 'bg-white text-black' },
-                  { id: 'incidents', label: t('incidents'), Icon: Flame, active: 'bg-white text-black' },
+                  { id: 'zones', label: t('zones'), Icon: ShieldAlert, active: 'bg-gray-900 text-white' },
+                  { id: 'preposition', label: t('prepare'), Icon: Compass, active: 'bg-gray-900 text-white' },
+                  { id: 'incidents', label: t('incidents'), Icon: Flame, active: 'bg-gray-900 text-white' },
                 ].map(({ id, label, Icon, active }) => (
                   <button
                     key={id}
                     onClick={() => setActiveTab(id)}
                     className={`relative flex-1 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-1.5 ${
-                      activeTab === id ? `${active} shadow` : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                      activeTab === id ? `${active} shadow` : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                     {label}
                     {id === 'preposition' && prepositionSuggestions.length > 0 && (
                       <span
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-neutral-300 text-black text-[9px] font-extrabold rounded-full flex items-center justify-center border-2"
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-gray-900 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center border-2"
                         style={{ borderColor: 'var(--vanta-panel)' }}
                       >
                         {prepositionSuggestions.length}
@@ -387,21 +393,21 @@ export default function App() {
                           key={z.id}
                           onClick={() => setSelectedZone(z)}
                           className={`v-card v-card-hover p-2.5 text-left transition flex items-center justify-between ${
-                            selectedZone?.id === z.id ? 'ring-1 ring-neutral-400/70' : ''
+                            selectedZone?.id === z.id ? 'ring-1 ring-gray-300/70' : ''
                           }`}
                         >
                           <div className="min-w-0">
-                            <div className="font-bold text-white text-[12px] truncate">{z.name}</div>
+                            <div className="font-bold text-gray-900 text-[12px] truncate">{z.name}</div>
                             <div className="v-mono text-[10px] mt-0.5" style={{ color: 'var(--vanta-text-faint)' }}>
                               {t('elevation')} {z.explanation?.mean_elevation_m?.toFixed(1) ?? '–'}m · {t('rain')} {z.explanation?.rainfall_24h_mm?.toFixed(1) ?? '0.0'}mm
                             </div>
                           </div>
                           <span
                             className={`shrink-0 ml-2 w-7 h-7 rounded-md flex items-center justify-center v-mono text-[11px] font-extrabold ${
-                              z.risk_level >= 4 ? 'bg-white text-black border border-white' :
-                              z.risk_level === 3 ? 'bg-neutral-800 text-white border border-neutral-600' :
-                              z.risk_level === 2 ? 'bg-neutral-900 text-neutral-300 border border-neutral-700' :
-                              'bg-neutral-950 text-neutral-500 border border-neutral-800'
+                              z.risk_level >= 4 ? 'bg-gray-100 text-gray-900 border border-gray-200' :
+                              z.risk_level === 3 ? 'bg-gray-50 text-gray-900 border border-gray-300' :
+                              z.risk_level === 2 ? 'bg-gray-100 text-gray-700 border border-gray-200' :
+                              'bg-gray-100 text-gray-500 border border-gray-200'
                             }`}
                           >
                             {z.risk_level}
@@ -427,7 +433,7 @@ export default function App() {
                       <span className="v-label">{t('loggedIncidents')} ({incidents.length})</span>
                       <button
                         onClick={() => setIsIncidentModalOpen(true)}
-                        className="text-neutral-300 text-[11px] hover:underline flex items-center gap-1"
+                        className="text-gray-700 text-[11px] hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> {t('addIncident')}
                       </button>
@@ -435,22 +441,22 @@ export default function App() {
 
                     {incidents.length === 0 ? (
                       <div className="v-panel p-4 text-center text-[11px]" style={{ color: 'var(--vanta-text-dim)' }}>
-                        <CheckCircle2 className="w-6 h-6 text-neutral-400 mx-auto mb-1.5" />
-                        <div className="text-white font-semibold">{t('noIncidents')}</div>
+                        <CheckCircle2 className="w-6 h-6 text-gray-600 mx-auto mb-1.5" />
+                        <div className="text-gray-900 font-semibold">{t('noIncidents')}</div>
                         <div className="text-[10px] mt-1" style={{ color: 'var(--vanta-text-faint)' }}>{t('noIncidentsHint')}</div>
                       </div>
                     ) : (
                       incidents.map((inc) => (
                         <div key={inc.id} className="v-card p-2.5 text-[11px] flex flex-col gap-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-neutral-300 uppercase tracking-wide text-[10px]">
+                            <span className="font-bold text-gray-700 uppercase tracking-wide text-[10px]">
                               {inc.type} · U{inc.urgency}
                             </span>
                             <span className="v-mono text-[10px]" style={{ color: 'var(--vanta-text-faint)' }}>
                               {new Date(inc.timestamp).toLocaleTimeString()}
                             </span>
                           </div>
-                          <div className="text-white font-medium leading-snug">{inc.message}</div>
+                          <div className="text-gray-900 font-medium leading-snug">{inc.message}</div>
                           <div className="text-[10px] flex items-center justify-between" style={{ color: 'var(--vanta-text-dim)' }}>
                             <span>{t('people')}: {inc.people}</span>
                             <span style={{ color: 'var(--vanta-text-faint)' }}>{inc.source}</span>
@@ -463,7 +469,7 @@ export default function App() {
                       <span className="v-label">{t('registeredUnits')} ({units.length})</span>
                       <button
                         onClick={() => setIsUnitModalOpen(true)}
-                        className="text-neutral-300 text-[11px] hover:underline flex items-center gap-1"
+                        className="text-gray-700 text-[11px] hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> {t('registerUnit')}
                       </button>
@@ -472,24 +478,24 @@ export default function App() {
                     {units.length === 0 ? (
                       <div className="v-panel p-4 text-center text-[11px]" style={{ color: 'var(--vanta-text-dim)' }}>
                         <Shield className="w-6 h-6 mx-auto mb-1.5" style={{ color: 'var(--vanta-text-faint)' }} />
-                        <div className="text-white font-semibold">{t('noUnits')}</div>
+                        <div className="text-gray-900 font-semibold">{t('noUnits')}</div>
                         <div className="text-[10px] mt-1" style={{ color: 'var(--vanta-text-faint)' }}>{t('unitsHint')}</div>
                       </div>
                     ) : (
                       units.map((u) => (
                         <div key={u.id} className="v-card p-2.5 text-[11px] flex items-center justify-between">
                           <div className="min-w-0">
-                            <div className="font-bold text-white flex items-center gap-1.5">
+                            <div className="font-bold text-gray-900 flex items-center gap-1.5">
                               <span>{u.kind === 'rescue_boat' ? '⛵' : u.kind === 'ambulance' ? '🚑' : '🚔'}</span>
                               <span className="truncate">{u.id}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 capitalize shrink-0">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-600 capitalize shrink-0">
                                 {u.kind.replace('_', ' ')}
                               </span>
                             </div>
                             <div className="text-[10px] mt-0.5" style={{ color: 'var(--vanta-text-faint)' }}>{u.station}</div>
                           </div>
                           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0 ${
-                            u.status === 'available' ? 'bg-neutral-900 text-neutral-300 border border-neutral-700' : 'bg-slate-800 text-slate-400'
+                            u.status === 'available' ? 'bg-gray-100 text-gray-700 border border-gray-200' : 'bg-gray-50 text-gray-600'
                           }`}>
                             {u.status === 'available' ? t('available') : u.status === 'en_route' ? t('enRoute') : u.status}
                           </span>
