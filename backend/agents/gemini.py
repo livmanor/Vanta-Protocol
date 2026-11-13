@@ -40,7 +40,7 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.2,
-                        max_output_tokens=1400,
+                        max_output_tokens=4096,
                         response_mime_type="application/json",
                         response_json_schema=schema.model_json_schema(),
                     ),
@@ -66,19 +66,7 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
             pass
         # #endregion
         try:
-            try:
             return schema.model_validate_json(response.text)
-        except Exception as parse_exc:
-            if type(parse_exc).__name__ == "ValidationError":
-                # #region agent log
-                try:
-                    import json as _json
-                    from datetime import datetime, timezone
-                    open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-715d98.log", "a", encoding="utf-8").write(_json.dumps({"sessionId":"715d98","hypothesisId":"E","location":"gemini.py:model_validate_json","message":"schema mismatch details","data":{"schema":schema.__name__,"error":str(parse_exc)[:1200],"text_preview":(response.text or "")[:800]},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+"\n")
-                except Exception:
-                    pass
-                # #endregion
-            raise
         except Exception as parse_exc:
             if type(parse_exc).__name__ == "ValidationError":
                 # #region agent log

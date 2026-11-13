@@ -39,15 +39,15 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
       {suggestions && suggestions.length > 0 ? (
         <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto pr-1">
           {suggestions.map((s) => (
-            <div 
+            <div
               key={s.id}
               className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex flex-col gap-2 hover:border-gray-700 transition"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    s.unit_kind === 'rescue_boat' 
-                      ? 'bg-neutral-900 text-neutral-300 border border-neutral-700' 
+                    s.unit_kind === 'rescue_boat'
+                      ? 'bg-neutral-900 text-neutral-300 border border-neutral-700'
                       : s.unit_kind === 'ambulance'
                       ? 'bg-neutral-900 text-neutral-300 border border-neutral-700'
                       : 'bg-neutral-900 text-neutral-300 border border-neutral-700'

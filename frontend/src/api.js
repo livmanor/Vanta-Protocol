@@ -43,10 +43,13 @@ export async function searchPredictHistory(query) {
 
 export async function runAgent(agentId, confirmGoogleProcessing, language = 'en', inputs = {}) {
   const endpoint = agentId === 'predict' ? `${API_BASE}/agents/predict/run` : `${API_BASE}/agents/run/${agentId}`;
+  const approval = agentId === 'predict'
+    ? { confirm_groq_processing: confirmGoogleProcessing }
+    : { confirm_google_processing: confirmGoogleProcessing };
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ confirm_google_processing: confirmGoogleProcessing, language, ...inputs })
+    body: JSON.stringify({ ...approval, language, ...inputs })
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Agent workflow failed`);

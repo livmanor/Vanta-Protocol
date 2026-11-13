@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Literal
 
 from backend.agents.gemini import AgentConfigurationError, AgentProviderError, is_configured
+from backend.agents.groq import is_configured as is_groq_configured
 from backend.agents.workflow import run_predict_prepare_workflow, run_predict_agent, run_prepare_agent, run_respond_agent
 from backend.config import settings
 
@@ -11,6 +12,7 @@ router = APIRouter(prefix="/api/agents", tags=["Predict and Prepare Agents"])
 
 class AgentRunApproval(BaseModel):
     confirm_google_processing: bool = False
+    confirm_groq_processing: bool = False
     language: Literal["en", "hi", "te"] = "en"
 
 
@@ -20,6 +22,9 @@ async def agent_status():
         "provider": "Google Gemini",
         "configured": is_configured(),
         "model": settings.GEMINI_MODEL,
+        "groq_configured": is_groq_configured(),
+        "groq_provider": "Groq",
+        "groq_model": settings.GROQ_MODEL,
         "agents": [
             {"id": "predict", "name": "Weather Predict", "goal": "Compare live risk and forecast with recent rainfall and recorded impacts."},
             {"id": "prepare", "name": "Prepare", "goal": "Build evidence-based pre-event readiness checks and positioning recommendations."},
@@ -30,15 +35,15 @@ async def agent_status():
 
 @router.post("/run")
 async def run_agents(approval: AgentRunApproval):
-    if not is_configured():
+    if not is_configured() or not is_groq_configured():
         raise HTTPException(
             status_code=503,
-            detail="Gemini API is not configured. Set GEMINI_API_KEY in the backend .env and restart the server.",
+            detail="The combined workflow requires GEMINI_API_KEY and GROQ_API_KEY in backend .env.",
         )
-    if not approval.confirm_google_processing:
+    if not approval.confirm_google_processing or not approval.confirm_groq_processing:
         raise HTTPException(
             status_code=403,
-            detail="Confirm that zone risk data and summarized positioning recommendations may be sent to Google Gemini for this run.",
+            detail="Confirm both provider disclosures before running the combined Groq and Gemini workflow.",
         )
     try:
         return await run_predict_prepare_workflow(approval.language)
@@ -51,10 +56,14 @@ async def run_agents(approval: AgentRunApproval):
 @router.post("/run/{agent_id}")
 async def run_single_agent(agent_id: Literal["predict", "prepare", "respond"], approval: AgentRunApproval):
     """Run one selected agent; each agent has an independent goal and output."""
-    if not is_configured():
-        raise HTTPException(status_code=503, detail="Gemini API is not configured. Set GEMINI_API_KEY in the backend .env and restart the server.")
-    if not approval.confirm_google_processing:
-        raise HTTPException(status_code=403, detail="Confirm processing of this agent's summarized operational inputs for this run.")
+    provider_ready = is_groq_configured() if agent_id == "predict" else is_configured()
+    provider_name = "Groq" if agent_id == "predict" else "Google Gemini"
+    confirmed = approval.confirm_groq_processing if agent_id == "predict" else approval.confirm_google_processing
+    if not provider_ready:
+        key_name = "GROQ_API_KEY" if agent_id == "predict" else "GEMINI_API_KEY"
+        raise HTTPException(status_code=503, detail=f"{provider_name} is not configured. Set {key_name} in backend .env and restart the server.")
+    if not confirmed:
+        raise HTTPException(status_code=403, detail=f"Confirm processing of this agent's summarized operational inputs by {provider_name} for this run.")
     runners = {"predict": run_predict_agent, "prepare": run_prepare_agent, "respond": run_respond_agent}
     try:
         return await runners[agent_id](approval.language)

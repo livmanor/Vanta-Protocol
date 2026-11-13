@@ -1,4 +1,5 @@
-from typing import List
+from datetime import date
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -9,10 +10,28 @@ class ZoneFocus(BaseModel):
     officer_check: str = Field(description="A practical check for the officer; do not create an action order")
 
 
+class PredictZoneAssessment(BaseModel):
+    zone_id: str = Field(description="An exact zone_id from the supplied risk data")
+    level: Literal["insufficient_data", "low", "moderate", "high", "severe"]
+    evidence: str = Field(description="Briefly cite only supplied forecast/history evidence")
+    officer_check: str = Field(description="A verification step for the officer; do not issue an order")
+
+
 class PredictAgentOutput(BaseModel):
-    summary: str = Field(description="Short synthesis of the computed risk picture")
+    summary: str = Field(description="Short synthesis grounded in the supplied observations and forecasts; state limits clearly")
+    zone_assessments: List[PredictZoneAssessment] = Field(description="Qualitative evidence-based assessment for the supplied zones; use insufficient_data where source evidence is missing")
     focus_zones: List[ZoneFocus] = Field(description="Zero to three zones needing the closest review")
     data_gaps: List[str] = Field(description="Only missing or explicitly failed inputs in the supplied data")
+
+
+class HistoryQueryIntent(BaseModel):
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    zone_id: Optional[str] = Field(default=None, description="One exact ID from the supplied allowed hotspot list; null means all mapped hotspots")
+    hazard: Literal["rain", "flood", "storm", "weather", "other"] = "other"
+    clarification_needed: bool = False
+    clarification_question: str = ""
+    interpreted_request: str = ""
 
 
 class ZonePreparationNote(BaseModel):
