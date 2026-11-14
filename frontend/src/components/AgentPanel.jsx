@@ -47,6 +47,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const [commandStates, setCommandStates] = useState({});
   const [history, setHistory] = useState(null);
   const [historyQuery, setHistoryQuery] = useState('');
+  const [areaQuery, setAreaQuery] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [selectedEventId, setSelectedEventId] = useState('');
@@ -56,7 +57,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const current = agents[selected];
   const agentConfigured = selected === 'predict' ? status?.groq_configured : status?.configured;
   const consent = selected === 'predict' ? groqConsent : geminiConsent;
-  const zoneName = (id) => riskZones.find(zone => zone.id === id)?.name || id;
+  const zoneName = (id) => riskZones.find(zone => zone.id === id)?.name || Object.values(results).flatMap(result => result?.analysis_areas || []).find(area => area.zone_id === id)?.zone_name || id;
 
   const handleHistorySearch = async (queryToSearch) => {
     const q = (queryToSearch || historyQuery).trim();
@@ -96,6 +97,8 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
       }
     }
     if (historyQuery.trim()) inputs.officer_query = historyQuery.trim();
+    const requestedArea = areaQuery.trim() || (!selectedEvent && historyQuery.trim().split(/\s+/).length <= 3 ? historyQuery.trim() : '');
+    if (requestedArea) inputs.area_query = requestedArea;
     onRun(selected, consent, language, inputs);
   };
 
@@ -103,7 +106,8 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
     if (!historyQuery.trim() || !groqConsent || !geminiConsent || !status?.groq_configured || !status?.configured || commandRunning || loading) return;
     setCommandRunning(true);
     setCommandStates({});
-    const inputs = { officer_query: historyQuery.trim() };
+    const requestedArea = areaQuery.trim() || (historyQuery.trim().split(/\s+/).length <= 3 ? historyQuery.trim() : '');
+    const inputs = { officer_query: historyQuery.trim(), ...(requestedArea ? { area_query: requestedArea } : {}) };
     try {
       for (const id of ['predict', 'prepare', 'respond']) {
         setCommandStates(previous => ({ ...previous, [id]: 'running' }));
@@ -158,7 +162,10 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
           <h2 className="mt-0.5 text-lg font-extrabold text-slate-900">Describe the incident once</h2>
           <p className="mt-1 text-xs text-slate-600">The same officer instruction is passed to Predict, Prepare, then Respond. Each agent runs independently and keeps its own report. Predict uses the latest available rain history unless you select a historical event below.</p>
         </div>
-        <textarea value={historyQuery} onChange={e => setHistoryQuery(e.target.value)} rows={3} placeholder="Example: Retrieve the latest rain impacts in Hyderabad and prepare for expected flooding near Musi river areas." className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" />
+          <div className="grid gap-3 md:grid-cols-[minmax(180px,0.7fr)_minmax(0,2fr)]">
+            <label className="text-xs font-bold text-slate-700">Area to focus<input value={areaQuery} onChange={e => setAreaQuery(e.target.value)} placeholder="Secunderabad" className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"/><span className="mt-1 block font-normal text-slate-500">Type a city, town, or locality.</span></label>
+            <label className="text-xs font-bold text-slate-700">Incident or instruction<textarea value={historyQuery} onChange={e => setHistoryQuery(e.target.value)} rows={3} placeholder="Example: Retrieve recent rain effects and prepare for expected flooding near Musi river areas." className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" /></label>
+          </div>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700"><input type="checkbox" checked={groqConsent} onChange={e => setGroqConsent(e.target.checked)} className="mt-0.5 accent-indigo-600"/><span>Allow Groq to process the incident description and Predict data for this run.</span></label>
           <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700"><input type="checkbox" checked={geminiConsent} onChange={e => setGeminiConsent(e.target.checked)} className="mt-0.5 accent-indigo-600"/><span>Allow Google Gemini to process aggregated Prepare and Respond data for this run.</span></label>

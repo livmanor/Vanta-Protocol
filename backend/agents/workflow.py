@@ -10,11 +10,14 @@ from backend.agents.gemini import generate_structured, AgentProviderError
 from backend.agents.groq import generate_structured as generate_groq_structured
 from backend.agents.schemas import PredictAgentOutput, PrepareAgentOutput, RespondAgentOutput
 from backend.config import settings
-from backend.models import PrepositionSuggestion, RiskZone
+from backend.models import PrepositionSuggestion, RiskExplanation, RiskZone
 from backend.services.prepositioning import generate_prepositioning_suggestions
 from backend.services.risk_engine import compute_real_risk_zones
 from backend.db import fetch_units, fetch_incidents, fetch_blocked_roads
 from backend.data_sources.open_meteo import get_recent_historical_rain
+from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_river_discharge
+from backend.data_sources.elevation import get_real_elevations
+from backend.data_sources.geocoding import resolve_location
 from backend.services.risk_engine import REAL_ZONES_METADATA
 
 logger = logging.getLogger("vanta.agents.workflow")
@@ -34,7 +37,7 @@ def _zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, An
             "river_discharge_m3s": explanation.river_discharge_m3s,
             "mean_elevation_m": explanation.mean_elevation_m,
         } if explanation else None,
-        "risk_model_note": "The score includes a mapped major waterlogging hotspot from the Hyderabad Traffic Police list dated 2025-08-06. This indicates historical vulnerability, not current flooding.",
+        "risk_model_note": "Location observations are supplied without a calculated score. A mapped major waterlogging hotspot, when present, indicates historical vulnerability rather than current flooding.",
         "source_status": source_status,
     }
 
@@ -137,7 +140,13 @@ async def _collect_recent_rain_impacts(
     zone_id: str | None = None,
 ) -> Dict[str, Any]:
     """Join archive rainfall with locally logged reports for the selected event window."""
-    history_metadata = [meta for meta in REAL_ZONES_METADATA if not zone_id or meta["id"] == zone_id]
+    history_metadata = []
+    for zone in zones:
+        if zone_id and zone.id != zone_id:
+            continue
+        coords = (zone.polygon or {}).get("coordinates", [])
+        if (zone.polygon or {}).get("type") == "Point" and len(coords) >= 2:
+            history_metadata.append({"id": zone.id, "name": zone.name, "centroid": (float(coords[1]), float(coords[0]))})
     histories = await asyncio.gather(*[
         get_recent_historical_rain(
             *meta["centroid"],
@@ -338,7 +347,7 @@ async def list_rain_history_events(
         "last_updated": datetime.now(timezone.utc).isoformat(),
         "source_status": source_status,
         "events": events,
-        "rainfall_note": "Rainfall is Open-Meteo historical reanalysis sampled at six mapped waterlogging hotspots, not gauge measurements or a citywide total. Archive availability varies by dataset; check available-through date.",
+        "rainfall_note": "Rainfall is Open-Meteo historical reanalysis at the analyzed point location, not a rain-gauge measurement. Archive availability varies by dataset; check available-through date.",
         "impact_note": "Effects count only flood, trapped-person and road-block reports recorded in this app during the event window. No record means unreported, not that the area or road was clear.",
     }
 class PredictAgent:
@@ -384,9 +393,9 @@ class PredictAgent:
             for source in source_status.get(zone.id, {}).values():
                 if source.get("status") in ("failed", "stale"):
                     source_gaps.append(f"{zone.name}: {source['name']} is {source['status']}.")
-        output.data_gaps = list(dict.fromkeys(
-            source_gaps + ["Hotspot locations come from the Hyderabad Traffic Police list dated 2025-08-06; verify that each remains vulnerable."] + output.data_gaps
-        ))[:8]
+        if any(zone.id.startswith("hyd-hotspot-") for zone in zones):
+            source_gaps.append("Mapped hotspot locations come from the Hyderabad Traffic Police list dated 2025-08-06; verify that each remains vulnerable.")
+        output.data_gaps = list(dict.fromkeys(source_gaps + output.data_gaps))[:8]
         # Attach the provider used so callers can surface it
         output.__dict__["_provider_used"] = provider_used
         return output
@@ -477,10 +486,55 @@ async def _weather_and_history(
     end_date: str | None = None,
     zone_id: str | None = None,
     include_rule_score: bool = True,
+    area_query: str | None = None,
 ):
-    zones = await compute_real_risk_zones(include_rule_score=include_rule_score)
-    source_status = _source_status_from_zones(zones)
-    recent_rain_impacts = await _collect_recent_rain_impacts(zones, start_date, end_date, zone_id)
+    if area_query and area_query.strip():
+        try:
+            place = await resolve_location(area_query)
+        except ValueError:
+            raise
+        except Exception as exc:
+            logger.warning("Area geocoding unavailable: %s", exc)
+            raise AgentProviderError("Place lookup is temporarily unavailable. Retry the area-specific run.") from exc
+        lat, lng = place["latitude"], place["longitude"]
+        weather, river, elevation = await asyncio.gather(
+            get_real_weather_forecast(lat, lng),
+            get_real_river_discharge(lat, lng),
+            get_real_elevations([(lat, lng)]),
+        )
+        weather_data = weather.get("data") or {}
+        daily = weather_data.get("daily") or {}
+        river_values = (river.get("data") or {}).get("daily", {}).get("river_discharge") or []
+        elev_values = elevation.get("data") or []
+        explanation = RiskExplanation(
+            rainfall_24h_mm=(daily.get("precipitation_sum") or [None])[0],
+            max_precipitation_probability=(daily.get("precipitation_probability_max") or [None])[0],
+            wind_max_kmh=(daily.get("wind_speed_10m_max") or [None])[0],
+            river_discharge_m3s=river_values[0] if river_values else None,
+            mean_elevation_m=elev_values[0].get("elevation") if elev_values else place.get("elevation"),
+            historical_flood_prone=False,
+            why_this="Location-specific observations from Open-Meteo; no hotspot score applied.",
+        )
+        now = datetime.now(timezone.utc).isoformat()
+        zone = RiskZone(
+            id=f"area-{lat:.3f}-{lng:.3f}", name=place["name"], risk_level=None,
+            polygon={"type": "Point", "coordinates": [lng, lat]}, population=None,
+            derived_from=[weather.get("source", "Open-Meteo Forecast API"), river.get("source", "Open-Meteo Flood API"), elevation.get("source", "Open-Elevation API"), place["source"]],
+            computed_at=now, explanation=explanation,
+        )
+        zones = [zone]
+        source_status = {zone.id: {
+            "weather": {"name": weather.get("source"), "status": weather.get("status"), "last_updated": weather.get("last_updated")},
+            "river": {"name": river.get("source"), "status": river.get("status"), "last_updated": river.get("last_updated")},
+            "elevation": {"name": elevation.get("source"), "status": elevation.get("status"), "last_updated": elevation.get("last_updated")},
+            "geocoding": {"name": place["source"], "status": "live", "last_updated": now},
+        }}
+    else:
+        zones = await compute_real_risk_zones(include_rule_score=include_rule_score)
+        source_status = _source_status_from_zones(zones)
+    recent_rain_impacts = await _collect_recent_rain_impacts(
+        zones, start_date, end_date, None if area_query else zone_id
+    )
     return zones, source_status, recent_rain_impacts
 
 
@@ -490,25 +544,28 @@ async def run_predict_agent(
     event_end: str | None = None,
     zone_id: str | None = None,
     officer_query: str | None = None,
+    area_query: str | None = None,
 ) -> Dict[str, Any]:
     zones, source_status, recent_rain_impacts = await _weather_and_history(
         event_start,
         event_end,
         zone_id,
         include_rule_score=False,
+        area_query=area_query,
     )
     prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language, officer_query)
     predict_provider = prediction.__dict__.get("_provider_used", settings.GROQ_MODEL)
     return {
         "status": "complete", "agent": "predict", "provider": predict_provider, "model": predict_provider,
         "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
-        "history_selection": {"query": officer_query, "start": event_start, "end": event_end, "zone_id": zone_id},
+        "analysis_areas": [{"zone_id": zone.id, "zone_name": zone.name} for zone in zones],
+        "history_selection": {"query": officer_query, "area": area_query, "start": event_start, "end": event_end, "zone_id": zone_id},
         "recent_rain_impacts": recent_rain_impacts, "predict": prediction.model_dump(mode="json"),
     }
 
 
-async def run_prepare_agent(language: str = "en", officer_query: str | None = None) -> Dict[str, Any]:
-    zones, source_status, recent_rain_impacts = await _weather_and_history()
+async def run_prepare_agent(language: str = "en", officer_query: str | None = None, area_query: str | None = None) -> Dict[str, Any]:
+    zones, source_status, recent_rain_impacts = await _weather_and_history(area_query=area_query)
     units = await fetch_units()
     suggestions = generate_prepositioning_suggestions(units, zones)
     preparation = await PrepareAgent().run(zones, suggestions, source_status, recent_rain_impacts, language, officer_query)
@@ -516,6 +573,7 @@ async def run_prepare_agent(language: str = "en", officer_query: str | None = No
         "status": "complete", "agent": "prepare", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "risk_zone_count": len(zones), "available_unit_count": sum(1 for unit in units if unit.status == "available"),
+        "analysis_areas": [{"zone_id": zone.id, "zone_name": zone.name} for zone in zones],
         "recent_rain_impacts": recent_rain_impacts, "prepare": preparation.model_dump(mode="json"),
         "positioning_recommendations": [item.model_dump(mode="json") for item in suggestions],
     }
@@ -555,14 +613,14 @@ async def _collect_respond_context(zones: List[RiskZone], source_status: Dict[st
     }
 
 
-async def run_respond_agent(language: str = "en", officer_query: str | None = None) -> Dict[str, Any]:
-    zones = await compute_real_risk_zones()
-    source_status = _source_status_from_zones(zones)
+async def run_respond_agent(language: str = "en", officer_query: str | None = None, area_query: str | None = None) -> Dict[str, Any]:
+    zones, source_status, _ = await _weather_and_history(area_query=area_query)
     operational_context = await _collect_respond_context(zones, source_status)
     response = await RespondAgent().run(zones, operational_context, language, officer_query)
     return {
         "status": "complete", "agent": "respond", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
         "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
+        "analysis_areas": [{"zone_id": zone.id, "zone_name": zone.name} for zone in zones],
         "respond": response.model_dump(mode="json"), "operational_context": operational_context,
     }
 

@@ -21,6 +21,7 @@ class PredictHistoryRun(BaseModel):
     event_end: date
     zone_id: Optional[str] = None
     officer_query: Optional[str] = None
+    area_query: Optional[str] = None
 
 
 class HistorySearch(BaseModel):
@@ -128,6 +129,7 @@ async def run_predict_for_selected_history(selection: PredictHistoryRun):
             selection.event_end.isoformat(),
             selection.zone_id,
             selection.officer_query,
+            selection.area_query,
         )
     except AgentConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc

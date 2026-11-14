@@ -15,6 +15,7 @@ class AgentRunApproval(BaseModel):
     confirm_groq_processing: bool = False
     language: Literal["en", "hi", "te"] = "en"
     officer_query: Optional[str] = None
+    area_query: Optional[str] = None
 
 
 @router.get("/status")
@@ -52,6 +53,8 @@ async def run_agents(approval: AgentRunApproval):
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except AgentProviderError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/run/{agent_id}")
@@ -67,12 +70,14 @@ async def run_single_agent(agent_id: Literal["predict", "prepare", "respond"], a
         raise HTTPException(status_code=403, detail=f"Confirm processing of this agent's summarized operational inputs by {provider_name} for this run.")
     try:
         if agent_id == "predict":
-            return await run_predict_agent(approval.language, officer_query=approval.officer_query)
+            return await run_predict_agent(approval.language, officer_query=approval.officer_query, area_query=approval.area_query)
         elif agent_id == "prepare":
-            return await run_prepare_agent(approval.language, approval.officer_query)
+            return await run_prepare_agent(approval.language, approval.officer_query, approval.area_query)
         else:
-            return await run_respond_agent(approval.language, approval.officer_query)
+            return await run_respond_agent(approval.language, approval.officer_query, approval.area_query)
     except AgentConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except AgentProviderError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
