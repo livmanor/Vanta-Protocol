@@ -54,7 +54,6 @@ export default function App() {
   const [view, setView] = useState('agents'); // 'map' | 'agents'
   const [entered, setEntered] = useState(false);
   const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
-  const [clock, setClock] = useState(new Date());
 
   const newMenuRef = useRef(null);
 
@@ -124,11 +123,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  useEffect(() => {
-    const timer = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const handleRegisterUnit = async (unitData) => {
     await registerUnit(unitData);
     await loadData();
@@ -187,37 +181,10 @@ export default function App() {
               <div className="text-[12px] text-[#64748B] leading-tight">{t('area')}</div>
             </div>
           </div>
-
-          <div className="h-4 w-px bg-[#E2E8F0] mx-1" />
-
-          {/* AI Engine Status Text */}
-          <div className="hidden sm:flex items-center gap-2 text-[12px] text-[#475569]">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: aiEngineOnline ? '#16A34A' : '#64748B' }}
-            />
-            <span>AI engine: {aiEngineOnline ? 'online' : 'offline'}</span>
-          </div>
-
-          <div className="h-4 w-px bg-[#E2E8F0] mx-1 hidden sm:block" />
-
-          {/* Risk Level */}
-          <div className="hidden md:flex items-center gap-2 text-[12px] text-[#475569]">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: alertTone.dot }}
-            />
-            <span>Risk: {alertTone.label}</span>
-          </div>
         </div>
 
         {/* Right side controls */}
         <div className="flex items-center gap-4">
-          {/* Clock */}
-          <span className="hidden sm:inline vp-mono text-[12px] text-[#64748B]">
-            {clock.toLocaleTimeString('en-IN', { hour12: false })}
-          </span>
-
           {/* Language Switch: Segmented control 14px */}
           <div
             className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]"
