@@ -166,6 +166,14 @@ export default function App() {
     setPrepositionSuggestions(prep);
   };
 
+  // Used by the dashboard risk summary after entering the control room.
+  const maxRisk = riskZones.reduce((max, zone) => Math.max(max, zone.risk_level || 0), 0);
+  const alertTone = maxRisk >= 4
+    ? { label: 'CRITICAL' }
+    : maxRisk === 3
+      ? { label: 'ELEVATED' }
+      : { label: 'NOMINAL' };
+
   const pendingApprovals = prepositionSuggestions.length;
 
   if (!entered) return <Landing onEnter={() => setEntered(true)} />;
