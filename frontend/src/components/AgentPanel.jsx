@@ -137,35 +137,20 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
           </p>
         </div>
 
-        {/* Inputs: Label above each field, Area narrow, Instruction wide */}
-        <div className="flex flex-col md:flex-row gap-4 items-start">
-          <div className="w-full md:w-64 flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium text-[#475569]">
-              Focus area
-            </label>
-            <input
-              type="text"
-              value={areaQuery}
-              onChange={(e) => setAreaQuery(e.target.value)}
-              placeholder="e.g. Secunderabad"
-              className="vp-input"
-            />
-          </div>
-
-          <div className="w-full flex-1 flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium text-[#475569]">
-              Incident instruction
-            </label>
-            <input
-              type="text"
-              value={historyQuery}
-              onChange={(e) => setHistoryQuery(e.target.value)}
-              placeholder="e.g. Retrieve recent rain effects and prepare for expected flooding near Musi river"
-              className="vp-input"
-            />
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              {SUGGESTION_CHIPS.map(chip => <button key={chip} type="button" onClick={() => handleChipClick(chip)} className="h-7 rounded-[6px] border border-[#E2E8F0] bg-white px-2.5 text-[12px] text-[#475569] hover:bg-[#F8FAFC]">{chip}</button>)}
-            </div>
+        {/* Incident instruction input */}
+        <div className="w-full flex flex-col gap-1.5">
+          <label className="text-[12px] font-medium text-[#475569]">
+            Incident instruction
+          </label>
+          <input
+            type="text"
+            value={historyQuery}
+            onChange={(e) => setHistoryQuery(e.target.value)}
+            placeholder="e.g. Retrieve recent rain effects and prepare for expected flooding near Musi river"
+            className="vp-input"
+          />
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {SUGGESTION_CHIPS.map(chip => <button key={chip} type="button" onClick={() => handleChipClick(chip)} className="h-7 rounded-[6px] border border-[#E2E8F0] bg-white px-2.5 text-[12px] text-[#475569] hover:bg-[#F8FAFC]">{chip}</button>)}
           </div>
         </div>
 
