@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertTriangle, ArrowRight, CheckCircle2, CloudRain, Compass, RefreshCw, Search, ShieldCheck, Siren, Sparkles, Send } from 'lucide-react';
+import { ArrowRight, CloudRain, Compass, RefreshCw, ShieldCheck, Siren, Sparkles, Send } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
-import { searchPredictHistory } from '../api';
+import OperationsCalendar from './OperationsCalendar';
+import RespondSmsPanel from './RespondSmsPanel';
 
 const agents = {
   predict: {
@@ -45,13 +46,8 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const [geminiConsent, setGeminiConsent] = useState(false);
   const [commandRunning, setCommandRunning] = useState(false);
   const [commandStates, setCommandStates] = useState({});
-  const [history, setHistory] = useState(null);
   const [historyQuery, setHistoryQuery] = useState('');
   const [areaQuery, setAreaQuery] = useState('');
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState('');
-  const [selectedEventId, setSelectedEventId] = useState('');
-  const [selectedHistoryZone, setSelectedHistoryZone] = useState('');
 
   const selectedResult = results[selected];
   const current = agents[selected];
@@ -59,46 +55,17 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const consent = selected === 'predict' ? groqConsent : geminiConsent;
   const zoneName = (id) => riskZones?.find(zone => zone.id === id)?.name || Object.values(results).flatMap(result => result?.analysis_areas || []).find(area => area.zone_id === id)?.zone_name || id;
 
-  const handleHistorySearch = async (queryToSearch) => {
-    const q = (queryToSearch || historyQuery).trim();
-    if (!q) return;
-    if (!groqConsent || !status?.groq_configured) {
-      setHistoryError('Accept Groq permission before searching historical events.');
-      return;
-    }
-    setHistoryLoading(true);
-    setHistoryError('');
-    try {
-      const data = await searchPredictHistory(q);
-      setHistory(data);
-      setSelectedEventId(data.events?.[0]?.id || '');
-      setSelectedHistoryZone(data.resolved_zone_id || '');
-    } catch (error) {
-      setHistory(null);
-      setHistoryError(error.message);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
-
   const handleChipClick = (chipText) => {
     setHistoryQuery(chipText);
-    handleHistorySearch(chipText);
   };
 
   const handleTriggerRun = () => {
     if (!agentConfigured || !consent) return;
     const inputs = {};
-    if (selected === 'predict') {
-      if (selectedEvent) {
-        inputs.event_start = selectedEvent.window_start;
-        inputs.event_end = selectedEvent.window_end;
-        inputs.zone_id = selectedHistoryZone || null;
-      }
-    }
     if (historyQuery.trim()) inputs.officer_query = historyQuery.trim();
-    const requestedArea = areaQuery.trim() || (!selectedEvent && historyQuery.trim().split(/\s+/).length <= 3 ? historyQuery.trim() : '');
-    if (requestedArea) inputs.area_query = requestedArea;
+    if (areaQuery.trim()) inputs.area_query = areaQuery.trim();
+    if (results.predict?.predict) inputs.previous_agent_output = { predict: results.predict.predict };
+    if (results.prepare?.prepare) inputs.previous_agent_output = { ...(inputs.previous_agent_output || {}), prepare: results.prepare.prepare };
     onRun(selected, consent, language, inputs);
   };
 
@@ -106,27 +73,20 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
     if (!historyQuery.trim() || !groqConsent || !geminiConsent || !status?.groq_configured || !status?.configured || commandRunning || loading) return;
     setCommandRunning(true);
     setCommandStates({});
-    const requestedArea = areaQuery.trim() || (historyQuery.trim().split(/\s+/).length <= 3 ? historyQuery.trim() : '');
-    const inputs = { officer_query: historyQuery.trim(), ...(requestedArea ? { area_query: requestedArea } : {}) };
+    const inputs = { officer_query: historyQuery.trim(), area_query: areaQuery.trim() || null };
+    const previous = {};
     try {
       for (const id of ['predict', 'prepare', 'respond']) {
+        setSelected(id);
         setCommandStates(previous => ({ ...previous, [id]: 'running' }));
-        const result = await onRun(id, id === 'predict' ? groqConsent : geminiConsent, language, inputs);
+        const result = await onRun(id, id === 'predict' ? groqConsent : geminiConsent, language, { ...inputs, previous_agent_output: Object.keys(previous).length ? { ...previous } : undefined });
         setCommandStates(previous => ({ ...previous, [id]: result ? 'complete' : 'failed' }));
+        if (result) previous[id] = result[id] || result;
       }
     } finally {
       setCommandRunning(false);
     }
   };
-
-  const selectedEvent = history?.events?.find(item => item.id === selectedEventId);
-  const selectedEventAreas = selectedEvent?.areas?.filter(item => !selectedHistoryZone || item.zone_id === selectedHistoryZone) || [];
-
-  const historyLabels = {
-    en: { title: 'Ask about past rain, flood, or operational query', hint: 'Type your question or scenario. Example: “Retrieve effects of last year’s flood in Hyderabad city.”', search: 'Search history', loading: 'Resolving query & retrieving telemetry…', unavailable: 'Historical telemetry unavailable right now.', empty: 'No matching rainfall events found for that period.', event: 'Matching rain event', area: 'Focus area', all: 'All mapped hotspots', impacts: 'Evidence by hotspot', rainfall: 'Rain total', max: 'Max daily rain', reports: 'Flood / trapped / road reports', blocks: 'Blocked-road reports', coverage: 'Archive coverage', source: 'Rainfall is reanalysis sampled at six mapped hotspots.', records: 'Effect counts include only reports recorded in this app.', allAreas: 'All mapped hotspots' },
-    hi: { title: 'पिछली बारिश या बाढ़ के बारे में पूछें', hint: 'घटना अपने शब्दों में लिखें। उदाहरण: “पिछले साल हैदराबाद में बाढ़ के प्रभाव दिखाएँ।”', search: 'इतिहास खोजें', loading: 'ऐतिहासिक वर्षा खोजी जा रही है…', unavailable: 'ऐतिहासिक वर्षा अभी उपलब्ध नहीं है।', empty: 'इस अवधि में कोई वर्षा घटना नहीं मिली।', event: 'मिली वर्षा घटना', area: 'ध्यान क्षेत्र', all: 'सभी मानचित्रित हॉटस्पॉट', impacts: 'हॉटस्पॉट के अनुसार साक्ष्य', rainfall: 'कुल वर्षा', max: 'अधिकतम दैनिक वर्षा', reports: 'बाढ़ / फँसे लोग / सड़क रिपोर्ट', blocks: 'सड़क अवरोध रिपोर्ट', coverage: 'संग्रह कवरेज', source: 'वर्षा छह मानचित्रित हॉटस्पॉट पर पुनर्विश्लेषण है।', records: 'केवल ऐप में दर्ज प्रभाव शामिल हैं।', allAreas: 'सभी मानचित्रित हॉटस्पॉट' },
-    te: { title: 'గత వర్షం లేదా వరద గురించి అడగండి', hint: 'మీ మాటల్లో ఘటనను వివరించండి. ఉదాహరణ: “గత ఏడాది హైదరాబాద్ వరద ప్రభావాలు చూపించు.”', search: 'చరిత్రలో వెతకండి', loading: 'చారిత్రక వర్షాన్ని వెతుకుతోంది…', unavailable: 'చారిత్రక వర్షపాతం ప్రస్తుతం అందుబాటులో లేదు.', empty: 'ఆ కాలానికి సరిపడే వర్ష ఘటనలు లేవు.', event: 'సరిపడిన వర్ష ఘటన', area: 'దృష్టి ప్రాంతం', all: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', impacts: 'హాట్‌స్పాట్ వారీ ఆధారాలు', rainfall: 'మొత్తం వర్షపాతం', max: 'గరిష్ఠ రోజువారీ వర్షం', reports: 'వరద / చిక్కుకున్నవారు / రోడ్డు నివేదికలు', blocks: 'రోడ్డు మూసివేత నివేదికలు', coverage: 'ఆర్కైవ్ పరిధి', source: 'వర్షపాతం ఆరు మ్యాప్ హాట్‌స్పాట్‌ల వద్ద రీఅనాలిసిస్.', records: 'యాప్‌లో నమోదైన ప్రభావాలే లెక్కించబడతాయి.', allAreas: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు' },
-  }[language] || {};
 
   const assessmentLabels = {
     en: { title: 'Qualitative assessment', insufficient_data: 'Insufficient data', low: 'Low', moderate: 'Moderate', high: 'High', severe: 'Severe' },
@@ -159,8 +119,8 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   );
 
   const getSequenceDisabledReason = () => {
-    if (!historyQuery.trim()) return 'Enter an incident instruction above.';
-    if (!groqConsent || !geminiConsent) return 'Accept both permissions to run.';
+    if (!historyQuery.trim()) return 'Enter an incident instruction';
+    if (!groqConsent || !geminiConsent) return 'Accept both permissions';
     if (!status?.groq_configured || !status?.configured) return 'AI models not fully configured.';
     return '';
   };
@@ -204,6 +164,9 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
               placeholder="e.g. Retrieve recent rain effects and prepare for expected flooding near Musi river"
               className="vp-input"
             />
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              {SUGGESTION_CHIPS.map(chip => <button key={chip} type="button" onClick={() => handleChipClick(chip)} className="h-7 rounded-[6px] border border-[#E2E8F0] bg-white px-2.5 text-[12px] text-[#475569] hover:bg-[#F8FAFC]">{chip}</button>)}
+            </div>
           </div>
         </div>
 
@@ -284,6 +247,9 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
                   }`}
                 >
                   <span>{item.title[langIndex]}</span>
+                  <span className="mt-1 block text-[10px] font-normal text-[#64748B]">
+                    {loadingAgent === id || commandStates[id] === 'running' ? 'Running' : errors[id] ? `Failed · ${errors[id]}` : results[id] ? `Done · ${new Date(results[id].generated_at || Date.now()).toLocaleTimeString()}` : 'Not run'}
+                  </span>
                   {active && (
                     <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA]" />
                   )}
@@ -292,9 +258,6 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             })}
           </div>
 
-          <span className="text-[12px] text-[#64748B]">
-            {selected === 'predict' ? 'Groq Qwen' : 'Google Gemini 2.5'}
-          </span>
         </div>
 
         {/* ── SELECTED AGENT DETAIL AREA (Plain headings and text, NO boxes) ── */}
@@ -328,165 +291,17 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             </div>
           </div>
 
-          {/* Type bar for individual agent queries */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="font-medium text-[#475569]">
-                {selected === 'predict' ? historyLabels.title : `Direct query for ${current.title[0]}`}
-              </span>
-              {history?.available_from && selected === 'predict' && (
-                <span className="text-[#64748B]">
-                  Archive: {history.available_from} to {history.available_through || 'present'}
-                </span>
-              )}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#E2E8F0] pt-4">
+            <div className="text-[12px] text-[#64748B]">
+              {agentConfigured ? (consent ? 'Ready to run with the current form values.' : 'Accept the provider permission in the command form.') : selected === 'predict' ? 'GROQ_API_KEY is missing.' : 'GEMINI_API_KEY is missing.'}
             </div>
-
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]">
-                  <Search className="w-4 h-4" strokeWidth={1.5} />
-                </span>
-                <input
-                  type="text"
-                  value={historyQuery}
-                  onChange={(e) => setHistoryQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      if (selected === 'predict') handleHistorySearch();
-                      else handleTriggerRun();
-                    }
-                  }}
-                  placeholder={current.placeholder}
-                  className="vp-input pl-9"
-                />
-              </div>
-
-              {selected === 'predict' && (
-                <button
-                  type="button"
-                  onClick={() => handleHistorySearch()}
-                  disabled={historyLoading || !historyQuery.trim() || !groqConsent || !status?.groq_configured}
-                  className="vp-btn vp-btn-secondary"
-                >
-                  {historyLoading ? <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} /> : <Search className="w-4 h-4" strokeWidth={1.5} />}
-                  <span>Search</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handleTriggerRun}
-                disabled={loading || !agentConfigured || !consent}
-                className="vp-btn vp-btn-primary"
-              >
-                {runningCurrent ? <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} /> : <Send className="w-4 h-4" strokeWidth={1.5} />}
-                <span>Run {current.title[0]}</span>
-              </button>
-            </div>
-
-            {/* Quick scenario chips: Plain text chips with 1px border, neutral icon (no lightning), 8px gap */}
-            {selected === 'predict' && (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="text-[12px] text-[#64748B]">Quick scenarios:</span>
-                {SUGGESTION_CHIPS.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => handleChipClick(chip)}
-                    className="h-7 px-2.5 rounded-[6px] border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] text-[12px] text-[#475569] inline-flex items-center gap-1.5 transition"
-                  >
-                    <Search className="w-3 h-3 text-[#64748B]" strokeWidth={1.5} />
-                    <span>{chip}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Feedback states */}
-            {historyLoading && (
-              <div className="text-[12px] text-[#4338CA] flex items-center gap-2 py-1">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
-                <span>{historyLabels.loading}</span>
-              </div>
-            )}
-
-            {(historyError || (history && history.status === 'failed')) && (
-              <div className="text-[12px] text-[#DC2626] py-1">
-                {historyError || historyLabels.unavailable}
-              </div>
-            )}
-
-            {/* Historical events list */}
-            {selectedEvent && (
-              <div className="flex flex-col gap-3 pt-3 border-t border-[#E2E8F0]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[12px] font-medium text-[#475569]">
-                      {historyLabels.event}
-                    </label>
-                    <select
-                      value={selectedEventId}
-                      onChange={(e) => setSelectedEventId(e.target.value)}
-                      className="vp-input"
-                    >
-                      {(history?.events || []).map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.window_start} – {item.window_end} ({item.mean_hotspot_rainfall_mm ?? '—'} mm mean)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[12px] font-medium text-[#475569]">
-                      {historyLabels.area}
-                    </label>
-                    <select
-                      value={selectedHistoryZone}
-                      onChange={(e) => setSelectedHistoryZone(e.target.value)}
-                      className="vp-input"
-                    >
-                      <option value="">{historyLabels.all}</option>
-                      {(riskZones || []).map((zone) => (
-                        <option key={zone.id} value={zone.id}>{zone.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Evidence table rows */}
-                <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
-                  {selectedEventAreas.map((area) => (
-                    <div key={area.zone_id} className="py-2 flex items-center justify-between text-[12px]">
-                      <span className="font-medium text-[#0F172A]">{zoneName(area.zone_id)}</span>
-                      <div className="flex items-center gap-4 text-[#64748B]">
-                        <span>Rain: <strong className="text-[#0F172A] font-medium">{area.rainfall_total_mm ?? '—'} mm</strong></span>
-                        <span>Incidents: <strong className="text-[#0F172A] font-medium">{area.incident_reports}</strong></span>
-                        <span>Road blocks: <strong className="text-[#0F172A] font-medium">{area.blocked_road_reports}</strong></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Individual permission helper / error */}
-            {!agentConfigured && (
-              <div className="text-[12px] text-[#D97706]">
-                {selected === 'predict'
-                  ? 'Add GROQ_API_KEY to backend .env to run Weather Predict.'
-                  : 'Add GEMINI_API_KEY to backend .env to run this agent.'}
-              </div>
-            )}
-
-            {err && (
-              <div className="text-[12px] text-[#DC2626]">
-                {err}
-              </div>
-            )}
+            <button type="button" onClick={handleTriggerRun} disabled={loading || !agentConfigured || !consent || !historyQuery.trim()} className="vp-btn vp-btn-secondary">
+              {runningCurrent ? <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} /> : <Send className="w-4 h-4" strokeWidth={1.5} />}
+              <span>Run this agent only</span>
+            </button>
           </div>
+          {err && <div className="text-[12px] text-[#DC2626]">{err}<button type="button" onClick={handleTriggerRun} className="ml-2 font-medium underline">Retry</button></div>}
         </div>
-
         {/* ── AGENT RESULTS / REPORT: Plain headings and text, NO card boxes ── */}
         {selectedResult && (
           <section className="flex flex-col gap-6 pt-6 border-t border-[#E2E8F0]">
@@ -629,6 +444,9 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
               <ShieldCheck className="w-4 h-4 text-[#16A34A]" strokeWidth={1.5} />
               <span>Advisory recommendations only. Officer review and approval is required prior to dispatch.</span>
             </div>
+            {selected === 'prepare' && <><p className="text-[12px] font-medium text-[#B45309]">Drafted by AI, requires officer approval.</p><OperationsCalendar calendar={selectedResult.operations_calendar || selectedResult.prepare?.operations_calendar} model={selectedResult.model || selectedResult.provider} /></>}
+            {selected === 'respond' && <RespondSmsPanel draft={selectedResult.respond?.sms_draft} model={selectedResult.model || selectedResult.provider} testMode={status?.sms_test_mode ?? true} sender={status?.sms_sender} />}
+            <div className="pt-2 text-[11px] text-[#64748B]">Model: {selectedResult.model || selectedResult.provider || 'Not available'}</div>
           </section>
         )}
       </section>

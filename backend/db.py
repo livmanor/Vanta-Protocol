@@ -66,6 +66,19 @@ async def init_db():
                 approved_at TEXT NOT NULL
             );
         """)
+        await db.execute("""CREATE TABLE IF NOT EXISTS contacts (
+            id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL UNIQUE,
+            area TEXT NOT NULL, group_name TEXT NOT NULL, created_at TEXT NOT NULL
+        )""")
+        await db.execute("""CREATE TABLE IF NOT EXISTS operations_calendar (
+            id TEXT PRIMARY KEY, event_json TEXT NOT NULL, valid_from TEXT NOT NULL,
+            valid_until TEXT NOT NULL, updated_at TEXT NOT NULL
+        )""")
+        await db.execute("""CREATE TABLE IF NOT EXISTS sos_send_logs (
+            id TEXT PRIMARY KEY, sent_at TEXT NOT NULL, officer_id TEXT NOT NULL,
+            message TEXT NOT NULL, recipients_json TEXT NOT NULL, status TEXT NOT NULL,
+            test_mode INTEGER NOT NULL
+        )""")
         await db.commit()
 
 # --- Incidents CRUD ---

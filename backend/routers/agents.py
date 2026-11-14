@@ -16,6 +16,7 @@ class AgentRunApproval(BaseModel):
     language: Literal["en", "hi", "te"] = "en"
     officer_query: Optional[str] = None
     area_query: Optional[str] = None
+    previous_agent_output: Optional[dict] = None
 
 
 @router.get("/status")
@@ -27,6 +28,9 @@ async def agent_status():
         "groq_configured": is_groq_configured(),
         "groq_provider": "Groq",
         "groq_model": settings.GROQ_MODEL,
+        "sms_test_mode": settings.SMS_TEST_MODE,
+        "sms_sender": settings.SMS_SENDER or ("Test mode — no SMS sent" if settings.SMS_TEST_MODE else "Not configured"),
+        "sms_provider": settings.SMS_PROVIDER,
         "agents": [
             {"id": "predict", "name": "Weather Predict", "goal": "Compare live risk and forecast with recent rainfall and recorded impacts."},
             {"id": "prepare", "name": "Prepare", "goal": "Build evidence-based pre-event readiness checks and positioning recommendations."},
@@ -72,9 +76,9 @@ async def run_single_agent(agent_id: Literal["predict", "prepare", "respond"], a
         if agent_id == "predict":
             return await run_predict_agent(approval.language, officer_query=approval.officer_query, area_query=approval.area_query)
         elif agent_id == "prepare":
-            return await run_prepare_agent(approval.language, approval.officer_query, approval.area_query)
+            return await run_prepare_agent(approval.language, approval.officer_query, approval.area_query, approval.previous_agent_output)
         else:
-            return await run_respond_agent(approval.language, approval.officer_query, approval.area_query)
+            return await run_respond_agent(approval.language, approval.officer_query, approval.area_query, approval.previous_agent_output)
     except AgentConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except AgentProviderError as exc:

@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import math
+import uuid
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from typing import Any, Dict, List
@@ -19,6 +20,9 @@ from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_
 from backend.data_sources.elevation import get_real_elevations
 from backend.data_sources.geocoding import resolve_location
 from backend.services.risk_engine import REAL_ZONES_METADATA
+from backend.db import DB_PATH
+import aiosqlite
+from backend.agents.schemas import OperationsCalendar
 
 logger = logging.getLogger("vanta.agents.workflow")
 
@@ -410,6 +414,10 @@ class PrepareAgent:
         recent_rain_impacts: Dict[str, Any],
         language: str,
         officer_query: str | None = None,
+        previous_agent_output: Dict[str, Any] | None = None,
+        known_roads: List[Dict[str, Any]] | None = None,
+        known_shelters: List[Dict[str, Any]] | None = None,
+        operations_window: Dict[str, str] | None = None,
     ) -> PrepareAgentOutput:
         allowed_ids = {zone.id for zone in zones}
         supported_zone_ids = {item.target_zone_id for item in suggestions}
@@ -432,6 +440,10 @@ class PrepareAgent:
                 "zones_ordered_by_current_risk": [zone.id for zone in sorted(zones, key=lambda item: item.risk_level, reverse=True)],
                 "deterministic_positioning_recommendations": summarized_suggestions,
                 "officer_incident_or_scenario": officer_query,
+                "previous_predict_agent_structured_output": previous_agent_output,
+                "known_shelters": known_shelters or [],
+                "known_road_records": known_roads or [],
+                "operations_calendar_validity_window": operations_window,
             },
             ensure_ascii=False,
         )
@@ -442,6 +454,7 @@ class PrepareAgent:
                 "routes, shelters, ETAs, measurements, or assignments. Do not change the existing "
                 "recommendations. If none are supplied, say that no unit positioning recommendation "
                   "can be made from registered available units. Still provide general evidence-based readiness actions even when no units are registered. "
+                "For the calendar, use only the supplied Predict output, explicit known shelters, road records and unit availability. Never invent shelters, roads, diversion points, units, destinations, assignments or routes. For traffic events, details must include road names, diversion points and time window; for evacuation events include area, destination shelter, route and time window. If any value is absent, use 'Not available' for that value. Use the provided validity window. "
                 "Use the officer's scenario as the operational focus, but do not treat unverified statements as confirmed facts. "
                 f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}. "
                 "Provide a short readiness note and a verification check for the officer; never issue a dispatch order. Use only exact supplied zone IDs."
@@ -469,6 +482,7 @@ class RespondAgent:
                 "Use only supplied active incident summaries, logged road-closure reports, current risk and aggregate unit availability. Road closures have no resolution status, so always recommend verifying whether a recorded closure remains active. Prioritize reported life-safety needs and areas with supporting evidence. "
                 "Do not invent incident details, traffic state, routes, facilities, unit capabilities, or instructions from authorities. Do not assign units, send messages, or dispatch. "
                 "Use the officer's incident or scenario as an operational focus, while treating it as an unverified report unless confirmed in the supplied records. "
+                "Draft concise public-safety SMS messages in English, Hindi and Telugu. Each should include the supplied area, hazard, action and helpline placeholder, remain under 160 characters where possible, and never claim an alert is official. Keep translations natural and equivalent. "
                 "Phrase all steps as recommendations for officer review and provide a check before action. If there are no recorded incidents, clearly say so rather than implying none exist in reality. "
                 f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}."
             ),
@@ -564,17 +578,41 @@ async def run_predict_agent(
     }
 
 
-async def run_prepare_agent(language: str = "en", officer_query: str | None = None, area_query: str | None = None) -> Dict[str, Any]:
+async def run_prepare_agent(language: str = "en", officer_query: str | None = None, area_query: str | None = None, previous_agent_output: Dict[str, Any] | None = None) -> Dict[str, Any]:
     zones, source_status, recent_rain_impacts = await _weather_and_history(area_query=area_query)
-    units = await fetch_units()
-    suggestions = generate_prepositioning_suggestions(units, zones)
-    preparation = await PrepareAgent().run(zones, suggestions, source_status, recent_rain_impacts, language, officer_query)
+    units, roads = await asyncio.gather(fetch_units(), fetch_blocked_roads())
+    suggestions = generate_prepositioning_suggestions(units, zones) if all(zone.risk_level is not None for zone in zones) else []
+    now = datetime.now(timezone.utc)
+    window = {"valid_from": now.isoformat(), "valid_until": (now + timedelta(hours=72)).isoformat()}
+    road_records = [{"name": road.name, "reason": road.reason, "timestamp": road.timestamp} for road in roads]
+    preparation = await PrepareAgent().run(
+        zones, suggestions, source_status, recent_rain_impacts, language, officer_query,
+        previous_agent_output, road_records, [], window,
+    )
+    calendar = preparation.operations_calendar
+    calendar.valid_from = now
+    calendar.valid_until = now + timedelta(hours=72)
+    calendar.events = [event for event in calendar.events if event.start < event.end and calendar.valid_from <= event.start <= event.valid_until <= calendar.valid_until]
+    for event in calendar.events:
+        event.status = "planned"
+        event.assigned_unit = None
+        if not event.id.strip():
+            event.id = f"cal-{uuid.uuid4().hex[:12]}"
+    async with aiosqlite.connect(DB_PATH) as db:
+        for event in calendar.events:
+            item = event.model_dump(mode="json")
+            await db.execute(
+                "INSERT OR REPLACE INTO operations_calendar VALUES (?, ?, ?, ?, ?)",
+                (event.id, json.dumps(item), calendar.valid_from.isoformat(), calendar.valid_until.isoformat(), now.isoformat()),
+            )
+        await db.commit()
     return {
         "status": "complete", "agent": "prepare", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "risk_zone_count": len(zones), "available_unit_count": sum(1 for unit in units if unit.status == "available"),
         "analysis_areas": [{"zone_id": zone.id, "zone_name": zone.name} for zone in zones],
         "recent_rain_impacts": recent_rain_impacts, "prepare": preparation.model_dump(mode="json"),
+        "operations_calendar": calendar.model_dump(mode="json"),
         "positioning_recommendations": [item.model_dump(mode="json") for item in suggestions],
     }
 
@@ -613,9 +651,21 @@ async def _collect_respond_context(zones: List[RiskZone], source_status: Dict[st
     }
 
 
-async def run_respond_agent(language: str = "en", officer_query: str | None = None, area_query: str | None = None) -> Dict[str, Any]:
+async def _contact_counts() -> Dict[str, Any]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT group_name, area, COUNT(*) AS count FROM contacts GROUP BY group_name, area") as cur:
+            rows = await cur.fetchall()
+    return {"total": sum(row["count"] for row in rows), "by_group_and_area": [dict(row) for row in rows]}
+
+
+async def run_respond_agent(language: str = "en", officer_query: str | None = None, area_query: str | None = None, previous_agent_output: Dict[str, Any] | None = None) -> Dict[str, Any]:
     zones, source_status, _ = await _weather_and_history(area_query=area_query)
     operational_context = await _collect_respond_context(zones, source_status)
+    operational_context["previous_predict_agent_structured_output"] = (previous_agent_output or {}).get("predict")
+    operational_context["previous_prepare_agent_structured_output"] = (previous_agent_output or {}).get("prepare")
+    operational_context["sms_helpline_placeholder"] = settings.SMS_HELPLINE
+    operational_context["sms_recipient_counts"] = await _contact_counts()
     response = await RespondAgent().run(zones, operational_context, language, officer_query)
     return {
         "status": "complete", "agent": "respond", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
@@ -626,7 +676,7 @@ async def run_respond_agent(language: str = "en", officer_query: str | None = No
 
 
 async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
-    """Run the deterministic risk/preposition tools, then the bounded LLM analyses in parallel."""
+    """Run Predict first, then pass its structured result into Prepare."""
     # PrepareAgent needs the weighted map score; PredictAgent must NOT receive it.
     predict_zones, prepare_zones, units = await asyncio.gather(
         compute_real_risk_zones(include_rule_score=False),
@@ -636,14 +686,30 @@ async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
     suggestions = generate_prepositioning_suggestions(units, prepare_zones)
     source_status = _source_status_from_zones(predict_zones)
     recent_rain_impacts = await _collect_recent_rain_impacts(predict_zones)
+    roads = await fetch_blocked_roads()
+    now = datetime.now(timezone.utc)
+    window = {"valid_from": now.isoformat(), "valid_until": (now + timedelta(hours=72)).isoformat()}
 
     predict_agent = PredictAgent()
     prepare_agent = PrepareAgent()
-    # Run both agents in parallel — they are independent of each other
-    prediction, preparation = await asyncio.gather(
-        predict_agent.run(predict_zones, source_status, recent_rain_impacts, language),
-        prepare_agent.run(prepare_zones, suggestions, source_status, recent_rain_impacts, language),
+    prediction = await predict_agent.run(predict_zones, source_status, recent_rain_impacts, language)
+    preparation = await prepare_agent.run(
+        prepare_zones, suggestions, source_status, recent_rain_impacts, language,
+        previous_agent_output=prediction.model_dump(mode="json"),
+        known_roads=[{"name": road.name, "reason": road.reason, "timestamp": road.timestamp} for road in roads],
+        known_shelters=[], operations_window=window,
     )
+    calendar = preparation.operations_calendar
+    calendar.valid_from = now
+    calendar.valid_until = now + timedelta(hours=72)
+    calendar.events = [event for event in calendar.events if event.start < event.end and now <= event.start <= event.end <= calendar.valid_until]
+    for event in calendar.events:
+        event.status = "planned"
+        event.assigned_unit = None
+    async with aiosqlite.connect(DB_PATH) as db:
+        for event in calendar.events:
+            await db.execute("INSERT OR REPLACE INTO operations_calendar VALUES (?, ?, ?, ?, ?)", (event.id, json.dumps(event.model_dump(mode="json")), now.isoformat(), calendar.valid_until.isoformat(), now.isoformat()))
+        await db.commit()
 
     predict_provider = prediction.__dict__.get("_provider_used", settings.GROQ_MODEL)
     return {
@@ -656,5 +722,6 @@ async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
         "recent_rain_impacts": recent_rain_impacts,
         "predict": prediction.model_dump(mode="json"),
         "prepare": preparation.model_dump(mode="json"),
+        "operations_calendar": calendar.model_dump(mode="json"),
         "positioning_recommendations": [item.model_dump(mode="json") for item in suggestions],
     }

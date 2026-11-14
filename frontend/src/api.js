@@ -41,6 +41,46 @@ export async function searchPredictHistory(query) {
   return payload;
 }
 
+export async function fetchContacts() {
+  const res = await fetch(`${API_BASE}/contacts`);
+  if (!res.ok) throw new Error('Could not load contacts');
+  return res.json();
+}
+
+export async function createContact(contact) {
+  const res = await fetch(`${API_BASE}/contacts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(contact) });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not register contact');
+  return payload;
+}
+
+export async function importContacts(contacts) {
+  const res = await fetch(`${API_BASE}/contacts/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contacts }) });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not import contacts');
+  return payload;
+}
+
+export async function decideCalendarEvent(eventId, decision) {
+  const res = await fetch(`${API_BASE}/operations-calendar/${encodeURIComponent(eventId)}?decision=${decision}`, { method: 'PATCH' });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not update calendar decision');
+  return payload;
+}
+
+export async function fetchSosLogs() {
+  const res = await fetch(`${API_BASE}/sos/logs`);
+  if (!res.ok) throw new Error('Could not load SOS logs');
+  return res.json();
+}
+
+export async function sendSos(contactIds, message, retryLogId = null) {
+  const res = await fetch(`${API_BASE}/sos/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact_ids: contactIds, message, officer_approved: true, retry_log_id: retryLogId }) });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'SOS send failed');
+  return payload;
+}
+
 export async function runAgent(agentId, confirmGoogleProcessing, language = 'en', inputs = {}) {
   const hasHistoryDates = Boolean(inputs.event_start && inputs.event_end);
   const endpoint = agentId === 'predict' && hasHistoryDates
