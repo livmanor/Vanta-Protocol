@@ -400,6 +400,7 @@ class PrepareAgent:
         source_status: Dict[str, Dict[str, Any]],
         recent_rain_impacts: Dict[str, Any],
         language: str,
+        officer_query: str | None = None,
     ) -> PrepareAgentOutput:
         allowed_ids = {zone.id for zone in zones}
         supported_zone_ids = {item.target_zone_id for item in suggestions}
@@ -421,6 +422,7 @@ class PrepareAgent:
                 "risk_zones": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
                 "zones_ordered_by_current_risk": [zone.id for zone in sorted(zones, key=lambda item: item.risk_level, reverse=True)],
                 "deterministic_positioning_recommendations": summarized_suggestions,
+                "officer_incident_or_scenario": officer_query,
             },
             ensure_ascii=False,
         )
@@ -430,9 +432,10 @@ class PrepareAgent:
                 "recommendations using only the supplied facts. Provide concrete pre-event readiness actions (such as verifying the affected area's accessible routes, checking that registered units are available, or validating a recorded road closure) only when supported by the supplied evidence; each action must cite its basis and include an officer verification step. Do not invent units, capabilities, "
                 "routes, shelters, ETAs, measurements, or assignments. Do not change the existing "
                 "recommendations. If none are supplied, say that no unit positioning recommendation "
-                "can be made from registered available units. Still provide general evidence-based readiness actions even when no units are registered. Provide a short readiness note and a "
+                  "can be made from registered available units. Still provide general evidence-based readiness actions even when no units are registered. "
+                "Use the officer's scenario as the operational focus, but do not treat unverified statements as confirmed facts. "
                 f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}. "
-                "verification check for the officer; never issue a dispatch order. Use only exact supplied zone IDs."
+                "Provide a short readiness note and a verification check for the officer; never issue a dispatch order. Use only exact supplied zone IDs."
             ),
             context=context,
             schema=PrepareAgentOutput,
@@ -447,14 +450,16 @@ class PrepareAgent:
 
 
 class RespondAgent:
-    async def run(self, zones: List[RiskZone], operational_context: Dict[str, Any], language: str) -> RespondAgentOutput:
+    async def run(self, zones: List[RiskZone], operational_context: Dict[str, Any], language: str, officer_query: str | None = None) -> RespondAgentOutput:
         allowed_ids = {zone.id for zone in zones}
+        operational_context["officer_incident_or_scenario"] = officer_query
         context = json.dumps(operational_context, ensure_ascii=False)
         output = await generate_structured(
             system_instruction=(
                 "You are Vanta's Respond agent. Your separate goal is to help the control-room officer assess current active incidents and coordinate a safe, timely response. "
                 "Use only supplied active incident summaries, logged road-closure reports, current risk and aggregate unit availability. Road closures have no resolution status, so always recommend verifying whether a recorded closure remains active. Prioritize reported life-safety needs and areas with supporting evidence. "
                 "Do not invent incident details, traffic state, routes, facilities, unit capabilities, or instructions from authorities. Do not assign units, send messages, or dispatch. "
+                "Use the officer's incident or scenario as an operational focus, while treating it as an unverified report unless confirmed in the supplied records. "
                 "Phrase all steps as recommendations for officer review and provide a check before action. If there are no recorded incidents, clearly say so rather than implying none exist in reality. "
                 f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}."
             ),
@@ -502,11 +507,11 @@ async def run_predict_agent(
     }
 
 
-async def run_prepare_agent(language: str = "en") -> Dict[str, Any]:
+async def run_prepare_agent(language: str = "en", officer_query: str | None = None) -> Dict[str, Any]:
     zones, source_status, recent_rain_impacts = await _weather_and_history()
     units = await fetch_units()
     suggestions = generate_prepositioning_suggestions(units, zones)
-    preparation = await PrepareAgent().run(zones, suggestions, source_status, recent_rain_impacts, language)
+    preparation = await PrepareAgent().run(zones, suggestions, source_status, recent_rain_impacts, language, officer_query)
     return {
         "status": "complete", "agent": "prepare", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -550,11 +555,11 @@ async def _collect_respond_context(zones: List[RiskZone], source_status: Dict[st
     }
 
 
-async def run_respond_agent(language: str = "en") -> Dict[str, Any]:
+async def run_respond_agent(language: str = "en", officer_query: str | None = None) -> Dict[str, Any]:
     zones = await compute_real_risk_zones()
     source_status = _source_status_from_zones(zones)
     operational_context = await _collect_respond_context(zones, source_status)
-    response = await RespondAgent().run(zones, operational_context, language)
+    response = await RespondAgent().run(zones, operational_context, language, officer_query)
     return {
         "status": "complete", "agent": "respond", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
         "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),

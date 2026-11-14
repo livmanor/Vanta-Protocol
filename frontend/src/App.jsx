@@ -93,20 +93,13 @@ export default function App() {
     setLoadingAgent(agentId);
     setAgentErrors(previous => ({ ...previous, [agentId]: '' }));
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7369/ingest/b6948bf1-0c84-4082-aca8-dc71a9b2d020',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'715d98'},body:JSON.stringify({sessionId:'715d98',hypothesisId:'C',location:'App.jsx:handleRunAgent',message:'agent run requested',data:{agentId,inputs},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       const result = await runAgent(agentId, confirmGoogleProcessing, runLanguage || language, inputs);
-      // #region agent log
-      fetch('http://127.0.0.1:7369/ingest/b6948bf1-0c84-4082-aca8-dc71a9b2d020',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'715d98'},body:JSON.stringify({sessionId:'715d98',hypothesisId:'E',location:'App.jsx:handleRunAgent',message:'agent run succeeded',data:{agentId,status:result.status,window:[result.recent_rain_impacts?.window_start,result.recent_rain_impacts?.window_end],historyStatus:result.recent_rain_impacts?.status,hasSummary:Boolean(result.predict?.summary||result.prepare?.summary||result.respond?.summary)},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       setAgentResults(previous => ({ ...previous, [agentId]: result }));
       if (agentId === 'prepare') setPrepositionSuggestions(result.positioning_recommendations || []);
+      return result;
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7369/ingest/b6948bf1-0c84-4082-aca8-dc71a9b2d020',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'715d98'},body:JSON.stringify({sessionId:'715d98',hypothesisId:'C',location:'App.jsx:handleRunAgent',message:'agent run failed',data:{agentId,error:err.message,inputs},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       setAgentErrors(previous => ({ ...previous, [agentId]: err.message }));
+      return null;
     } finally {
       setLoadingAgent(null);
     }

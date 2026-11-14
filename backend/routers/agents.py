@@ -69,9 +69,9 @@ async def run_single_agent(agent_id: Literal["predict", "prepare", "respond"], a
         if agent_id == "predict":
             return await run_predict_agent(approval.language, officer_query=approval.officer_query)
         elif agent_id == "prepare":
-            return await run_prepare_agent(approval.language)
+            return await run_prepare_agent(approval.language, approval.officer_query)
         else:
-            return await run_respond_agent(approval.language)
+            return await run_respond_agent(approval.language, approval.officer_query)
     except AgentConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except AgentProviderError as exc:

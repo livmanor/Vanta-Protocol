@@ -41,7 +41,10 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const { language } = useLanguage();
   const langIndex = language === 'hi' ? 1 : language === 'te' ? 2 : 0;
   const [selected, setSelected] = useState('predict');
-  const [consent, setConsent] = useState(true); // Default to checked for smooth workflow
+  const [groqConsent, setGroqConsent] = useState(false);
+  const [geminiConsent, setGeminiConsent] = useState(false);
+  const [commandRunning, setCommandRunning] = useState(false);
+  const [commandStates, setCommandStates] = useState({});
   const [history, setHistory] = useState(null);
   const [historyQuery, setHistoryQuery] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -52,11 +55,16 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const selectedResult = results[selected];
   const current = agents[selected];
   const agentConfigured = selected === 'predict' ? status?.groq_configured : status?.configured;
+  const consent = selected === 'predict' ? groqConsent : geminiConsent;
   const zoneName = (id) => riskZones.find(zone => zone.id === id)?.name || id;
 
   const handleHistorySearch = async (queryToSearch) => {
     const q = (queryToSearch || historyQuery).trim();
     if (!q) return;
+    if (!groqConsent || !status?.groq_configured) {
+      setHistoryError('Enable Groq processing consent and configure GROQ_API_KEY before searching historical events.');
+      return;
+    }
     setHistoryLoading(true);
     setHistoryError('');
     try {
@@ -86,11 +94,25 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
         inputs.event_end = selectedEvent.window_end;
         inputs.zone_id = selectedHistoryZone || null;
       }
-      if (historyQuery.trim()) {
-        inputs.officer_query = historyQuery.trim();
-      }
     }
+    if (historyQuery.trim()) inputs.officer_query = historyQuery.trim();
     onRun(selected, consent, language, inputs);
+  };
+
+  const handleRunCommand = async () => {
+    if (!historyQuery.trim() || !groqConsent || !geminiConsent || !status?.groq_configured || !status?.configured || commandRunning || loading) return;
+    setCommandRunning(true);
+    setCommandStates({});
+    const inputs = { officer_query: historyQuery.trim() };
+    try {
+      for (const id of ['predict', 'prepare', 'respond']) {
+        setCommandStates(previous => ({ ...previous, [id]: 'running' }));
+        const result = await onRun(id, id === 'predict' ? groqConsent : geminiConsent, language, inputs);
+        setCommandStates(previous => ({ ...previous, [id]: result ? 'complete' : 'failed' }));
+      }
+    } finally {
+      setCommandRunning(false);
+    }
   };
 
   const selectedEvent = history?.events?.find(item => item.id === selectedEventId);
@@ -119,7 +141,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   };
 
   const dataForConsent = {
-    predict: 'Sends officer query, date window, live weather observations, historical rainfall and logged impact counts to Groq. Raw incident messages and exact officer locations are excluded.',
+    predict: 'Groq receives the incident description, live weather observations, historical rainfall and logged impact counts. Raw incident messages and exact officer locations are excluded.',
     prepare: 'Sends zone risk, live forecasts, past impacts and aggregated available resource availability to Google Gemini. Unit IDs and exact coordinates are excluded.',
     respond: 'Sends aggregated active incident counts, urgency, people totals, road closures and available units to Google Gemini. Raw messages and officer IDs are excluded.',
   };
@@ -130,6 +152,22 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
 
   return (
     <div className="flex flex-col gap-5 text-sm">
+      <section className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-5 shadow-sm">
+        <div className="mb-3">
+          <div className="text-[11px] font-bold uppercase tracking-[.14em] text-indigo-600">Incident Command Center</div>
+          <h2 className="mt-0.5 text-lg font-extrabold text-slate-900">Describe the incident once</h2>
+          <p className="mt-1 text-xs text-slate-600">The same officer instruction is passed to Predict, Prepare, then Respond. Each agent runs independently and keeps its own report. Predict uses the latest available rain history unless you select a historical event below.</p>
+        </div>
+        <textarea value={historyQuery} onChange={e => setHistoryQuery(e.target.value)} rows={3} placeholder="Example: Retrieve the latest rain impacts in Hyderabad and prepare for expected flooding near Musi river areas." className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" />
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700"><input type="checkbox" checked={groqConsent} onChange={e => setGroqConsent(e.target.checked)} className="mt-0.5 accent-indigo-600"/><span>Allow Groq to process the incident description and Predict data for this run.</span></label>
+          <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700"><input type="checkbox" checked={geminiConsent} onChange={e => setGeminiConsent(e.target.checked)} className="mt-0.5 accent-indigo-600"/><span>Allow Google Gemini to process aggregated Prepare and Respond data for this run.</span></label>
+        </div>
+        <button onClick={handleRunCommand} disabled={!historyQuery.trim() || !groqConsent || !geminiConsent || !status?.groq_configured || !status?.configured || commandRunning || loading} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-extrabold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">
+          {commandRunning ? <RefreshCw className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4"/>}{commandRunning ? 'Running command workflow…' : 'Run all agents in sequence'}
+        </button>
+        {Object.keys(commandStates).length > 0 && <div className="mt-3 grid gap-2 md:grid-cols-3">{['predict','prepare','respond'].map(id => <div key={id} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"><b>{agents[id].title[0]}</b><span className="float-right font-semibold">{commandStates[id] === 'running' ? 'Running…' : commandStates[id] === 'complete' ? 'Complete' : commandStates[id] === 'failed' ? 'Failed · see report' : 'Waiting'}</span></div>)}</div>}
+      </section>
       {/* ── Choose Agent Selector ───────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -259,7 +297,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
                 <button
                   type="button"
                   onClick={() => handleHistorySearch()}
-                  disabled={historyLoading || !historyQuery.trim()}
+                  disabled={historyLoading || !historyQuery.trim() || !groqConsent || !status?.groq_configured}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 text-xs transition disabled:opacity-40"
                 >
                   {historyLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
@@ -385,7 +423,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             <input
               type="checkbox"
               checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
+              onChange={(e) => selected === 'predict' ? setGroqConsent(e.target.checked) : setGeminiConsent(e.target.checked)}
               className="mt-0.5 h-4 w-4 accent-indigo-600 rounded"
             />
             <span className="text-xs leading-relaxed text-slate-700">
