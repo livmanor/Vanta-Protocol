@@ -269,7 +269,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
 
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#E2E8F0] pt-4">
             <div className="text-[12px] text-[#64748B]">
-              {agentConfigured ? (consent ? 'Ready to run with the current form values.' : 'Accept the provider permission in the command form.') : selected === 'predict' ? 'GROQ_API_KEY is missing.' : 'GEMINI_API_KEY is missing.'}
+              {agentConfigured ? 'Ready to run with the current form values.' : selected === 'predict' ? 'GROQ_API_KEY is missing.' : 'GEMINI_API_KEY is missing.'}
             </div>
             <button type="button" onClick={handleTriggerRun} disabled={loading || !agentConfigured || !consent || !historyQuery.trim()} className="vp-btn vp-btn-secondary">
               {runningCurrent ? <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} /> : <Send className="w-4 h-4" strokeWidth={1.5} />}
