@@ -31,14 +31,14 @@ export default function Map({
       center: [17.3914, 78.4702],
       zoom: 12,
       zoomControl: true,
-      attributionControl: false
+      attributionControl: true
     });
 
-    // Muted light gray style: CartoDB Positron tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20
+    // Keyless OpenStreetMap tiles. Keep this to interactive viewport requests;
+    // the public tile service is best-effort and must not be used for prefetching.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
     }).addTo(map);
 
     mapInstanceRef.current = map;
