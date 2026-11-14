@@ -42,8 +42,8 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const { language } = useLanguage();
   const langIndex = language === 'hi' ? 1 : language === 'te' ? 2 : 0;
   const [selected, setSelected] = useState('predict');
-  const [groqConsent, setGroqConsent] = useState(false);
-  const [geminiConsent, setGeminiConsent] = useState(false);
+  const [groqConsent, setGroqConsent] = useState(true);
+  const [geminiConsent, setGeminiConsent] = useState(true);
   const [commandRunning, setCommandRunning] = useState(false);
   const [commandStates, setCommandStates] = useState({});
   const [historyQuery, setHistoryQuery] = useState('');
@@ -120,7 +120,6 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
 
   const getSequenceDisabledReason = () => {
     if (!historyQuery.trim()) return 'Enter an incident instruction';
-    if (!groqConsent || !geminiConsent) return 'Accept both permissions';
     if (!status?.groq_configured || !status?.configured) return 'AI models not fully configured.';
     return '';
   };
@@ -168,29 +167,6 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
               {SUGGESTION_CHIPS.map(chip => <button key={chip} type="button" onClick={() => handleChipClick(chip)} className="h-7 rounded-[6px] border border-[#E2E8F0] bg-white px-2.5 text-[12px] text-[#475569] hover:bg-[#F8FAFC]">{chip}</button>)}
             </div>
           </div>
-        </div>
-
-        {/* Compact Consent Checkboxes: Combined single block, 14px text, no individual card boxes */}
-        <div className="flex flex-col gap-2 pt-2 border-t border-[#E2E8F0]">
-          <label className="flex items-center gap-2.5 text-[14px] text-[#334155] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={groqConsent}
-              onChange={(e) => setGroqConsent(e.target.checked)}
-              className="w-4 h-4 rounded-[4px] border-[#CBD5E1] text-[#4338CA] focus:ring-[#4338CA]"
-            />
-            <span>Allow Groq to process incident query and telemetry for Weather Predict.</span>
-          </label>
-
-          <label className="flex items-center gap-2.5 text-[14px] text-[#334155] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={geminiConsent}
-              onChange={(e) => setGeminiConsent(e.target.checked)}
-              className="w-4 h-4 rounded-[4px] border-[#CBD5E1] text-[#4338CA] focus:ring-[#4338CA]"
-            />
-            <span>Allow Google Gemini to process aggregated data for Prepare and Respond.</span>
-          </label>
         </div>
 
         {/* Sticky / Right-Aligned Run All Agents Button with Helper text */}
