@@ -40,48 +40,46 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 text-xs shadow-2xl flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-              <AlertCircle className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Log Emergency Incident</h3>
-              <p className="text-[11px] text-slate-400">Hyderabad Metropolitan Police Intake</p>
-            </div>
+    <div className="fixed inset-0 z-[1000] bg-[#0F172A]/30 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white border border-[#E2E8F0] rounded-[6px] w-full max-w-md p-6 text-[14px] shadow-md flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+          <div>
+            <h3 className="font-semibold text-[#0F172A] text-[16px]">Log Emergency Incident</h3>
+            <p className="text-[12px] text-[#64748B]">Hyderabad Police Intake Control</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
-            <X className="w-4 h-4" />
+          <button
+            onClick={onClose}
+            className="text-[#64748B] hover:text-[#0F172A] p-1 rounded-[4px] hover:bg-[#F1F5F9] transition"
+          >
+            <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-slate-700 font-bold text-xs">Incident Category</label>
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-medium text-[#475569]">Category</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
+                className="vp-input"
               >
                 <option value="flood">Flood / Waterlogging</option>
                 <option value="trapped">Trapped Citizens</option>
                 <option value="medical">Medical Emergency</option>
-                <option value="road_blocked">Road Blockage / Diversion</option>
-                <option value="fire">Electrical / Fire Hazard</option>
+                <option value="road_blocked">Road Blockage</option>
+                <option value="fire">Electrical / Hazard</option>
               </select>
             </div>
 
-            <div>
-              <label className="text-slate-700 font-bold text-xs">Urgency Rating (1–5)</label>
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-medium text-[#475569]">Urgency (1–5)</label>
               <select
                 value={urgency}
                 onChange={(e) => setUrgency(e.target.value)}
-                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-bold"
+                className="vp-input font-medium"
               >
-                <option value="5">5 - Immediate Life Threat</option>
+                <option value="5">5 - Immediate Threat</option>
                 <option value="4">4 - High Urgency</option>
                 <option value="3">3 - Moderate</option>
                 <option value="2">2 - Low / Advisory</option>
@@ -90,89 +88,89 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
             </div>
           </div>
 
-          <div>
-            <label className="text-slate-700 font-bold text-xs">Description / Caller Message</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-[#475569]">Caller message / details</label>
             <textarea
               required
               rows={2}
               placeholder="e.g. Water ingress at underpass, vehicle stranded"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 resize-none font-medium text-xs"
+              className="w-full bg-white border border-[#E2E8F0] rounded-[6px] p-2.5 text-[14px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/15 resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3 items-center">
-            <div>
-              <label className="text-slate-700 font-bold text-xs">People Affected</label>
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-medium text-[#475569]">People affected</label>
               <input
                 type="number"
                 min="0"
                 value={people}
                 onChange={(e) => setPeople(e.target.value)}
-                className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
+                className="vp-input"
               />
             </div>
 
-            <div className="flex items-center gap-2 pt-5">
+            <div className="flex items-center gap-2 pt-4">
               <input
                 type="checkbox"
                 id="vuln"
                 checked={vulnerable}
                 onChange={(e) => setVulnerable(e.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 focus:ring-indigo-400"
+                className="w-4 h-4 rounded-[4px] border-[#CBD5E1] text-[#4338CA] focus:ring-[#4338CA]"
               />
-              <label htmlFor="vuln" className="text-slate-700 font-semibold cursor-pointer text-xs">
-                Elderly / Infants Present
+              <label htmlFor="vuln" className="text-[12px] text-[#334155] cursor-pointer">
+                Elderly / infants present
               </label>
             </div>
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
-            <span className="text-slate-700 font-bold text-xs flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-              Incident Coordinates (Hyderabad)
+          <div className="flex flex-col gap-2 pt-2 border-t border-[#E2E8F0]">
+            <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
+              Coordinates (Hyderabad)
             </span>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 font-medium">Latitude</label>
+                <label className="text-[11px] text-[#64748B]">Latitude</label>
                 <input
                   type="number"
                   step="0.0001"
                   required
                   value={lat}
                   onChange={(e) => setLat(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-indigo-500 text-xs font-mono"
+                  className="vp-input vp-mono text-[12px]"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 font-medium">Longitude</label>
+                <label className="text-[11px] text-[#64748B]">Longitude</label>
                 <input
                   type="number"
                   step="0.0001"
                   required
                   value={lng}
                   onChange={(e) => setLng(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 outline-none focus:border-indigo-500 text-xs font-mono"
+                  className="vp-input vp-mono text-[12px]"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-3 mt-2 pt-3 border-t border-[#E2E8F0]">
             <button
               type="button"
               onClick={onClose}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition text-xs"
+              className="vp-btn vp-btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-extrabold transition disabled:opacity-50 shadow-sm text-xs"
+              className="vp-btn vp-btn-primary"
             >
-              {submitting ? 'Logging...' : 'Confirm Incident'}
+              {submitting ? 'Logging…' : 'Confirm Incident'}
             </button>
           </div>
         </form>

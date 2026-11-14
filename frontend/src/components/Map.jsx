@@ -34,14 +34,12 @@ export default function Map({
       attributionControl: false
     });
 
-    // Clean Natural OSM TileLayer (styled via index.css)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
+    // Muted light gray style: CartoDB Positron tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(map);
-
-    L.control.attribution({ position: 'bottomright' })
-      .addAttribution('&copy; <a href="https://openstreetmap.org" class="text-indigo-600">OpenStreetMap</a> contributors | OSRM | GloFAS')
-      .addTo(map);
 
     mapInstanceRef.current = map;
 
@@ -374,6 +372,14 @@ export default function Map({
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Floating map legend: green/amber/red */}
+      <div className="absolute bottom-4 left-4 z-[400] bg-white border border-[#E2E8F0] rounded-[6px] px-3 py-2 text-[12px] shadow-sm flex items-center gap-4">
+        <span className="font-medium text-[#0F172A]">Risk:</span>
+        <span className="flex items-center gap-1.5 text-[#16A34A]"><span className="w-2 h-2 rounded-full bg-[#16A34A]" /> L1–L2 Nominal</span>
+        <span className="flex items-center gap-1.5 text-[#D97706]"><span className="w-2 h-2 rounded-full bg-[#D97706]" /> L3 Watch</span>
+        <span className="flex items-center gap-1.5 text-[#DC2626]"><span className="w-2 h-2 rounded-full bg-[#DC2626]" /> L4–L5 Critical</span>
+      </div>
     </div>
   );
 }

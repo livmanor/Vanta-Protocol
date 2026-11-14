@@ -37,107 +37,107 @@ export default function BlockedRoadModal({ isOpen, onClose, onReport }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 text-xs shadow-2xl flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-              <AlertOctagon className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Report Road Blockage / Diversion</h3>
-              <p className="text-[11px] text-slate-400">Updates OSRM routing corridors dynamically</p>
-            </div>
+    <div className="fixed inset-0 z-[1000] bg-[#0F172A]/30 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white border border-[#E2E8F0] rounded-[6px] w-full max-w-md p-6 text-[14px] shadow-md flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+          <div>
+            <h3 className="font-semibold text-[#0F172A] text-[16px]">Report Road Blockage / Diversion</h3>
+            <p className="text-[12px] text-[#64748B]">Updates live OSRM routing corridors dynamically</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
-            <X className="w-4 h-4" />
+          <button
+            onClick={onClose}
+            className="text-[#64748B] hover:text-[#0F172A] p-1 rounded-[4px] hover:bg-[#F1F5F9] transition"
+          >
+            <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-          <div>
-            <label className="text-slate-700 font-bold text-xs">Road / Corridor Name</label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-[#475569]">Road / Corridor Name</label>
             <input
               type="text"
               required
+              placeholder="e.g. Moosarambagh Bridge Approach"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
+              className="vp-input"
             />
           </div>
 
-          <div>
-            <label className="text-slate-700 font-bold text-xs">Reason for Inaccessibility</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-[#475569]">Reason for Inaccessibility</label>
             <input
               type="text"
               required
+              placeholder="e.g. Severe Musi river overflow / waterlogging"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 font-medium"
+              className="vp-input"
             />
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
-            <span className="text-slate-700 font-bold text-xs flex items-center gap-1.5">
-              <Route className="w-3.5 h-3.5 text-indigo-600" />
+          <div className="flex flex-col gap-2 pt-2 border-t border-[#E2E8F0]">
+            <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
+              <Route className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
               Blockage Coordinates (Start & End)
             </span>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 font-medium">Start Lat / Lng</label>
-                <div className="flex gap-1.5 mt-1">
+                <label className="text-[11px] text-[#64748B]">Start Lat / Lng</label>
+                <div className="flex gap-2 mt-1">
                   <input
                     type="number"
                     step="0.0001"
                     value={startLat}
                     onChange={(e) => setStartLat(e.target.value)}
-                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-mono text-xs outline-none focus:border-indigo-500"
+                    className="vp-input vp-mono text-[12px]"
                   />
                   <input
                     type="number"
                     step="0.0001"
                     value={startLng}
                     onChange={(e) => setStartLng(e.target.value)}
-                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-mono text-xs outline-none focus:border-indigo-500"
+                    className="vp-input vp-mono text-[12px]"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 font-medium">End Lat / Lng</label>
-                <div className="flex gap-1.5 mt-1">
+                <label className="text-[11px] text-[#64748B]">End Lat / Lng</label>
+                <div className="flex gap-2 mt-1">
                   <input
                     type="number"
                     step="0.0001"
                     value={endLat}
                     onChange={(e) => setEndLat(e.target.value)}
-                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-mono text-xs outline-none focus:border-indigo-500"
+                    className="vp-input vp-mono text-[12px]"
                   />
                   <input
                     type="number"
                     step="0.0001"
                     value={endLng}
                     onChange={(e) => setEndLng(e.target.value)}
-                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-mono text-xs outline-none focus:border-indigo-500"
+                    className="vp-input vp-mono text-[12px]"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-3 mt-2 pt-3 border-t border-[#E2E8F0]">
             <button
               type="button"
               onClick={onClose}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition text-xs"
+              className="vp-btn vp-btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-extrabold transition disabled:opacity-50 shadow-sm text-xs"
+              className="vp-btn vp-btn-primary"
             >
-              {submitting ? 'Submitting...' : 'Register Road Diversion'}
+              {submitting ? 'Reporting…' : 'Report Blockage'}
             </button>
           </div>
         </form>
