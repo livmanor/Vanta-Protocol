@@ -29,6 +29,17 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[SecretStr] = None
     GROQ_MODEL: str = "qwen/qwen3.8-27b"
 
+    SMS_PROVIDER: str = "twilio"
+    SMS_TEST_MODE: bool = True
+    SMS_SENDER: str = ""
+    SMS_HELPLINE: str = "[HELPLINE]"
+    SMS_DLT_TEMPLATE_ID: str = ""
+    SMS_STATUS_CALLBACK_URL: str = ""
+    TWILIO_ACCOUNT_SID: Optional[SecretStr] = None
+    TWILIO_AUTH_TOKEN: Optional[SecretStr] = None
+    MSG91_AUTH_KEY: Optional[SecretStr] = None
+    MSG91_TEMPLATE_ID: str = ""
+
     PORT: int = 8000
     HOST: str = "0.0.0.0"
     DATABASE_PATH: str = "vanta.db"

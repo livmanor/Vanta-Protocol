@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertTriangle, ArrowRight, CheckCircle2, CloudRain, Compass, RefreshCw, Search, ShieldCheck, Siren, Sparkles, Send } from 'lucide-react';
+import { ArrowRight, CloudRain, Compass, RefreshCw, ShieldCheck, Siren, Sparkles, Send } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
-import { searchPredictHistory } from '../api';
+import OperationsCalendar from './OperationsCalendar';
+import RespondSmsPanel from './RespondSmsPanel';
 
 const agents = {
   predict: {
@@ -10,7 +11,7 @@ const agents = {
     goal: ['Compare live forecasts with historical rainfall and recorded area impacts.', 'लाइव पूर्वानुमान की तुलना हाल की बारिश और दर्ज क्षेत्रीय प्रभावों से करें।', 'ప్రత్యక్ష అంచనాలను ఇటీవలి వర్షపాతం, నమోదైన ప్రాంతీయ ప్రభావాలతో పోల్చండి.'],
     data: ['Live weather and flood risk, recent rainfall history, logged flood and road-block counts.', 'लाइव मौसम व बाढ़ जोखिम, हाल की वर्षा, दर्ज बाढ़ और सड़क अवरोधों की संख्या।', 'ప్రత్యక్ష వాతావరణం, వరద ప్రమాదం, ఇటీవలి వర్షపాతం, నమోదైన వరద/రోడ్డు మూసివేతల సంఖ్య.'],
     output: ['Rain-event comparison, focus areas, data gaps and officer verification checks.', 'बारिश की तुलना, ध्यान देने योग्य क्षेत्र, डेटा की कमी और अधिकारी जाँच।', 'వర్షపాతం పోలిక, దృష్టి ప్రాంతాలు, డేటా లోపాలు, అధికారి తనిఖీలు.'],
-    placeholder: 'Ask about historical flood, monsoon window, or hotspot rain (e.g. "Last year flood in Hyderabad")...'
+    placeholder: 'e.g. Last year flood in Hyderabad or Musi river overflow...'
   },
   prepare: {
     icon: Compass,
@@ -18,7 +19,7 @@ const agents = {
     goal: ['Turn forecasts, past impacts and available resources into pre-event readiness checks.', 'पूर्वानुमान, पिछले प्रभावों और उपलब्ध संसाधनों से आपदा-पूर्व तैयारी जाँचें बनाएँ।', 'అంచనా, గత ప్రభావాలు, అందుబాటులోని వనరులతో విపత్తుకు ముందస్తు తనిఖీలు రూపొందించండి.'],
     data: ['Current zone risks, recent rain impacts and aggregated available-unit types and positioning.', 'मौजूदा क्षेत्रीय जोखिम, हाल के वर्षा प्रभाव और उपलब्ध दलों का सार।', 'ప్రస్తుత ప్రాంతీయ ప్రమాదాలు, ఇటీవలి వర్ష ప్రభావాలు, అందుబాటులోని బృందాల సమగ్ర వివరాలు.'],
     output: ['Evidence-linked readiness actions, resource gaps and officer checks. No assignments.', 'सबूत-आधारित तैयारी कार्य, संसाधन की कमी और अधिकारी जाँच। तैनाती नहीं।', 'ఆధారాలతో కూడిన సన్నద్ధత చర్యలు, వనరుల లోపాలు, అధికారి తనిఖీలు. కేటాయింపులు లేవు.'],
-    placeholder: 'Type operational focus or asset instruction (e.g. "Check boat readiness for Musi river zones")...'
+    placeholder: 'e.g. Check boat readiness for Musi river zones...'
   },
   respond: {
     icon: Siren,
@@ -26,7 +27,7 @@ const agents = {
     goal: ['Assess active reported incidents and help the officer coordinate a safe response.', 'सक्रिय दर्ज घटनाओं का आकलन कर अधिकारी को सुरक्षित प्रतिक्रिया समन्वय में सहायता दें।', 'ప్రస్తుతం నమోదైన ఘటనలను అంచనా వేసి, సురక్షిత ప్రతిస్పందన సమన్వయంలో అధికారికి సహాయపడండి.'],
     data: ['Active incident counts by type, reported urgency and zone; logged road closures; live risk; available resource counts.', 'प्रकार, तात्कालिकता और क्षेत्र के अनुसार सक्रिय घटनाएँ; दर्ज सड़क बंद; लाइव जोखिम; उपलब्ध संसाधनों की संख्या।', 'రకం, అత్యవసరత, ప్రాంతం వారీగా ఘటనలు; నమోదైన రోడ్డు మూసివేతలు; ప్రత్యక్ష ప్రమాదం; వనరుల సంఖ్య.'],
     output: ['Priority areas, suggested coordination steps and what an officer must verify. No dispatch.', 'प्राथमिकता वाले क्षेत्र, समन्वय सुझाव और अधिकारी द्वारा जाँची जाने वाली बातें। रवाना नहीं करता।', 'ప్రాధాన్యత ప్రాంతాలు, సమన్వయ సూచనలు, అధికారి నిర్ధారించాల్సిన అంశాలు. పంపిణీ చేయదు.'],
-    placeholder: 'Type incident priority or officer guidance (e.g. "Focus on trapped citizens near Nampally")...'
+    placeholder: 'e.g. Focus on trapped citizens near Nampally underpass...'
   },
 };
 
@@ -41,535 +42,390 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
   const { language } = useLanguage();
   const langIndex = language === 'hi' ? 1 : language === 'te' ? 2 : 0;
   const [selected, setSelected] = useState('predict');
-  const [consent, setConsent] = useState(true); // Default to checked for smooth workflow
-  const [history, setHistory] = useState(null);
+  const [groqConsent, setGroqConsent] = useState(true);
+  const [geminiConsent, setGeminiConsent] = useState(true);
+  const [commandRunning, setCommandRunning] = useState(false);
+  const [commandStates, setCommandStates] = useState({});
   const [historyQuery, setHistoryQuery] = useState('');
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState('');
-  const [selectedEventId, setSelectedEventId] = useState('');
-  const [selectedHistoryZone, setSelectedHistoryZone] = useState('');
+  const [areaQuery, setAreaQuery] = useState('');
 
   const selectedResult = results[selected];
   const current = agents[selected];
   const agentConfigured = selected === 'predict' ? status?.groq_configured : status?.configured;
-  const zoneName = (id) => riskZones.find(zone => zone.id === id)?.name || id;
-
-  const handleHistorySearch = async (queryToSearch) => {
-    const q = (queryToSearch || historyQuery).trim();
-    if (!q) return;
-    setHistoryLoading(true);
-    setHistoryError('');
-    try {
-      const data = await searchPredictHistory(q);
-      setHistory(data);
-      setSelectedEventId(data.events?.[0]?.id || '');
-      setSelectedHistoryZone(data.resolved_zone_id || '');
-    } catch (error) {
-      setHistory(null);
-      setHistoryError(error.message);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
+  const consent = selected === 'predict' ? groqConsent : geminiConsent;
+  const zoneName = (id) => riskZones?.find(zone => zone.id === id)?.name || Object.values(results).flatMap(result => result?.analysis_areas || []).find(area => area.zone_id === id)?.zone_name || id;
 
   const handleChipClick = (chipText) => {
     setHistoryQuery(chipText);
-    handleHistorySearch(chipText);
   };
 
   const handleTriggerRun = () => {
     if (!agentConfigured || !consent) return;
     const inputs = {};
-    if (selected === 'predict') {
-      if (selectedEvent) {
-        inputs.event_start = selectedEvent.window_start;
-        inputs.event_end = selectedEvent.window_end;
-        inputs.zone_id = selectedHistoryZone || null;
-      }
-      if (historyQuery.trim()) {
-        inputs.officer_query = historyQuery.trim();
-      }
-    }
+    if (historyQuery.trim()) inputs.officer_query = historyQuery.trim();
+    if (areaQuery.trim()) inputs.area_query = areaQuery.trim();
+    if (results.predict?.predict) inputs.previous_agent_output = { predict: results.predict.predict };
+    if (results.prepare?.prepare) inputs.previous_agent_output = { ...(inputs.previous_agent_output || {}), prepare: results.prepare.prepare };
     onRun(selected, consent, language, inputs);
   };
 
-  const selectedEvent = history?.events?.find(item => item.id === selectedEventId);
-  const selectedEventAreas = selectedEvent?.areas?.filter(item => !selectedHistoryZone || item.zone_id === selectedHistoryZone) || [];
-
-  const historyLabels = {
-    en: { title: 'Ask about past rain, flood, or operational query', hint: 'Type your question or scenario. Example: “Retrieve effects of last year’s flood in Hyderabad city.”', search: 'Search history', loading: 'Resolving query & retrieving telemetry…', unavailable: 'Historical telemetry unavailable right now.', empty: 'No matching rainfall events found for that period.', event: 'Matching rain event', area: 'Focus area', all: 'All mapped hotspots', impacts: 'Evidence by hotspot', rainfall: 'Rain total', max: 'Max daily rain', reports: 'Flood / trapped / road reports', blocks: 'Blocked-road reports', coverage: 'Archive coverage', source: 'Rainfall is reanalysis sampled at six mapped hotspots, not gauge data or citywide total.', records: 'Effect counts include only reports recorded in this app.', allAreas: 'All mapped hotspots', selected: 'Resolved search' },
-    hi: { title: 'पिछली बारिश या बाढ़ के बारे में पूछें', hint: 'घटना अपने शब्दों में लिखें। उदाहरण: “पिछले साल हैदराबाद में बाढ़ के प्रभाव दिखाएँ।”', search: 'इतिहास खोजें', loading: 'आपका प्रश्न समझकर ऐतिहासिक वर्षा खोजी जा रही है…', unavailable: 'ऐतिहासिक वर्षा अभी उपलब्ध नहीं है।', empty: 'इस अवधि में कोई वर्षा घटना नहीं मिली।', event: 'मिली वर्षा घटना', area: 'ध्यान क्षेत्र', all: 'सभी मानचित्रित हॉटस्पॉट', impacts: 'हॉटस्पॉट के अनुसार साक्ष्य', rainfall: 'कुल वर्षा', max: 'अधिकतम दैनिक वर्षा', reports: 'बाढ़ / फँसे लोग / सड़क रिपोर्ट', blocks: 'सड़क अवरोध रिपोर्ट', coverage: 'संग्रह कवरेज', source: 'वर्षा छह मानचित्रित हॉटस्पॉट पर पुनर्विश्लेषण है।', records: 'केवल ऐप में दर्ज प्रभाव शामिल हैं।', allAreas: 'सभी मानचित्रित हॉटस्पॉट', selected: 'समझी गई खोज' },
-    te: { title: 'గత వర్షం లేదా వరద గురించి అడగండి', hint: 'మీ మాటల్లో ఘటనను వివరించండి. ఉదాహరణ: “గత ఏడాది హైదరాబాద్ వరద ప్రభావాలు చూపించు.”', search: 'చరిత్రలో వెతకండి', loading: 'మీ ప్రశ్నను అర్థం చేసుకుని చారిత్రక వర్షాన్ని వెతుకుతోంది…', unavailable: 'చారిత్రక వర్షపాతం ప్రస్తుతం అందుబాటులో లేదు.', empty: 'ఆ కాలానికి సరిపడే వర్ష ఘటనలు లేవు.', event: 'సరిపడిన వర్ష ఘటన', area: 'దృష్టి ప్రాంతం', all: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', impacts: 'హాట్‌స్పాట్ వారీ ఆధారాలు', rainfall: 'మొత్తం వర్షపాతం', max: 'గరిష్ఠ రోజువారీ వర్షం', reports: 'వరద / చిక్కుకున్నవారు / రోడ్డు నివేదికలు', blocks: 'రోడ్డు మూసివేత నివేదికలు', coverage: 'ఆర్కైవ్ పరిధి', source: 'వర్షపాతం ఆరు మ్యాప్ హాట్‌స్పాట్‌ల వద్ద రీఅనాలిసిస్.', records: 'యాప్‌లో నమోదైన ప్రభావాలే లెక్కించబడతాయి.', allAreas: 'మ్యాప్‌లోని అన్ని హాట్‌స్పాట్‌లు', selected: 'అర్థం చేసుకున్న శోధన' },
-  }[language] || {};
-
-  const assessmentLabels = {
-    en: { title: 'Groq qualitative assessment · no fixed score', insufficient_data: 'Insufficient data', low: 'Low', moderate: 'Moderate', high: 'High', severe: 'Severe' },
-    hi: { title: 'Groq का गुणात्मक आकलन · निश्चित स्कोर नहीं', insufficient_data: 'अपर्याप्त डेटा', low: 'कम', moderate: 'मध्यम', high: 'उच्च', severe: 'गंभीर' },
-    te: { title: 'Groq గుణాత్మక అంచనా · స్థిర స్కోరు లేదు', insufficient_data: 'సరిపడా డేటా లేదు', low: 'తక్కువ', moderate: 'మధ్యస్థం', high: 'ఎక్కువ', severe: 'తీవ్రం' },
-  }[language] || {};
-
-  const levelPill = (lvl) => {
-    switch (lvl) {
-      case 'severe': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-red-50 text-red-700 border-red-200';
-      case 'moderate': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'low': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      default: return 'bg-slate-100 text-slate-600 border-slate-200';
+  const handleRunCommand = async () => {
+    if (!historyQuery.trim() || !groqConsent || !geminiConsent || !status?.groq_configured || !status?.configured || commandRunning || loading) return;
+    setCommandRunning(true);
+    setCommandStates({});
+    const inputs = { officer_query: historyQuery.trim(), area_query: areaQuery.trim() || null };
+    const previous = {};
+    try {
+      for (const id of ['predict', 'prepare', 'respond']) {
+        setSelected(id);
+        setCommandStates(previous => ({ ...previous, [id]: 'running' }));
+        const result = await onRun(id, id === 'predict' ? groqConsent : geminiConsent, language, { ...inputs, previous_agent_output: Object.keys(previous).length ? { ...previous } : undefined });
+        setCommandStates(previous => ({ ...previous, [id]: result ? 'complete' : 'failed' }));
+        if (result) previous[id] = result[id] || result;
+      }
+    } finally {
+      setCommandRunning(false);
     }
   };
 
-  const dataForConsent = {
-    predict: 'Sends officer query, date window, live weather observations, historical rainfall and logged impact counts to Groq. Raw incident messages and exact officer locations are excluded.',
-    prepare: 'Sends zone risk, live forecasts, past impacts and aggregated available resource availability to Google Gemini. Unit IDs and exact coordinates are excluded.',
-    respond: 'Sends aggregated active incident counts, urgency, people totals, road closures and available units to Google Gemini. Raw messages and officer IDs are excluded.',
+  const assessmentLabels = {
+    en: { title: 'Qualitative assessment', insufficient_data: 'Insufficient data', low: 'Low', moderate: 'Moderate', high: 'High', severe: 'Severe' },
+    hi: { title: 'गुणात्मक आकलन', insufficient_data: 'अपर्याप्त डेटा', low: 'कम', moderate: 'मध्यम', high: 'उच्च', severe: 'गंभीर' },
+    te: { title: 'గుణాత్మక అంచనా', insufficient_data: 'సరిపడా డేటా లేదు', low: 'తక్కువ', moderate: 'మధ్యస్థం', high: 'ఎక్కువ', severe: 'తీవ్రం' },
+  }[language] || {};
+
+  const levelBadge = (lvl) => {
+    switch (lvl) {
+      case 'severe': return { bg: '#FEE2E2', text: '#DC2626' };
+      case 'high': return { bg: '#FEE2E2', text: '#DC2626' };
+      case 'moderate': return { bg: '#FEF3C7', text: '#D97706' };
+      case 'low': return { bg: '#DCFCE7', text: '#16A34A' };
+      default: return { bg: '#F1F5F9', text: '#64748B' };
+    }
   };
 
   const loading = loadingAgent !== null;
   const runningCurrent = loadingAgent === selected;
   const err = errors[selected];
 
+  const canRunSequence = Boolean(
+    historyQuery.trim() &&
+    groqConsent &&
+    geminiConsent &&
+    status?.groq_configured &&
+    status?.configured &&
+    !commandRunning &&
+    !loading
+  );
+
+  const getSequenceDisabledReason = () => {
+    if (!historyQuery.trim()) return 'Enter an incident instruction';
+    if (!status?.groq_configured || !status?.configured) return 'AI models not fully configured.';
+    return '';
+  };
+
   return (
-    <div className="flex flex-col gap-5 text-sm">
-      {/* ── Choose Agent Selector ───────────────────────── */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-[.14em] text-indigo-600">
-              {language === 'hi' ? 'एजेंट कार्यक्षेत्र' : language === 'te' ? 'ఏజెంట్ వర్క్‌స్పేస్' : 'Agent Workbench'}
-            </div>
-            <h2 className="mt-0.5 text-lg font-extrabold text-slate-900">
-              {language === 'hi' ? 'एक एजेंट चुनें' : language === 'te' ? 'ఒక ఏజెంట్‌ను ఎంచుకోండి' : 'Choose an Autonomous Agent'}
-            </h2>
-          </div>
-          <span className={`rounded-full border px-3 py-1 text-xs font-bold ${
-            agentConfigured
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : 'border-amber-200 bg-amber-50 text-amber-700'
-          }`}>
-            {selected === 'predict' ? (agentConfigured ? 'GROQ QWEN READY' : 'GROQ KEY REQUIRED') : (agentConfigured ? 'GEMINI 2.5 READY' : 'GEMINI KEY REQUIRED')}
-          </span>
+    <div className="flex flex-col gap-8 text-[14px]">
+      {/* ── ONE PRIMARY SURFACE: Incident Command Form ── */}
+      <section className="bg-white border border-[#E2E8F0] rounded-[6px] p-6 flex flex-col gap-6">
+        <div>
+          <h2 className="text-[16px] font-semibold text-[#0F172A] tracking-tight">
+            Incident Command Form
+          </h2>
+          <p className="text-[14px] text-[#475569] mt-1">
+            Describe the situation once to run Predict, Prepare and Respond sequentially.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {Object.entries(agents).map(([id, item]) => {
-            const Icon = item.icon;
-            const active = selected === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setSelected(id)}
-                aria-pressed={active}
-                className={`rounded-2xl border p-4 text-left transition flex flex-col justify-between ${
-                  active
-                    ? 'border-indigo-400 bg-indigo-50/60 ring-2 ring-indigo-100 shadow-sm'
-                    : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 hover:border-slate-300'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2.5 font-bold text-slate-900 text-sm">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-600 shadow-xs'}`}>
-                      <Icon className="h-4.5 w-4.5" />
-                    </div>
-                    {item.title[langIndex]}
-                  </div>
-                  <p className="mt-2.5 text-xs leading-relaxed text-slate-600 font-normal">
-                    {item.goal[langIndex]}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-2.5 border-t border-slate-200/80 flex items-center justify-between text-xs font-semibold">
-                  <span className={results[id] ? 'text-emerald-700' : 'text-slate-400 font-normal'}>
-                    {results[id] ? (language === 'hi' ? 'परिणाम तैयार' : language === 'te' ? 'ఫలితం సిద్ధం' : 'Result Ready') : (language === 'hi' ? 'तैयार' : language === 'te' ? 'సిద్ధంగా ఉంది' : 'Standby')}
-                  </span>
-                  {results[id] && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── Active Agent Workspace ──────────────────────── */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm">
-            <current.icon className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-extrabold text-slate-900">
-              {current.title[langIndex]} · {language === 'hi' ? 'कार्य व दायरा' : language === 'te' ? 'లక్ష్యం' : 'Autonomous Advisory Protocol'}
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">{current.goal[langIndex]}</p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              {language === 'hi' ? 'यह एजेंट क्या देखता है' : language === 'te' ? 'ఏజెంట్ పరిశీలించేది' : 'Telemetry Ingestion & Inputs'}
-            </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-700">{current.data[langIndex]}</p>
-          </div>
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              {language === 'hi' ? 'आपको क्या मिलेगा' : language === 'te' ? 'మీకు లభించేది' : 'Advisory Output & Officer Checks'}
-            </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-700">{current.output[langIndex]}</p>
-          </div>
-        </div>
-
-        {/* ── PROMINENT TYPE BAR (Interactive Search & Prompt Bar) ── */}
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-xs flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h4 className="font-extrabold text-slate-900 text-sm">
-                {selected === 'predict' ? historyLabels.title : `Ask or Instruct ${current.title[0]}`}
-              </h4>
-              <p className="text-xs text-slate-500">
-                {selected === 'predict' ? historyLabels.hint : 'Type custom guidance, focus queries, or scenario instructions for the agent.'}
-              </p>
-            </div>
-            {history?.available_from && selected === 'predict' && (
-              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-xs">
-                {historyLabels.coverage}: {history.available_from} – {history.available_through || '—'}
-              </span>
-            )}
+        {/* Inputs: Label above each field, Area narrow, Instruction wide */}
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          <div className="w-full md:w-64 flex flex-col gap-1.5">
+            <label className="text-[12px] font-medium text-[#475569]">
+              Focus area
+            </label>
+            <input
+              type="text"
+              value={areaQuery}
+              onChange={(e) => setAreaQuery(e.target.value)}
+              placeholder="e.g. Secunderabad"
+              className="vp-input"
+            />
           </div>
 
-          {/* Clean Type Bar Input with Embedded Action Button */}
-          <div className="relative flex items-center">
-            <span className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
-              <Search className="w-4 h-4" />
-            </span>
+          <div className="w-full flex-1 flex flex-col gap-1.5">
+            <label className="text-[12px] font-medium text-[#475569]">
+              Incident instruction
+            </label>
             <input
               type="text"
               value={historyQuery}
               onChange={(e) => setHistoryQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (selected === 'predict') handleHistorySearch();
-                  else handleTriggerRun();
-                }
-              }}
-              placeholder={current.placeholder}
-              className="w-full pl-10 pr-28 py-3 text-xs md:text-sm bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm transition"
+              placeholder="e.g. Retrieve recent rain effects and prepare for expected flooding near Musi river"
+              className="vp-input"
             />
-            <div className="absolute right-1.5 flex items-center gap-1.5">
-              {selected === 'predict' && (
-                <button
-                  type="button"
-                  onClick={() => handleHistorySearch()}
-                  disabled={historyLoading || !historyQuery.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 text-xs transition disabled:opacity-40"
-                >
-                  {historyLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-                  <span>Search</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleTriggerRun}
-                disabled={loading || !agentConfigured || !consent}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 text-xs transition disabled:opacity-40 shadow-xs"
-              >
-                {runningCurrent ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                <span>Run</span>
-              </button>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              {SUGGESTION_CHIPS.map(chip => <button key={chip} type="button" onClick={() => handleChipClick(chip)} className="h-7 rounded-[6px] border border-[#E2E8F0] bg-white px-2.5 text-[12px] text-[#475569] hover:bg-[#F8FAFC]">{chip}</button>)}
             </div>
           </div>
-
-          {/* Quick-Click Suggestion Chips */}
-          {selected === 'predict' && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Quick Scenarios:</span>
-              {SUGGESTION_CHIPS.map((chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => handleChipClick(chip)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-slate-600 transition shadow-2xs"
-                >
-                  ⚡ {chip}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Historical Search Progress / Clarification / Empty Feedback */}
-          {historyLoading && (
-            <div className="flex items-center gap-2 text-xs text-indigo-700 font-medium pt-1">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              {historyLabels.loading}
-            </div>
-          )}
-
-          {(historyError || (history && history.status === 'failed')) && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 font-medium">
-              {historyError || historyLabels.unavailable}
-            </div>
-          )}
-
-          {history?.status === 'clarification_required' && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-              {history.clarification_question}
-            </div>
-          )}
-
-          {!historyLoading && history && history.status !== 'failed' && history.status !== 'clarification_required' && !history.events?.length && (
-            <div className="text-xs text-slate-500 bg-white p-3 rounded-xl border border-slate-200">
-              {history.resolved_hazard === 'flood'
-                ? 'No flood reports recorded in Vanta for this period. Rainfall data alone does not confirm flooding.'
-                : historyLabels.empty}
-            </div>
-          )}
-
-          {/* Historical Event Selector */}
-          {selectedEvent && (
-            <div className="mt-2 flex flex-col gap-3 pt-3 border-t border-slate-200/80">
-              <div className="grid gap-2.5 md:grid-cols-2">
-                <label className="text-xs font-bold text-slate-700">
-                  {historyLabels.event}
-                  <select
-                    value={selectedEventId}
-                    onChange={(e) => setSelectedEventId(e.target.value)}
-                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                  >
-                    {(history?.events || []).map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.window_start} – {item.window_end} · {item.mean_hotspot_rainfall_mm === null ? '—' : `${item.mean_hotspot_rainfall_mm} mm mean at ${item.rainfall_point_count} points`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="text-xs font-bold text-slate-700">
-                  {historyLabels.area}
-                  <select
-                    value={selectedHistoryZone}
-                    onChange={(e) => setSelectedHistoryZone(e.target.value)}
-                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                  >
-                    <option value="">{historyLabels.all}</option>
-                    {(riskZones || []).map((zone) => (
-                      <option key={zone.id} value={zone.id}>{zone.name}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  {historyLabels.impacts} · {selectedEvent.window_start} – {selectedEvent.window_end}
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  {selectedEventAreas.map((area) => (
-                    <div key={area.zone_id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs">
-                      <b className="text-slate-900 font-bold">{zoneName(area.zone_id)}</b>
-                      <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
-                        <span>{historyLabels.rainfall}</span><span className="text-right font-semibold text-slate-900">{area.rainfall_total_mm ?? '—'} mm</span>
-                        <span>{historyLabels.max}</span><span className="text-right font-semibold text-slate-900">{area.max_daily_rainfall_mm ?? '—'} mm</span>
-                        <span>{historyLabels.reports}</span><span className="text-right font-semibold text-slate-900">{area.incident_reports}</span>
-                        <span>{historyLabels.blocks}</span><span className="text-right font-semibold text-slate-900">{area.blocked_road_reports}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* ── Single Unified Consent Disclosure ───────────── */}
-        {agentConfigured ? (
-          <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 shadow-xs cursor-pointer">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-indigo-600 rounded"
-            />
-            <span className="text-xs leading-relaxed text-slate-700">
-              {dataForConsent[selected]}
-              {selected === 'predict' && selectedEvent && (
-                <span className="mt-1 block font-bold text-indigo-700">
-                  Active window: {selectedEvent.window_start} – {selectedEvent.window_end} · {selectedHistoryZone ? zoneName(selectedHistoryZone) : historyLabels.allAreas}
-                </span>
-              )}
+        {/* Sticky / Right-Aligned Run All Agents Button with Helper text */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#E2E8F0]">
+          <div className="text-[12px] text-[#64748B]">
+            {!canRunSequence && getSequenceDisabledReason()}
+          </div>
+
+          <button
+            onClick={handleRunCommand}
+            disabled={!canRunSequence}
+            className="vp-btn vp-btn-primary"
+          >
+            {commandRunning ? (
+              <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+            ) : (
+              <Sparkles className="w-4 h-4" strokeWidth={1.5} />
+            )}
+            <span>
+              {commandRunning ? 'Running sequence…' : 'Run all agents in sequence'}
             </span>
-          </label>
-        ) : (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 font-medium">
-            <AlertTriangle className="mr-1.5 inline h-4 w-4 text-amber-600" />
-            {selected === 'predict'
-              ? 'Add GROQ_API_KEY to backend .env and restart backend.'
-              : 'Add GEMINI_API_KEY to backend .env and restart backend.'}
-          </div>
-        )}
-
-        {err && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 font-medium">
-            {err}
-          </div>
-        )}
-
-        {/* ── Main Execution Button ───────────────────────── */}
-        <button
-          onClick={handleTriggerRun}
-          disabled={!agentConfigured || !consent || loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-3.5 font-extrabold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40 text-sm"
-        >
-          {runningCurrent ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {runningCurrent
-            ? `Running ${current.title[0]}…`
-            : selected === 'predict' && selectedEvent
-            ? `Run Weather Predict (with ${selectedEvent.window_start} window)`
-            : `Run ${current.title[0]}`}
-        </button>
-
-        <div className="text-center text-[11px] text-slate-400">
-          {selected === 'predict' ? `Groq · ${status?.groq_model || 'qwen/qwen3.8-27b'}` : `Google Gemini · ${status?.model || 'gemini-2.5-flash'}`} · Advisory Output · Officer approval required
+          </button>
         </div>
+
+        {/* Progress indicator during sequential run */}
+        {Object.keys(commandStates).length > 0 && (
+          <div className="flex flex-wrap items-center gap-6 pt-3 border-t border-[#E2E8F0] text-[12px]">
+            {['predict', 'prepare', 'respond'].map((id) => (
+              <div key={id} className="flex items-center gap-2">
+                <span className="font-medium text-[#0F172A]">{agents[id].title[0]}:</span>
+                <span className="text-[#475569]">
+                  {commandStates[id] === 'running' ? 'Running…' : commandStates[id] === 'complete' ? 'Completed' : commandStates[id] === 'failed' ? 'Failed' : 'Pending'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* ── Agent Report Section ────────────────────────── */}
-      {selectedResult && (
-        <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="font-extrabold text-slate-900 text-base">
-              {language === 'hi' ? 'एजेंट रिपोर्ट' : language === 'te' ? 'ఏజెంట్ నివేదిక' : 'Agent Intelligence Report'}
-            </h3>
-            <span className="text-xs text-slate-400 font-mono">
-              {selectedResult.generated_at && new Date(selectedResult.generated_at).toLocaleString()}
-            </span>
+      {/* ── AGENT SELECTOR: Segmented Control / Tab Row (No large cards) ── */}
+      <section className="flex flex-col gap-6">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0]">
+          <div className="flex items-center gap-8">
+            {Object.entries(agents).map(([id, item]) => {
+              const active = selected === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setSelected(id)}
+                  className={`relative py-3 text-[14px] font-medium transition ${
+                    active
+                      ? 'text-[#4338CA] font-semibold'
+                      : 'text-[#64748B] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <span>{item.title[langIndex]}</span>
+                  <span className="mt-1 block text-[10px] font-normal text-[#64748B]">
+                    {loadingAgent === id || commandStates[id] === 'running' ? 'Running' : errors[id] ? `Failed · ${errors[id]}` : results[id] ? `Done · ${new Date(results[id].generated_at || Date.now()).toLocaleTimeString()}` : 'Not run'}
+                  </span>
+                  {active && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA]" />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {selected === 'predict' && (
-            <>
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
-                <div className="font-bold text-indigo-900 text-xs uppercase tracking-wider mb-1">
-                  Weather Analysis Summary
-                </div>
-                <p className="text-slate-800 leading-relaxed text-sm font-medium">{selectedResult.predict?.summary}</p>
-              </div>
+        </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">{assessmentLabels.title}</div>
-                <div className="flex flex-col gap-2.5">
-                  {(selectedResult.predict?.zone_assessments || []).map((item) => (
-                    <div key={item.zone_id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
-                      <div className="flex items-center justify-between gap-2">
-                        <b className="text-slate-900 text-sm">{zoneName(item.zone_id)}</b>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase border ${levelPill(item.level)}`}>
-                          {assessmentLabels[item.level] || item.level.replace('_', ' ')}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-600 leading-relaxed">{item.evidence}</p>
-                      <div className="mt-2 text-xs font-semibold text-indigo-700 bg-indigo-50/60 p-2 rounded-lg border border-indigo-100">
-                        Officer check: {item.officer_check}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* ── SELECTED AGENT DETAIL AREA (Plain headings and text, NO boxes) ── */}
+        <div className="flex flex-col gap-6">
+          <div>
+            <h3 className="text-[16px] font-semibold text-[#0F172A]">
+              {current.title[langIndex]} Protocol
+            </h3>
+            <p className="text-[14px] text-[#475569] mt-1">
+              {current.goal[langIndex]}
+            </p>
+          </div>
 
-              <div className="text-xs text-slate-500 px-1 font-medium">
-                Source: {selectedResult.recent_rain_impacts?.source} · {selectedResult.recent_rain_impacts?.status} · {selectedResult.recent_rain_impacts?.window_start || '—'} – {selectedResult.recent_rain_impacts?.window_end || '—'}
+          {/* Telemetry & Output rendered as plain text lists with small labels, NO boxes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 border-t border-b border-[#E2E8F0]">
+            <div>
+              <div className="text-[12px] uppercase font-medium text-[#64748B] tracking-wider mb-1">
+                Telemetry ingestion & inputs
               </div>
+              <p className="text-[14px] text-[#334155] leading-relaxed">
+                {current.data[langIndex]}
+              </p>
+            </div>
+            <div>
+              <div className="text-[12px] uppercase font-medium text-[#64748B] tracking-wider mb-1">
+                Advisory output & officer checks
+              </div>
+              <p className="text-[14px] text-[#334155] leading-relaxed">
+                {current.output[langIndex]}
+              </p>
+            </div>
+          </div>
 
-              {(selectedResult.predict?.focus_zones || []).map((item, index) => (
-                <div key={`${item.zone_id}-${index}`} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                    <b className="text-slate-900 text-xs uppercase tracking-wide">Focus Zone: {zoneName(item.zone_id)}</b>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#E2E8F0] pt-4">
+            <div className="text-[12px] text-[#64748B]">
+              {agentConfigured ? 'Ready to run with the current form values.' : selected === 'predict' ? 'GROQ_API_KEY is missing.' : 'GEMINI_API_KEY is missing.'}
+            </div>
+            <button type="button" onClick={handleTriggerRun} disabled={loading || !agentConfigured || !consent || !historyQuery.trim()} className="vp-btn vp-btn-secondary">
+              {runningCurrent ? <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} /> : <Send className="w-4 h-4" strokeWidth={1.5} />}
+              <span>Run this agent only</span>
+            </button>
+          </div>
+          {err && <div className="text-[12px] text-[#DC2626]">{err}<button type="button" onClick={handleTriggerRun} className="ml-2 font-medium underline">Retry</button></div>}
+        </div>
+        {/* ── AGENT RESULTS / REPORT: Plain headings and text, NO card boxes ── */}
+        {selectedResult && (
+          <section className="flex flex-col gap-6 pt-6 border-t border-[#E2E8F0]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[16px] font-semibold text-[#0F172A]">
+                Intelligence Report
+              </h3>
+              <span className="vp-mono text-[12px] text-[#64748B]">
+                {selectedResult.generated_at && new Date(selectedResult.generated_at).toLocaleString()}
+              </span>
+            </div>
+
+            {selected === 'predict' && (
+              <div className="flex flex-col gap-6">
+                <div>
+                  <div className="text-[12px] uppercase font-medium text-[#64748B] tracking-wider mb-1">
+                    Summary
                   </div>
-                  <p className="mt-1 text-xs text-slate-700">{item.observation}</p>
-                  <p className="mt-1.5 text-xs font-semibold text-indigo-700">Recommended check: {item.officer_check}</p>
-                </div>
-              ))}
-            </>
-          )}
-
-          {selected === 'prepare' && (
-            <>
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
-                <p className="text-slate-900 font-medium leading-relaxed">{selectedResult.prepare?.summary}</p>
-              </div>
-
-              <div className="flex flex-col gap-2.5">
-                {(selectedResult.prepare?.readiness_actions || []).map((item, index) => (
-                  <div key={index} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-                    <b className="text-slate-900 text-sm">
-                      {item.zone_id ? zoneName(item.zone_id) : 'City-wide'} · {item.action}
-                    </b>
-                    <p className="mt-1 text-xs text-slate-600">{item.reason}</p>
-                    <p className="mt-2 text-xs font-semibold text-indigo-700 bg-indigo-50/60 p-2 rounded-lg border border-indigo-100">
-                      Officer check: {item.officer_check}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={onReviewPreparation}
-                className="inline-flex items-center gap-1.5 self-start text-xs font-bold text-indigo-600 hover:text-indigo-800 transition"
-              >
-                Review positioning recommendations <ArrowRight className="h-4 w-4" />
-              </button>
-            </>
-          )}
-
-          {selected === 'respond' && (
-            <>
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
-                <div className="font-bold text-indigo-900 text-xs uppercase tracking-wider mb-1">
-                  Situation Summary
-                </div>
-                <p className="text-slate-900 font-medium leading-relaxed">{selectedResult.respond?.summary}</p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Recorded Operational Picture
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  {(selectedResult.operational_context?.active_incident_and_logged_road_closure_counts_by_zone || []).filter(area => area.active_incidents || area.blocked_road_reports || area.risk_level >= 3).map((area) => (
-                    <div key={area.zone_id} className="flex flex-wrap justify-between gap-2 border-b border-slate-200 py-2 text-xs last:border-0">
-                      <b className="text-slate-900">{area.zone_name}</b>
-                      <span className="text-slate-600 font-medium">
-                        Risk {area.risk_level} · {area.active_incidents} incidents · {area.blocked_road_reports} road closures
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {(selectedResult.respond?.priorities || []).map((item, index) => (
-                <div key={index} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-                  <b className="text-slate-900 text-sm">{item.zone_id ? zoneName(item.zone_id) : 'City-wide'} · {item.situation}</b>
-                  <ul className="mt-2 list-disc pl-5 text-xs text-slate-600 space-y-1">
-                    {item.recommended_steps?.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 text-xs font-semibold text-indigo-700 bg-indigo-50/60 p-2 rounded-lg border border-indigo-100">
-                    Officer check: {item.officer_check}
+                  <p className="text-[14px] text-[#0F172A] leading-relaxed">
+                    {selectedResult.predict?.summary}
                   </p>
                 </div>
-              ))}
-            </>
-          )}
 
-          <div className="flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500 font-medium">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            Advisory recommendations only. Officer review and approval is required prior to dispatch.
-          </div>
-        </section>
-      )}
+                <div className="flex flex-col gap-2">
+                  <div className="text-[12px] uppercase font-medium text-[#64748B] tracking-wider">
+                    {assessmentLabels.title}
+                  </div>
+                  <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
+                    {(selectedResult.predict?.zone_assessments || []).map((item) => {
+                      const badge = levelBadge(item.level);
+                      return (
+                        <div key={item.zone_id} className="py-3 flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-[#0F172A] text-[14px]">{zoneName(item.zone_id)}</span>
+                            <span
+                              className="px-2 py-0.5 rounded-[4px] text-[12px] font-semibold uppercase"
+                              style={{ backgroundColor: badge.bg, color: badge.text }}
+                            >
+                              {assessmentLabels[item.level] || item.level}
+                            </span>
+                          </div>
+                          <p className="text-[14px] text-[#475569]">{item.evidence}</p>
+                          <div className="text-[12px] text-[#4338CA]">
+                            Officer check: {item.officer_check}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-      <p className="flex items-center gap-1.5 text-xs text-slate-400 font-medium px-1">
-        <Activity className="h-4 w-4 text-indigo-500 shrink-0" />
-        Autonomous workflow: Predict, Prepare, and Respond operate independently with transparent data provenance.
-      </p>
+                {(selectedResult.predict?.focus_zones || []).length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <div className="text-[12px] uppercase font-medium text-[#64748B] tracking-wider">
+                      Focus zones
+                    </div>
+                    <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
+                      {selectedResult.predict.focus_zones.map((item, idx) => (
+                        <div key={`${item.zone_id}-${idx}`} className="py-2.5 flex flex-col gap-1">
+                          <span className="font-medium text-[#0F172A] text-[14px]">{zoneName(item.zone_id)}</span>
+                          <p className="text-[14px] text-[#475569]">{item.observation}</p>
+                          <div className="text-[12px] text-[#4338CA]">
+                            Recommended check: {item.officer_check}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selected === 'prepare' && (
+              <div className="flex flex-col gap-6">
+                <div>
+                  <div className="text-[12px] uppercase font-medium text-[#64748B] tracking-wider mb-1">
+                    Readiness summary
+                  </div>
+                  <p className="text-[14px] text-[#0F172A] leading-relaxed">
+                    {selectedResult.prepare?.summary}
+                  </p>
+                </div>
+
+                <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
+                  {(selectedResult.prepare?.readiness_actions || []).map((item, idx) => (
+                    <div key={idx} className="py-3 flex flex-col gap-1">
+                      <span className="font-medium text-[#0F172A] text-[14px]">
+                        {item.zone_id ? zoneName(item.zone_id) : 'Citywide'} · {item.action}
+                      </span>
+                      <p className="text-[14px] text-[#475569]">{item.reason}</p>
+                      <div className="text-[12px] text-[#4338CA]">
+                        Officer verification: {item.officer_check}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={onReviewPreparation}
+                  className="self-start text-[14px] font-medium text-[#4338CA] hover:underline flex items-center gap-1.5"
+                >
+                  <span>Review prepositioning recommendations</span>
+                  <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+              </div>
+            )}
+
+            {selected === 'respond' && (
+              <div className="flex flex-col gap-6">
+                <div>
+                  <div className="text-[12px] uppercase font-medium text-[#64748B] tracking-wider mb-1">
+                    Situation summary
+                  </div>
+                  <p className="text-[14px] text-[#0F172A] leading-relaxed">
+                    {selectedResult.respond?.summary}
+                  </p>
+                </div>
+
+                <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
+                  {(selectedResult.respond?.priorities || []).map((item, idx) => (
+                    <div key={idx} className="py-3 flex flex-col gap-1.5">
+                      <span className="font-medium text-[#0F172A] text-[14px]">
+                        {item.zone_id ? zoneName(item.zone_id) : 'Citywide'} · {item.situation}
+                      </span>
+                      <ul className="list-disc pl-5 text-[14px] text-[#475569] space-y-1">
+                        {item.recommended_steps?.map((step, i) => (
+                          <li key={i}>{step}</li>
+                        ))}
+                      </ul>
+                      <div className="text-[12px] text-[#4338CA] pt-1">
+                        Officer verification: {item.officer_check}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-2 text-[12px] text-[#64748B]">
+              <ShieldCheck className="w-4 h-4 text-[#16A34A]" strokeWidth={1.5} />
+              <span>Advisory recommendations only. Officer review and approval is required prior to dispatch.</span>
+            </div>
+            {selected === 'prepare' && <><p className="text-[12px] font-medium text-[#B45309]">Drafted by AI, requires officer approval.</p><OperationsCalendar calendar={selectedResult.operations_calendar || selectedResult.prepare?.operations_calendar} model={selectedResult.model || selectedResult.provider} /></>}
+            {selected === 'respond' && <RespondSmsPanel draft={selectedResult.respond?.sms_draft} model={selectedResult.model || selectedResult.provider} testMode={status?.sms_test_mode ?? true} sender={status?.sms_sender} />}
+            <div className="pt-2 text-[11px] text-[#64748B]">Model: {selectedResult.model || selectedResult.provider || 'Not available'}</div>
+          </section>
+        )}
+      </section>
     </div>
   );
 }

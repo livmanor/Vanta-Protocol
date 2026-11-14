@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Activity, Bot, CheckCircle2, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
+  Activity, Bot, CheckCircle2, ChevronDown, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
   ShieldAlert, Siren
 } from 'lucide-react';
 import Landing from './components/Landing';
@@ -20,7 +20,6 @@ import {
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent
 } from './api';
 
-/* Left-rail navigation items */
 const NAV = [
   { id: 'agents', label: 'AI Agents', Icon: Bot },
   { id: 'map', label: 'Tactical Map', Icon: MapIcon },
@@ -50,11 +49,25 @@ export default function App() {
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
   const [isRoadModalOpen, setIsRoadModalOpen] = useState(false);
+  const [isNewMenuOpen, setIsNewMenuOpen] = useState(false);
 
-  const [view, setView] = useState('agents'); // 'map' | 'agents' — agents is the landing screen
-  const [entered, setEntered] = useState(false); // landing page gate
+  const [view, setView] = useState('agents'); // 'map' | 'agents'
+  const [entered, setEntered] = useState(false);
   const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
   const [clock, setClock] = useState(new Date());
+
+  const newMenuRef = useRef(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (newMenuRef.current && !newMenuRef.current.contains(event.target)) {
+        setIsNewMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoadingSources(true);
@@ -93,20 +106,13 @@ export default function App() {
     setLoadingAgent(agentId);
     setAgentErrors(previous => ({ ...previous, [agentId]: '' }));
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7369/ingest/b6948bf1-0c84-4082-aca8-dc71a9b2d020',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'715d98'},body:JSON.stringify({sessionId:'715d98',hypothesisId:'C',location:'App.jsx:handleRunAgent',message:'agent run requested',data:{agentId,inputs},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       const result = await runAgent(agentId, confirmGoogleProcessing, runLanguage || language, inputs);
-      // #region agent log
-      fetch('http://127.0.0.1:7369/ingest/b6948bf1-0c84-4082-aca8-dc71a9b2d020',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'715d98'},body:JSON.stringify({sessionId:'715d98',hypothesisId:'E',location:'App.jsx:handleRunAgent',message:'agent run succeeded',data:{agentId,status:result.status,window:[result.recent_rain_impacts?.window_start,result.recent_rain_impacts?.window_end],historyStatus:result.recent_rain_impacts?.status,hasSummary:Boolean(result.predict?.summary||result.prepare?.summary||result.respond?.summary)},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       setAgentResults(previous => ({ ...previous, [agentId]: result }));
-      if (agentId === 'prepare') setPrepositionSuggestions(result.positioning_recommendations || []);
+      return result;
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7369/ingest/b6948bf1-0c84-4082-aca8-dc71a9b2d020',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'715d98'},body:JSON.stringify({sessionId:'715d98',hypothesisId:'C',location:'App.jsx:handleRunAgent',message:'agent run failed',data:{agentId,error:err.message,inputs},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-      setAgentErrors(previous => ({ ...previous, [agentId]: err.message }));
+      const msg = err.message || 'Agent failed to respond.';
+      setAgentErrors(previous => ({ ...previous, [agentId]: msg }));
+      return null;
     } finally {
       setLoadingAgent(null);
     }
@@ -114,96 +120,107 @@ export default function App() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 60000);
-    const t = setInterval(() => setClock(new Date()), 1000);
-    return () => { clearInterval(interval); clearInterval(t); };
+    const interval = setInterval(loadData, 45000);
+    return () => clearInterval(interval);
   }, [loadData]);
 
-  // Nudge Leaflet when the map becomes visible again after switching views
   useEffect(() => {
-    if (view === 'map') window.dispatchEvent(new Event('resize'));
-  }, [view]);
+    const timer = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const handleGenerateRoute = async (zone) => {
+  const handleRegisterUnit = async (unitData) => {
+    await registerUnit(unitData);
+    await loadData();
+  };
+
+  const handleReportIncident = async (incidentData) => {
+    await reportIncident(incidentData);
+    await loadData();
+  };
+
+  const handleReportRoad = async (roadData) => {
+    await reportBlockedRoad(roadData);
+    await loadData();
+  };
+
+  const handleApprovePreposition = async (id, unitId, targetZoneName) => {
+    await approvePrepositioning(id, unitId, targetZoneName);
+    await loadData();
+  };
+
+  const handleGenerateRoute = async (zoneId, targetType = 'shelter') => {
     setLoadingRoute(true);
     try {
-      // A hotspot is already a target point; polygon zones use their ring centroid.
-      const geometry = zone.polygon || {};
-      const coords = geometry.coordinates || [];
-      const ring = coords[0] || [];
-      const avgLng = geometry.type === 'Point' ? coords[0] : ring.reduce((sum, point) => sum + point[0], 0) / (ring.length || 1);
-      const avgLat = geometry.type === 'Point' ? coords[1] : ring.reduce((sum, point) => sum + point[1], 0) / (ring.length || 1);
-      const route = await generateEvacuationRoute(zone.id, zone.name, avgLat, avgLng);
-      setActiveRoute(route);
+      const res = await generateEvacuationRoute(zoneId, targetType);
+      setActiveRoute(res);
     } catch (err) {
-      alert(`Could not calculate route: ${err.message}`);
+      alert(`Routing failed: ${err.message}`);
     } finally {
       setLoadingRoute(false);
     }
   };
 
-  const handleRegisterUnit = async (unitData) => {
-    const created = await registerUnit(unitData);
-    setUnits(prev => [created, ...prev]);
-    const prep = await fetchPrepositionSuggestions().catch(() => []);
-    setPrepositionSuggestions(prep);
-  };
-
-  const handleReportIncident = async (incData) => {
-    const created = await reportIncident(incData);
-    setIncidents(prev => [created, ...prev]);
-  };
-
-  const handleReportRoad = async (roadData) => {
-    const created = await reportBlockedRoad(roadData);
-    setBlockedRoads(prev => [created, ...prev]);
-  };
-
-  const handleApprovePreposition = async (suggestionId, unitId, targetZoneName) => {
-    await approvePrepositioning(suggestionId, unitId, targetZoneName);
-    const [uList, prep] = await Promise.all([fetchUnits(), fetchPrepositionSuggestions()]);
-    setUnits(uList);
-    setPrepositionSuggestions(prep);
-  };
-
-  // Used by the dashboard risk summary after entering the control room.
-  const maxRisk = riskZones.reduce((max, zone) => Math.max(max, zone.risk_level || 0), 0);
-  const alertTone = maxRisk >= 4
-    ? { label: 'CRITICAL' }
-    : maxRisk === 3
-      ? { label: 'ELEVATED' }
-      : { label: 'NOMINAL' };
+  const maxRisk = riskZones.reduce((m, z) => Math.max(m, z.risk_level || 0), 0);
+  const alertTone =
+    maxRisk >= 4 ? { dot: '#DC2626', label: 'Critical' } :
+    maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
+    { dot: '#16A34A', label: 'Nominal' };
 
   const pendingApprovals = prepositionSuggestions.length;
+  const aiEngineOnline = Boolean(agentStatus?.configured || agentStatus?.groq_configured);
 
   if (!entered) return <Landing onEnter={() => setEntered(true)} />;
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: 'var(--vp-bg)' }}>
-      {/* ── Top Header Bar ──────────────────────────────── */}
-      <header
-        className="flex items-center gap-4 px-5 h-[64px] border-b shrink-0 z-[700] bg-white border-slate-200"
-      >
-        {/* Brand */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-sm">
-            <Siren className="w-5 h-5 text-white" />
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F8FAFC] text-[#0F172A]">
+      {/* ── Top Bar: Strict 56px height, vertically centered, 16px gaps ── */}
+      <header className="flex items-center justify-between px-6 h-[56px] border-b border-[#E2E8F0] bg-white shrink-0 z-[700]">
+        <div className="flex items-center gap-4">
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-[6px] bg-[#4338CA] flex items-center justify-center text-white">
+              <Siren className="w-4 h-4 text-white" strokeWidth={1.5} />
+            </div>
+            <div>
+              <div className="font-semibold text-[14px] text-[#0F172A] leading-tight">Vanta Protocol</div>
+              <div className="text-[12px] text-[#64748B] leading-tight">{t('area')}</div>
+            </div>
           </div>
-          <div className="leading-tight">
-            <div className="font-extrabold tracking-tight text-slate-900 text-[14px]">Vanta Protocol</div>
-            <div className="text-[11px] text-slate-500 font-medium">{t('area')}</div>
+
+          <div className="h-4 w-px bg-[#E2E8F0] mx-1" />
+
+          {/* AI Engine Status Text */}
+          <div className="hidden sm:flex items-center gap-2 text-[12px] text-[#475569]">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: aiEngineOnline ? '#16A34A' : '#64748B' }}
+            />
+            <span>AI engine: {aiEngineOnline ? 'online' : 'offline'}</span>
+          </div>
+
+          <div className="h-4 w-px bg-[#E2E8F0] mx-1 hidden sm:block" />
+
+          {/* Risk Level */}
+          <div className="hidden md:flex items-center gap-2 text-[12px] text-[#475569]">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: alertTone.dot }}
+            />
+            <span>Risk: {alertTone.label}</span>
           </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* Right side controls */}
+        <div className="flex items-center gap-4">
           {/* Clock */}
-          <span className="hidden sm:inline vp-mono text-[12px] px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-medium">
+          <span className="hidden sm:inline vp-mono text-[12px] text-[#64748B]">
             {clock.toLocaleTimeString('en-IN', { hour12: false })}
           </span>
 
-          {/* Language switcher */}
+          {/* Language Switch: Segmented control 14px */}
           <div
-            className="flex items-center gap-0.5 rounded-lg border border-slate-200 p-0.5 bg-slate-50"
+            className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]"
             aria-label={t('langLabel')}
           >
             {[['en', 'EN'], ['hi', 'हिं'], ['te', 'తె']].map(([code, label]) => (
@@ -211,8 +228,10 @@ export default function App() {
                 key={code}
                 onClick={() => setLanguage(code)}
                 aria-pressed={language === code}
-                className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${
-                  language === code ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'
+                className={`h-7 px-2.5 rounded-[4px] text-[14px] font-medium transition ${
+                  language === code
+                    ? 'bg-white text-[#0F172A] shadow-xs font-semibold'
+                    : 'text-[#64748B] hover:text-[#0F172A]'
                 }`}
               >
                 {label}
@@ -220,94 +239,120 @@ export default function App() {
             ))}
           </div>
 
-          <button
-            onClick={() => setIsIncidentModalOpen(true)}
-            className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition"
-          >
-            <Plus className="w-3.5 h-3.5 text-indigo-600" /> {t('logIncident')} <span className="vp-mono text-slate-400 font-normal">{incidents.length}</span>
-          </button>
-          <button
-            onClick={() => setIsUnitModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition"
-          >
-            <Shield className="w-3.5 h-3.5 text-indigo-600" /> {t('registerUnit')} <span className="vp-mono text-slate-400 font-normal">{units.length}</span>
-          </button>
-          <button
-            onClick={() => setIsRoadModalOpen(true)}
-            className="hidden md:flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition"
-          >
-            <Route className="w-3.5 h-3.5 text-indigo-600" /> {t('roadBlock')} <span className="vp-mono text-slate-400 font-normal">{blockedRoads.length}</span>
-          </button>
+          {/* Single "New" Primary Action Dropdown */}
+          <div className="relative" ref={newMenuRef}>
+            <button
+              onClick={() => setIsNewMenuOpen(prev => !prev)}
+              className="h-[36px] px-3.5 rounded-[6px] bg-[#4338CA] hover:bg-[#3730A3] text-white text-[14px] font-medium inline-flex items-center gap-2 transition"
+            >
+              <Plus className="w-4 h-4 text-white" strokeWidth={1.5} />
+              <span>New</span>
+              <ChevronDown className="w-3.5 h-3.5 text-white/80" strokeWidth={1.5} />
+            </button>
+
+            {isNewMenuOpen && (
+              <div className="absolute right-0 mt-1.5 w-56 rounded-[6px] border border-[#E2E8F0] bg-white py-1 shadow-md z-[800]">
+                <button
+                  onClick={() => { setIsNewMenuOpen(false); setIsIncidentModalOpen(true); }}
+                  className="w-full px-3 py-2 text-left text-[14px] text-[#0F172A] hover:bg-[#F8FAFC] flex items-center justify-between transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-[#475569]" strokeWidth={1.5} />
+                    {t('logIncident')}
+                  </span>
+                  {incidents.length > 0 && (
+                    <span className="vp-mono text-[12px] text-[#64748B]">{incidents.length}</span>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setIsNewMenuOpen(false); setIsUnitModalOpen(true); }}
+                  className="w-full px-3 py-2 text-left text-[14px] text-[#0F172A] hover:bg-[#F8FAFC] flex items-center justify-between transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-[#475569]" strokeWidth={1.5} />
+                    {t('registerUnit')}
+                  </span>
+                  {units.length > 0 && (
+                    <span className="vp-mono text-[12px] text-[#64748B]">{units.length}</span>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setIsNewMenuOpen(false); setIsRoadModalOpen(true); }}
+                  className="w-full px-3 py-2 text-left text-[14px] text-[#0F172A] hover:bg-[#F8FAFC] flex items-center justify-between transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <Route className="w-4 h-4 text-[#475569]" strokeWidth={1.5} />
+                    {t('roadBlock')}
+                  </span>
+                  {blockedRoads.length > 0 && (
+                    <span className="vp-mono text-[12px] text-[#64748B]">{blockedRoads.length}</span>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* ── Body: rail + main ───────────────────────────── */}
+      {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left nav rail */}
-        <nav
-          className="w-[210px] flex flex-col justify-between px-3 py-4 border-r shrink-0 z-[600] bg-white border-slate-200"
-        >
-          <div className="flex flex-col gap-1">
-            <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Operations</div>
+        {/* Left Nav Rail: Collapses to icon rail below 1024px */}
+        <nav className="w-14 lg:w-48 flex flex-col justify-between py-4 border-r border-[#E2E8F0] shrink-0 z-[600] bg-white">
+          <div className="flex flex-col gap-1 px-2">
+            <div className="px-2 pb-2 text-[12px] font-medium text-[#64748B] hidden lg:block">
+              Navigation
+            </div>
             {NAV.map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setView(id)}
                 title={label}
-                className={`relative w-full h-10 rounded-xl px-3 flex items-center gap-3 transition text-left ${
+                className={`relative h-[36px] rounded-[6px] px-3 flex items-center gap-3 transition text-left ${
                   view === id
-                    ? 'bg-indigo-50 text-indigo-700 font-bold shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50 font-medium'
+                    ? 'bg-[#EEF2FF] text-[#4338CA] font-medium'
+                    : 'text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
                 }`}
               >
-                {view === id && <span className="absolute left-1 top-2.5 bottom-2.5 w-1 rounded-full bg-indigo-600" />}
-                <Icon className={`w-[18px] h-[18px] ${view === id ? 'text-indigo-600' : 'text-slate-400'}`} />
-                <span className="text-[13px]">{label}</span>
+                {view === id && (
+                  <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-[#4338CA]" />
+                )}
+                <Icon
+                  className={`w-4 h-4 shrink-0 ${view === id ? 'text-[#4338CA]' : 'text-[#64748B]'}`}
+                  strokeWidth={1.5}
+                />
+                <span className="text-[14px] hidden lg:inline">{label}</span>
               </button>
             ))}
 
-            {/* Pending approvals badge */}
             {pendingApprovals > 0 && (
               <button
                 onClick={() => { setView('map'); setActiveTab('preposition'); }}
                 title={`${pendingApprovals} approvals pending`}
-                className="mt-1 w-full h-10 rounded-xl flex items-center gap-3 px-3 relative text-amber-700 hover:bg-amber-50 font-medium transition"
+                className="h-[36px] rounded-[6px] px-3 flex items-center gap-3 text-[#D97706] hover:bg-[#FEF3C7]/40 transition text-left mt-1"
               >
-                <Compass className="w-[18px] h-[18px] text-amber-600" />
-                <span className="text-[13px]">Prepositioning</span>
-                <span className="ml-auto px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-extrabold rounded-full border border-amber-200">
+                <Compass className="w-4 h-4 text-[#D97706] shrink-0" strokeWidth={1.5} />
+                <span className="text-[14px] hidden lg:inline">Prepositioning</span>
+                <span className="ml-auto px-1.5 py-0.2 bg-[#FEF3C7] text-[#D97706] text-[11px] font-semibold rounded-[4px] border border-[#FDE68A] hidden lg:inline">
                   {pendingApprovals}
                 </span>
               </button>
             )}
           </div>
 
-          {/* Bottom Card - matching the Shopster reference callout card */}
-          <div className="rounded-xl border border-indigo-100 bg-gradient-to-b from-indigo-50/70 to-white p-3 shadow-sm">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
-                <ShieldAlert className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[11px] font-bold text-slate-800">Hyderabad Control</span>
-            </div>
-            <p className="text-[10px] text-slate-500 leading-relaxed mb-2">
-              Advisory engine live. Officer authorization required before deployment.
-            </p>
-            <button
-              onClick={() => { setView('map'); setActiveTab('zones'); }}
-              className="w-full py-1.5 text-[11px] font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition text-center"
-            >
-              Inspect Hotspots
-            </button>
+          <div className="px-3 text-[12px] text-[#64748B] hidden lg:block">
+            <span>Control ID #HYD-2026</span>
           </div>
         </nav>
 
-        {/* Main area */}
-        <main className="flex-1 relative overflow-hidden bg-[#f5f6f8]">
-          {/* MAP VIEW (kept mounted so Leaflet state survives) */}
+        {/* Main Content Area */}
+        <main className="flex-1 relative overflow-hidden bg-[#F8FAFC]">
+          {/* MAP VIEW */}
           <div
             className="absolute inset-0 flex"
-            style={{ visibility: view === 'map' ? 'visible' : 'hidden', pointerEvents: view === 'map' ? 'auto' : 'none' }}
+            style={{
+              visibility: view === 'map' ? 'visible' : 'hidden',
+              pointerEvents: view === 'map' ? 'auto' : 'none'
+            }}
           >
             <div className="flex-1 h-full relative">
               <Map
@@ -322,7 +367,7 @@ export default function App() {
               />
 
               {activeRoute && (
-                <div className="absolute bottom-5 left-5 z-[500] w-80">
+                <div className="absolute bottom-6 left-6 z-[500] w-80">
                   <EvacuationPanel
                     route={activeRoute}
                     onClose={() => setActiveRoute(null)}
@@ -332,40 +377,41 @@ export default function App() {
               )}
             </div>
 
-            {/* Right dock */}
-            <aside
-              className="w-[23rem] max-w-[45vw] flex flex-col border-l z-[400] h-full shadow-lg bg-white border-slate-200"
-            >
-              {/* Tab Navigation matching reference tab style */}
-              <div className="flex border-b border-slate-200 px-2 pt-2 gap-1 text-[12px] shrink-0 bg-white">
+            {/* Tactical Map Right Panel: 360px wide, white, one left hairline border */}
+            <aside className="w-[360px] max-w-[45vw] flex flex-col border-l border-[#E2E8F0] z-[400] h-full bg-white">
+              {/* Underline tab bar */}
+              <div className="flex border-b border-[#E2E8F0] px-4 gap-6 text-[14px] shrink-0">
                 {[
-                  { id: 'zones', label: t('zones'), Icon: ShieldAlert },
-                  { id: 'preposition', label: t('prepare'), Icon: Compass },
-                  { id: 'incidents', label: t('incidents'), Icon: Flame },
-                ].map(({ id, label, Icon }) => (
+                  { id: 'zones', label: t('zones') },
+                  { id: 'preposition', label: t('prepare'), badge: prepositionSuggestions.length },
+                  { id: 'incidents', label: t('incidents'), badge: incidents.length },
+                ].map(({ id, label, badge }) => (
                   <button
                     key={id}
                     onClick={() => setActiveTab(id)}
-                    className={`relative flex-1 pb-2.5 pt-1 font-semibold transition flex items-center justify-center gap-1.5 border-b-2 ${
+                    className={`relative py-3 font-medium transition flex items-center gap-1.5 ${
                       activeTab === id
-                        ? 'border-indigo-600 text-indigo-700'
-                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                        ? 'text-[#4338CA] font-semibold'
+                        : 'text-[#64748B] hover:text-[#0F172A]'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${activeTab === id ? 'text-indigo-600' : 'text-slate-400'}`} />
-                    {label}
-                    {id === 'preposition' && prepositionSuggestions.length > 0 && (
-                      <span className="ml-1 px-1.5 py-0.2 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200">
-                        {prepositionSuggestions.length}
+                    <span>{label}</span>
+                    {badge > 0 && (
+                      <span className="text-[12px] px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569] font-medium">
+                        {badge}
                       </span>
+                    )}
+                    {activeTab === id && (
+                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA]" />
                     )}
                   </button>
                 ))}
               </div>
 
-              <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 bg-[#f8fafc]">
+              {/* Panel Content */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
                 {activeTab === 'zones' && (
-                  <div className="flex flex-col gap-3 vp-enter">
+                  <div className="flex flex-col gap-4">
                     {selectedZone ? (
                       <RiskZonePanel
                         zone={selectedZone}
@@ -375,44 +421,40 @@ export default function App() {
                         loadingRoute={loadingRoute}
                       />
                     ) : (
-                      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-3.5 text-[12px] text-center text-slate-500 shadow-sm">
+                      <div className="py-2 text-[12px] text-[#64748B]">
                         {t('inspectMap')}
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
+                      <span className="text-[12px] font-medium text-[#64748B]">
                         {t('monitoredWards')} ({riskZones.length})
                       </span>
-                      <Layers className="w-3.5 h-3.5 text-slate-400" />
                     </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
                       {[...riskZones].sort((a, b) => (b.risk_level || 0) - (a.risk_level || 0)).map((z) => (
                         <button
                           key={z.id}
                           onClick={() => setSelectedZone(z)}
-                          className={`w-full p-3 text-left transition flex items-center justify-between rounded-xl border bg-white shadow-sm hover:shadow hover:border-slate-300 ${
-                            selectedZone?.id === z.id
-                              ? 'border-indigo-500 ring-2 ring-indigo-100'
-                              : 'border-slate-200'
+                          className={`w-full min-h-[40px] py-2 px-1 text-left flex items-center justify-between transition hover:bg-[#F8FAFC] ${
+                            selectedZone?.id === z.id ? 'bg-[#EEF2FF]/60' : ''
                           }`}
                         >
                           <div className="min-w-0 pr-2">
-                            <div className="font-bold text-slate-900 text-[13px] truncate">{z.name}</div>
-                            <div className="vp-mono text-[10px] text-slate-500 mt-0.5">
+                            <div className="text-[14px] font-medium text-[#0F172A] truncate">{z.name}</div>
+                            <div className="vp-mono text-[12px] text-[#64748B]">
                               {t('elevation')} {z.explanation?.mean_elevation_m?.toFixed(1) ?? '–'}m · {t('rain')} {z.explanation?.rainfall_24h_mm?.toFixed(1) ?? '0.0'}mm
                             </div>
                           </div>
                           <span
-                            className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center vp-mono text-[12px] font-extrabold ${
-                              z.risk_level >= 4 ? 'bg-red-50 text-red-700 border border-red-200' :
-                              z.risk_level === 3 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                              z.risk_level === 2 ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-                              'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            }`}
+                            className="shrink-0 px-2 py-0.5 rounded-[4px] text-[12px] font-semibold vp-mono"
+                            style={{
+                              backgroundColor: z.risk_level >= 4 ? '#FEE2E2' : z.risk_level === 3 ? '#FEF3C7' : '#DCFCE7',
+                              color: z.risk_level >= 4 ? '#DC2626' : z.risk_level === 3 ? '#D97706' : '#16A34A',
+                            }}
                           >
-                            {z.risk_level}
+                            L{z.risk_level}
                           </span>
                         </button>
                       ))}
@@ -421,90 +463,90 @@ export default function App() {
                 )}
 
                 {activeTab === 'preposition' && (
-                  <div className="vp-enter">
-                    <PrepositionPanel
-                      suggestions={prepositionSuggestions}
-                      onApprove={handleApprovePreposition}
-                    />
-                  </div>
+                  <PrepositionPanel
+                    suggestions={prepositionSuggestions}
+                    onApprove={handleApprovePreposition}
+                  />
                 )}
 
                 {activeTab === 'incidents' && (
-                  <div className="flex flex-col gap-3 vp-enter">
+                  <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{t('loggedIncidents')} ({incidents.length})</span>
+                      <span className="text-[12px] font-medium text-[#64748B]">
+                        {t('loggedIncidents')} ({incidents.length})
+                      </span>
                       <button
                         onClick={() => setIsIncidentModalOpen(true)}
-                        className="text-indigo-600 text-[11px] hover:underline flex items-center gap-1 font-semibold"
+                        className="text-[#4338CA] text-[12px] font-medium hover:underline flex items-center gap-1"
                       >
-                        <Plus className="w-3 h-3" /> {t('addIncident')}
+                        <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        <span>{t('addIncident')}</span>
                       </button>
                     </div>
 
                     {incidents.length === 0 ? (
-                      <div className="rounded-xl border border-slate-200 bg-white p-5 text-center text-[12px] text-slate-500 shadow-sm">
-                        <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
-                        <div className="text-slate-800 font-semibold">{t('noIncidents')}</div>
-                        <div className="text-[11px] mt-1 text-slate-400">{t('noIncidentsHint')}</div>
+                      <div className="py-6 text-center text-[12px] text-[#64748B]">
+                        No active incidents recorded.
                       </div>
                     ) : (
-                      incidents.map((inc) => (
-                        <div key={inc.id} className="rounded-xl border border-slate-200 bg-white p-3 text-[12px] flex flex-col gap-1.5 shadow-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-800 uppercase tracking-wide text-[10px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
-                              {inc.type} · U{inc.urgency}
-                            </span>
-                            <span className="vp-mono text-[10px] text-slate-400">
-                              {new Date(inc.timestamp).toLocaleTimeString()}
-                            </span>
+                      <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
+                        {incidents.map((inc) => (
+                          <div key={inc.id} className="py-2.5 flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12px] font-medium text-[#0F172A] uppercase">
+                                {inc.type} · Urgency {inc.urgency}
+                              </span>
+                              <span className="vp-mono text-[12px] text-[#64748B]">
+                                {new Date(inc.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <div className="text-[14px] text-[#334155]">{inc.message}</div>
+                            <div className="text-[12px] flex items-center justify-between text-[#64748B]">
+                              <span>{t('people')}: <strong className="text-[#0F172A] font-medium">{inc.people}</strong></span>
+                              <span>{inc.source}</span>
+                            </div>
                           </div>
-                          <div className="text-slate-800 font-medium leading-snug">{inc.message}</div>
-                          <div className="text-[11px] flex items-center justify-between text-slate-500 pt-1 border-t border-slate-100">
-                            <span>{t('people')}: <strong className="text-slate-700">{inc.people}</strong></span>
-                            <span className="text-slate-400">{inc.source}</span>
-                          </div>
-                        </div>
-                      ))
+                        ))}
+                      </div>
                     )}
 
-                    <div className="mt-2 pt-3 border-t border-slate-200 flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{t('registeredUnits')} ({units.length})</span>
+                    <div className="pt-2 flex items-center justify-between border-t border-[#E2E8F0]">
+                      <span className="text-[12px] font-medium text-[#64748B]">
+                        {t('registeredUnits')} ({units.length})
+                      </span>
                       <button
                         onClick={() => setIsUnitModalOpen(true)}
-                        className="text-indigo-600 text-[11px] hover:underline flex items-center gap-1 font-semibold"
+                        className="text-[#4338CA] text-[12px] font-medium hover:underline flex items-center gap-1"
                       >
-                        <Plus className="w-3 h-3" /> {t('registerUnit')}
+                        <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        <span>{t('registerUnit')}</span>
                       </button>
                     </div>
 
                     {units.length === 0 ? (
-                      <div className="rounded-xl border border-slate-200 bg-white p-5 text-center text-[12px] text-slate-500 shadow-sm">
-                        <Shield className="w-6 h-6 mx-auto mb-1.5 text-slate-300" />
-                        <div className="text-slate-800 font-semibold">{t('noUnits')}</div>
-                        <div className="text-[11px] mt-1 text-slate-400">{t('unitsHint')}</div>
+                      <div className="py-4 text-center text-[12px] text-[#64748B]">
+                        No field units registered.
                       </div>
                     ) : (
-                      units.map((u) => (
-                        <div key={u.id} className="rounded-xl border border-slate-200 bg-white p-3 text-[12px] flex items-center justify-between shadow-sm">
-                          <div className="min-w-0">
-                            <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                              <span>{u.kind === 'rescue_boat' ? '⛵' : u.kind === 'ambulance' ? '🚑' : '🚔'}</span>
-                              <span className="truncate">{u.id}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 capitalize shrink-0 border border-slate-200">
-                                {u.kind.replace('_', ' ')}
-                              </span>
+                      <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
+                        {units.map((u) => (
+                          <div key={u.id} className="py-2 flex items-center justify-between">
+                            <div>
+                              <div className="text-[14px] font-medium text-[#0F172A]">{u.id}</div>
+                              <div className="text-[12px] text-[#64748B]">{u.kind.replace('_', ' ')} · {u.station}</div>
                             </div>
-                            <div className="text-[10px] mt-0.5 text-slate-400">{u.station}</div>
+                            <span
+                              className="text-[12px] px-2 py-0.5 rounded-[4px] font-medium"
+                              style={{
+                                backgroundColor: u.status === 'available' ? '#DCFCE7' : '#F1F5F9',
+                                color: u.status === 'available' ? '#16A34A' : '#64748B',
+                              }}
+                            >
+                              {u.status === 'available' ? t('available') : u.status}
+                            </span>
                           </div>
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 border ${
-                            u.status === 'available'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-slate-100 text-slate-500 border-slate-200'
-                          }`}>
-                            {u.status === 'available' ? t('available') : u.status === 'en_route' ? t('enRoute') : u.status}
-                          </span>
-                        </div>
-                      ))
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
@@ -512,77 +554,60 @@ export default function App() {
             </aside>
           </div>
 
-          {/* AGENT COMMAND VIEW — real Gemini agent workbench */}
+          {/* AI AGENTS WORKBENCH VIEW */}
           {view === 'agents' && (
-            <div className="absolute inset-0 z-[450] overflow-y-auto bg-[#f5f6f8]">
-              <div className="max-w-[1420px] mx-auto p-6 lg:p-8">
-                {/* Header Card matching the Shopster user profile card */}
-                <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="absolute inset-0 z-[450] overflow-y-auto bg-[#F8FAFC]">
+              <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-8 pb-16 flex flex-col gap-8">
+                {/* ONE SLIM PAGE HEADER BAND */}
+                <div className="border-b border-[#E2E8F0] pb-4 flex flex-col gap-4">
                   <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md">
-                        <Siren className="w-7 h-7" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
-                            Hyderabad Police Disaster Response
-                          </h1>
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Active System
-                          </span>
-                          <span className="text-xs text-slate-400 font-mono">Control ID: #HYD-2026</span>
-                        </div>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          Multi-Agent Flood & Disaster Decision Support · Powered by Groq Llama/Qwen & Google Gemini 2.5
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                        <span className={`h-2.5 w-2.5 rounded-full ${maxRisk >= 4 ? 'bg-red-500' : maxRisk === 3 ? 'bg-amber-500' : 'bg-emerald-500'}`}/>
-                        {alertTone.label} Risk · {riskZones.length} Hotspots
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Clean Tab Bar matching reference */}
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-6 text-xs font-semibold text-slate-500">
-                    <span className="text-indigo-600 border-b-2 border-indigo-600 pb-2 -mb-[17px] font-bold">
-                      Agent Intelligence
-                    </span>
-                    <button onClick={() => setView('map')} className="hover:text-slate-900 transition">
-                      Tactical Spatial Map
-                    </button>
-                    <button onClick={() => { setView('map'); setActiveTab('preposition'); }} className="hover:text-slate-900 transition">
-                      Prepositioning Queue ({prepositionSuggestions.length})
-                    </button>
-                    <button onClick={() => { setView('map'); setActiveTab('incidents'); }} className="hover:text-slate-900 transition">
-                      Active Incidents ({incidents.length})
-                    </button>
-                  </div>
-                </div>
-
-                {/* Banner Callout matching the Shopster blue banner */}
-                <div className="mb-6 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 to-indigo-50/50 p-4 shadow-sm flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-sky-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-                      <Activity className="w-5 h-5" />
-                    </div>
                     <div>
-                      <div className="font-bold text-slate-900 text-sm">Autonomous Advisory Intelligence Online</div>
-                      <div className="text-xs text-slate-600">
-                        Live telemetry ingestion across 6 Hyderabad Traffic Police waterlogging points via Open-Meteo & GloFAS river discharge.
+                      <h1 className="text-[20px] font-semibold text-[#0F172A] tracking-tight">
+                        Hyderabad Police Disaster Response
+                      </h1>
+                      <div className="flex items-center gap-3 mt-1 text-[12px] text-[#64748B]">
+                        <span className="flex items-center gap-1.5 text-[#16A34A] font-medium">
+                          <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+                          Active system
+                        </span>
+                        <span>·</span>
+                        <span>{alertTone.label} risk · {riskZones.length} hotspots monitored</span>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right hidden sm:block">
-                    <span className="text-[11px] font-semibold text-slate-500">Citywide Status</span>
-                    <div className="text-xs font-extrabold text-indigo-700">Advisory Mode (Human-in-the-Loop)</div>
+
+                    {/* Underline Tab Bar (Clean, no redundant Tactical Map) */}
+                    <div className="flex items-center gap-6 text-[14px]">
+                      <span className="text-[#4338CA] font-semibold relative py-2">
+                        Agent Intelligence
+                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA]" />
+                      </span>
+                      <button
+                        onClick={() => { setView('map'); setActiveTab('preposition'); }}
+                        className="text-[#64748B] hover:text-[#0F172A] py-2 font-medium transition flex items-center gap-1.5"
+                      >
+                        <span>Prepositioning Queue</span>
+                        {prepositionSuggestions.length > 0 && (
+                          <span className="text-[12px] px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569]">
+                            {prepositionSuggestions.length}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => { setView('map'); setActiveTab('incidents'); }}
+                        className="text-[#64748B] hover:text-[#0F172A] py-2 font-medium transition flex items-center gap-1.5"
+                      >
+                        <span>Active Incidents</span>
+                        {incidents.length > 0 && (
+                          <span className="text-[12px] px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569]">
+                            {incidents.length}
+                          </span>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
+                {/* Single Primary Surface & Agent Workspace */}
                 <AgentPanel
                   status={agentStatus}
                   results={agentResults}
@@ -592,6 +617,12 @@ export default function App() {
                   onReviewPreparation={() => { setView('map'); setActiveTab('preposition'); }}
                   riskZones={riskZones}
                 />
+
+                {/* Clean Footer note */}
+                <div className="pt-8 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-4 text-[12px] text-[#64748B]">
+                  <span>Vanta Protocol · CipherCop 2026 · Hyderabad Police AI Control Room</span>
+                  <span>Powered by Groq Qwen & Google Gemini 2.5 · Officer verification required prior to dispatch.</span>
+                </div>
               </div>
             </div>
           )}

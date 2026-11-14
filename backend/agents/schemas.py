@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -47,11 +47,36 @@ class ReadinessAction(BaseModel):
     officer_check: str = Field(description="How an officer can verify completion; never issue dispatch orders")
 
 
+class OperationsCalendarEvent(BaseModel):
+    id: str
+    start: datetime
+    end: datetime
+    category: Literal["traffic", "evacuation", "resources", "advisory"]
+    title: str
+    location: str
+    details: str
+    assigned_unit: Optional[str] = None
+    status: Literal["planned", "approved", "rejected"] = "planned"
+
+
+class OperationsCalendar(BaseModel):
+    valid_from: datetime
+    valid_until: datetime
+    events: List[OperationsCalendarEvent] = Field(default_factory=list)
+
+
 class PrepareAgentOutput(BaseModel):
     summary: str = Field(description="Short synthesis of the preparedness recommendations")
-    zone_notes: List[ZonePreparationNote] = Field(description="Notes for zones that have supplied recommendations")
-    readiness_actions: List[ReadinessAction] = Field(default_factory=list, description="Specific pre-event readiness tasks grounded in evidence; no automatic dispatch")
-    readiness_gaps: List[str] = Field(description="Missing resources or facts explicitly evident in supplied data")
+    zone_notes: List[ZonePreparationNote]
+    readiness_actions: List[ReadinessAction] = Field(default_factory=list)
+    readiness_gaps: List[str]
+    operations_calendar: OperationsCalendar = Field(description="A structured calendar for the next 72 hours, grounded in supplied facts")
+
+
+class SmsDraft(BaseModel):
+    en: str = Field(max_length=320)
+    hi: str = Field(max_length=320)
+    te: str = Field(max_length=320)
 
 
 class ResponsePriority(BaseModel):
@@ -66,3 +91,4 @@ class RespondAgentOutput(BaseModel):
     priorities: List[ResponsePriority] = Field(description="Ordered response areas that have supplied incident or elevated risk evidence")
     immediate_checks: List[str] = Field(description="Officer verification checks; not automated actions")
     data_gaps: List[str] = Field(description="Missing or stale sources and operational information")
+    sms_draft: SmsDraft = Field(description="Officer-reviewable public safety alert in English, Hindi and Telugu; use a helpline placeholder")
