@@ -13,6 +13,7 @@ from backend.agents.schemas import HistoryQueryIntent, PredictAgentOutput, Prepa
 from backend.config import settings
 from backend.models import PrepositionSuggestion, RiskExplanation, RiskZone
 from backend.services.prepositioning import generate_prepositioning_suggestions
+from backend.services.grid import emerging_hotspot_zones
 from backend.services.risk_engine import compute_real_risk_zones
 from backend.db import fetch_units, fetch_incidents, fetch_blocked_roads
 from backend.data_sources.open_meteo import get_recent_historical_rain
@@ -403,7 +404,8 @@ class PredictAgent:
             "Historical rainfall is reanalysis at mapped points, not a rain-gauge observation; local traffic evidence is incomplete officer-entered logs, not a live traffic feed. Interpret only supplied facts. "
             f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}. "
             "Do not invent measurements, infer missing values, or claim a source is healthy unless the input says so. If weather or river inputs are failed/stale or unavailable, use insufficient_data where that prevents a sound assessment and explain the gap. "
-            "Highlight up to three zones needing review and give practical verification checks. This is advisory, not an alert or dispatch order. Treat mapped hotspot status as historical vulnerability, not current flooding. Use only exact supplied zone IDs."
+            "Highlight up to three zones needing review and give practical verification checks. This is advisory, not an alert or dispatch order. Treat mapped hotspot status as historical vulnerability, not current flooding. "
+            "Emerging grid cells, when supplied, are extra monitored locations beside the six named hotspots. Assess those supplied cells too. Use only exact supplied zone IDs."
         )
 
         # Try Groq first; fall back to Gemini if Groq is unavailable or misconfigured
@@ -425,7 +427,7 @@ class PredictAgent:
             provider_used = "Gemini (Groq fallback)"
 
         output.focus_zones = [item for item in output.focus_zones if item.zone_id in allowed_ids][:3]
-        output.zone_assessments = [item for item in output.zone_assessments if item.zone_id in allowed_ids][:6]
+        output.zone_assessments = [item for item in output.zone_assessments if item.zone_id in allowed_ids][:16]
         source_gaps = []
         for zone in zones:
             for source in source_status.get(zone.id, {}).values():
@@ -661,6 +663,10 @@ async def run_predict_agent(
         include_rule_score=False,
         area_query=area_query,
     )
+    if not area_query:
+        emerging_zones, emerging_status = await emerging_hotspot_zones()
+        zones = [*zones, *emerging_zones]
+        source_status.update(emerging_status)
     if window_basis == "officer_query":
         recent_rain_impacts["window_basis"] = "officer_query"
     elif window_basis == "caller_dates":

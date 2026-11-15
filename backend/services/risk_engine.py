@@ -54,7 +54,7 @@ REAL_ZONES_METADATA = [
     }
 ]
 
-def calculate_zone_risk(
+def score_observations(
     rainfall_24h: Optional[float],
     precip_prob_max: Optional[float],
     wind_max_kmh: Optional[float],
@@ -64,7 +64,8 @@ def calculate_zone_risk(
     rainfall_48h: Optional[float] = None,
     weather_status: Optional[str] = None,
     weather_last_updated: Optional[str] = None,
-) -> tuple[Optional[int], RiskExplanation]:
+    low_lying: bool = False,
+) -> tuple[Optional[int], Optional[float], RiskExplanation]:
     """Calculates risk level 1-5 with transparent explainability.
     
     Screening factors are additive and are not statistically calibrated:
@@ -82,7 +83,7 @@ def calculate_zone_risk(
             historical_flood_prone=historical_flood,
             why_this="Rainfall data unavailable; numerical risk withheld. Verify the weather feed and local conditions.",
         )
-        return None, explanation
+        return None, None, explanation
 
     score = 1.0  # Base level 1 (Low)
 
@@ -122,6 +123,12 @@ def calculate_zone_risk(
     if historical_flood:
         score += 0.5
 
+    # Grid cells below the city median sit in the drainage path more often.
+    # Named hotspots leave this off so their existing levels stay unchanged.
+    if low_lying and elevation_m is not None:
+        score += 0.5
+
+    raw_score = round(score, 2)
     final_level = min(5, max(1, round(score)))
 
     reasons = []
@@ -133,7 +140,9 @@ def calculate_zone_risk(
         reasons.append(f"Max wind gusts: {wind_max_kmh:.1f} km/h")
     if river_discharge is not None:
         reasons.append(f"River discharge: {river_discharge:.1f} m³/s")
-    if elevation_m is not None:
+    if elevation_m is not None and low_lying:
+        reasons.append(f"Below city median elevation ({elevation_m:.1f} m)")
+    elif elevation_m is not None:
         reasons.append(f"Terrain elevation context: {elevation_m:.1f} m; not used as an absolute flood threshold")
     if historical_flood:
         reasons.append("Hyderabad Traffic Police major waterlogging hotspot (2025 list)")
@@ -152,7 +161,35 @@ def calculate_zone_risk(
         historical_flood_prone=historical_flood,
         why_this=why_this
     )
-    return final_level, explanation
+    return final_level, raw_score, explanation
+
+
+def calculate_zone_risk(
+    rainfall_24h: Optional[float],
+    precip_prob_max: Optional[float],
+    wind_max_kmh: Optional[float],
+    river_discharge: Optional[float],
+    elevation_m: Optional[float],
+    historical_flood: bool,
+    rainfall_48h: Optional[float] = None,
+    weather_status: Optional[str] = None,
+    weather_last_updated: Optional[str] = None,
+    low_lying: bool = False,
+) -> tuple[Optional[int], RiskExplanation]:
+    """Level and explanation for the six named hotspots. Grid scoring uses score_observations."""
+    level, _score, explanation = score_observations(
+        rainfall_24h=rainfall_24h,
+        precip_prob_max=precip_prob_max,
+        wind_max_kmh=wind_max_kmh,
+        river_discharge=river_discharge,
+        elevation_m=elevation_m,
+        historical_flood=historical_flood,
+        rainfall_48h=rainfall_48h,
+        weather_status=weather_status,
+        weather_last_updated=weather_last_updated,
+        low_lying=low_lying,
+    )
+    return level, explanation
 
 async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZone]:
     """Collect live zone observations, optionally applying the shared map score rules.
