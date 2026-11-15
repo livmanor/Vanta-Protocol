@@ -5,9 +5,9 @@ import { useLanguage } from '../i18n.jsx';
 export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute, loadingRoute }) {
   const { language } = useLanguage();
   const words = {
-    en: ['Hotspot assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', "Today's forecast", '48h rainfall', 'River discharge', 'Terrain elevation', 'Mapped vulnerability', 'Assessment reason', 'Prepare evacuation route', 'Routing via OSRM…', 'Past 48h rainfall is an Open-Meteo model estimate, not a local rain-gauge reading.'],
-    hi: ['हॉटस्पॉट जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', 'आज का पूर्वानुमान', '48 घंटे की वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'मानचित्रित संवेदनशीलता', 'आकलन कारण', 'निकासी मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…', 'पिछले 48 घंटे की वर्षा Open-Meteo मॉडल का अनुमान है, स्थानीय वर्षामापी की रीडिंग नहीं।'],
-    te: ['హాట్‌స్పాట్ ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', 'ఈ రోజు అంచనా', '48 గంటల వర్షపాతం', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'ముప్పు వివరణ', 'అంచనా కారణం', 'తరలింపు మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…', 'గత 48 గంటల వర్షపాతం Open-Meteo మోడల్ అంచనా; స్థానిక వర్షమాపక కొలత కాదు.'],
+    en: ['Hotspot assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', "Today's forecast", '48h rainfall', 'River discharge', 'Terrain elevation', 'Mapped vulnerability', 'Assessment reason', 'Prepare evacuation route', 'Routing via OSRM…', 'Past 48h rainfall is an Open-Meteo model estimate, not a local rain-gauge reading.', 'Grid cell'],
+    hi: ['हॉटस्पॉट जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', 'आज का पूर्वानुमान', '48 घंटे की वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'मानचित्रित संवेदनशीलता', 'आकलन कारण', 'निकासी मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…', 'पिछले 48 घंटे की वर्षा Open-Meteo मॉडल का अनुमान है, स्थानीय वर्षामापी की रीडिंग नहीं।', 'ग्रिड सेल'],
+    te: ['హాట్‌స్పాట్ ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', 'ఈ రోజు అంచనా', '48 గంటల వర్షపాతం', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'ముప్పు వివరణ', 'అంచనా కారణం', 'తరలింపు మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…', 'గత 48 గంటల వర్షపాతం Open-Meteo మోడల్ అంచనా; స్థానిక వర్షమాపక కొలత కాదు.', 'గ్రిడ్ సెల్'],
   }[language] || [];
   if (!zone) return null;
 
@@ -37,7 +37,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
       {/* Header */}
       <div className="flex items-start justify-between border-b border-[#E2E8F0] pb-3">
         <div>
-          <div className="text-[12px] font-medium text-[#64748B] uppercase tracking-wider">{words[0]}</div>
+          <div className="text-[12px] font-medium text-[#64748B] uppercase tracking-wider">{zone.cell_type === 'grid' ? words[18] : words[0]}</div>
           <h2 className="text-[16px] font-semibold text-[#0F172A] mt-0.5">{zone.name}</h2>
         </div>
         <button
@@ -96,7 +96,11 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
             </div>
           </div>
         ) : (
-          <p className="text-[12px] text-[#64748B] py-2">{weather?.error_message || 'Waiting for Open-Meteo data.'}</p>
+          <p className="text-[12px] text-[#64748B] py-2">
+            {exp.rainfall_48h_mm != null || exp.rainfall_24h_mm != null
+              ? 'Station weather is loaded for the six hotspots. Rain and elevation for this cell are listed below.'
+              : (weather?.error_message || 'Waiting for Open-Meteo data.')}
+          </p>
         )}
       </div>
 
@@ -115,7 +119,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
           <span className="font-medium text-[#0F172A] vp-mono">
             {exp.river_discharge_m3s !== null && exp.river_discharge_m3s !== undefined
               ? `${exp.river_discharge_m3s.toFixed(1)} m³/s`
-              : 'No sensor'}
+              : zone.cell_type === 'grid' ? 'Not queried for this cell' : 'No sensor'}
           </span>
         </div>
         <div className="min-h-[40px] flex items-center justify-between text-[14px]">

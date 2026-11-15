@@ -38,7 +38,7 @@ const SUGGESTION_CHIPS = [
   "Banjara Hills rain impacts"
 ];
 
-export default function AgentPanel({ status, results = {}, errors = {}, loadingAgent, onRun, onReviewPreparation, riskZones }) {
+export default function AgentPanel({ status, results = {}, errors = {}, loadingAgent, onRun, onReviewPreparation, riskZones, operationsPlan }) {
   const { language } = useLanguage();
   const langIndex = language === 'hi' ? 1 : language === 'te' ? 2 : 0;
   const [selected, setSelected] = useState('predict');
@@ -265,6 +265,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             </button>
           </div>
           {err && <div className="text-[12px] text-[#DC2626]">{err}<button type="button" onClick={handleTriggerRun} className="ml-2 font-medium underline">Retry</button></div>}
+          {selected === 'prepare' && <OperationsCalendar calendar={operationsPlan} model="Rainfall plan" />}
         </div>
         {/* ── AGENT RESULTS / REPORT: Plain headings and text, NO card boxes ── */}
         {selectedResult && (
@@ -408,7 +409,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
               <ShieldCheck className="w-4 h-4 text-[#16A34A]" strokeWidth={1.5} />
               <span>Advisory recommendations only. Officer review and approval is required prior to dispatch.</span>
             </div>
-            {selected === 'prepare' && <><p className="text-[12px] font-medium text-[#B45309]">Drafted by AI, requires officer approval.</p><OperationsCalendar calendar={selectedResult.operations_calendar || selectedResult.prepare?.operations_calendar} model={selectedResult.model || selectedResult.provider} /></>}
+            {selected === 'prepare' && (selectedResult.operations_calendar || selectedResult.prepare?.operations_calendar)?.events?.length > 0 && <><p className="text-[12px] font-medium text-[#B45309]">Additional draft from the Prepare agent. Officer approval is still required.</p><OperationsCalendar calendar={selectedResult.operations_calendar || selectedResult.prepare?.operations_calendar} model={selectedResult.model || selectedResult.provider} /></>}
             {selected === 'respond' && <RespondSmsPanel draft={selectedResult.respond?.sms_draft} model={selectedResult.model || selectedResult.provider} testMode={status?.sms_test_mode ?? true} sender={status?.sms_sender} />}
             <div className="pt-2 text-[11px] text-[#64748B]">Model: {selectedResult.model || selectedResult.provider || 'Not available'}</div>
           </section>

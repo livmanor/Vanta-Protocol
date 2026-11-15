@@ -55,7 +55,8 @@ export default function OperationsCalendar({ calendar, model }) {
       </div>
     </div>
     {view === 'day' && <div className="flex items-center gap-3 text-[12px] text-[#475569]"><button onClick={() => setDay(value => { const date = new Date(value); date.setDate(date.getDate() - 1); return date.toDateString(); })} className="underline">Previous day</button><span>{day}</span><button onClick={() => setDay(value => { const date = new Date(value); date.setDate(date.getDate() + 1); return date.toDateString(); })} className="underline">Next day</button></div>}
-    <p className="text-[12px] text-[#64748B]">Drafted by AI, requires officer approval · {new Date(calendar?.valid_from || Date.now()).toLocaleString()} – {new Date(calendar?.valid_until || Date.now()).toLocaleString()}</p>
+    <p className="text-[13px] text-[#334155]">{calendar?.summary || 'The calendar is the next operating window. The evacuation route is the path; this schedule says when that path should open.'}</p>
+    <p className="text-[12px] text-[#64748B]">Drafted from live rainfall. An officer still approves every event. · {new Date(calendar?.valid_from || Date.now()).toLocaleString()} – {new Date(calendar?.valid_until || Date.now()).toLocaleString()}</p>
     {error && <p role="alert" className="text-[12px] text-[#DC2626]">{error}</p>}
     {Object.entries(groups).map(([day, items]) => <div key={day} className="grid grid-cols-[120px_minmax(0,1fr)] gap-4 border-t border-[#E2E8F0] py-3">
       <h5 className="text-[12px] font-medium text-[#475569]">{day}</h5>
@@ -66,7 +67,7 @@ export default function OperationsCalendar({ calendar, model }) {
         </button>)}
       </div>
     </div>)}
-    {!events.length && <p className="border-y border-[#E2E8F0] py-5 text-[13px] text-[#64748B]">No calendar events were returned. Retry Prepare to generate a draft.</p>}
+    {!events.length && <p className="border-y border-[#E2E8F0] py-5 text-[13px] text-[#64748B]">The rainfall plan has not been calculated yet.</p>}
     <div className="text-[11px] text-[#64748B]">Model: {model || 'Not available'} · Only approved events are exported.</div>
     {active && <div className="fixed inset-0 z-[1500] flex justify-end bg-slate-900/20" onClick={() => setActive(null)}><aside className="h-full w-full max-w-md overflow-y-auto bg-white p-6 shadow-xl" onClick={event => event.stopPropagation()}>
       <div className="flex justify-between"><h4 className="text-[16px] font-semibold">{active.title}</h4><button onClick={() => setActive(null)} aria-label="Close"><X className="h-4 w-4"/></button></div>

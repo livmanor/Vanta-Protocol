@@ -7,7 +7,7 @@ const riskColor = (level) => {
     case 5: return '#dc2626';
     case 4: return '#ea580c';
     case 3: return '#d97706';
-    case 2: return '#2563eb';
+    case 2: return '#059669';
     default: return '#059669';
   }
 };

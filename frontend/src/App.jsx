@@ -6,6 +6,8 @@ import {
 import Landing from './components/Landing';
 import Map from './components/Map';
 import AgentPanel from './components/AgentPanel';
+import SourceStatusBar from './components/SourceStatusBar';
+import OperationsCalendar from './components/OperationsCalendar';
 import RiskZonePanel from './components/RiskZonePanel';
 import EvacuationPanel from './components/EvacuationPanel';
 import PrepositionPanel from './components/PrepositionPanel';
@@ -17,7 +19,8 @@ import {
   fetchSources, fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit,
   fetchIncidents, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
-  reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent
+  reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
+  refreshOperationsPlan
 } from './api';
 
 const NAV = [
@@ -41,6 +44,7 @@ export default function App() {
   const [incidents, setIncidents] = useState([]);
   const [blockedRoads, setBlockedRoads] = useState([]);
   const [prepositionSuggestions, setPrepositionSuggestions] = useState([]);
+  const [operationsPlan, setOperationsPlan] = useState(null);
 
   const [selectedZone, setSelectedZone] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
@@ -71,12 +75,22 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadSources = useCallback(async () => {
     setLoadingSources(true);
-    setLoadingRisk(true);
     try {
-      const [srcs, rZones, grid, weather, aStatus, uList, incList, roads] = await Promise.all([
-        fetchSources().catch(e => { console.error(e); return []; }),
+      setSources(await fetchSources());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingSources(false);
+    }
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setLoadingRisk(true);
+    loadSources();
+    try {
+      const [rZones, grid, weather, aStatus, uList, incList, roads] = await Promise.all([
         fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
         fetchRiskGrid().catch(e => { console.error(e); return { error: e.message }; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
@@ -85,7 +99,6 @@ export default function App() {
         fetchIncidents().catch(e => { console.error(e); return []; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; })
       ]);
-      setSources(srcs);
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
       if (normalizedZones) {
         setRiskZones(normalizedZones);
@@ -112,11 +125,11 @@ export default function App() {
       } else {
         setPrepositionSuggestions([]);
       }
+      refreshOperationsPlan().then(setOperationsPlan).catch(err => console.error(err));
     } finally {
-      setLoadingSources(false);
       setLoadingRisk(false);
     }
-  }, []);
+  }, [loadSources]);
 
   const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage, inputs = {}) => {
     setLoadingAgent(agentId);
@@ -160,10 +173,17 @@ export default function App() {
     await loadData();
   };
 
-  const handleGenerateRoute = async (zoneId, targetType = 'shelter') => {
+  const handleGenerateRoute = async (zone) => {
+    const coordinates = zone?.polygon?.coordinates;
+    const lat = zone?.lat ?? coordinates?.[1];
+    const lng = zone?.lng ?? zone?.lon ?? coordinates?.[0];
+    if (!zone?.id || lat == null || lng == null) {
+      alert('This location has no coordinates, so a route cannot be calculated.');
+      return;
+    }
     setLoadingRoute(true);
     try {
-      const res = await generateEvacuationRoute(zoneId, targetType);
+      const res = await generateEvacuationRoute(zone.id, zone.name || zone.id, lat, lng);
       setActiveRoute(res);
     } catch (err) {
       alert(`Routing failed: ${err.message}`);
@@ -283,6 +303,7 @@ export default function App() {
           </div>
         </div>
       </header>
+      <SourceStatusBar sources={sources} onRefresh={loadSources} loading={loadingSources} />
 
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
@@ -454,10 +475,13 @@ export default function App() {
                 )}
 
                 {activeTab === 'preposition' && (
-                  <PrepositionPanel
-                    suggestions={prepositionSuggestions}
-                    onApprove={handleApprovePreposition}
-                  />
+                  <div className="flex flex-col gap-6">
+                    <OperationsCalendar calendar={operationsPlan} model="Rainfall plan" />
+                    <PrepositionPanel
+                      suggestions={prepositionSuggestions}
+                      onApprove={handleApprovePreposition}
+                    />
+                  </div>
                 )}
 
                 {activeTab === 'incidents' && (
@@ -607,6 +631,7 @@ export default function App() {
                   onRun={handleRunAgent}
                   onReviewPreparation={() => { setView('map'); setActiveTab('preposition'); }}
                   riskZones={riskZones}
+                  operationsPlan={operationsPlan}
                 />
 
                 {/* Clean Footer note */}

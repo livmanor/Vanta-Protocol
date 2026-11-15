@@ -1,3 +1,4 @@
+﻿import asyncio
 import time
 import httpx
 from datetime import datetime, timezone
@@ -38,131 +39,118 @@ async def _probe(name: str, url: str, timeout: float = 8.0, method: str = "GET",
         )
 
 
-@router.get("/sources", response_model=List[DataSourceStatus])
-async def get_data_sources_status():
-    """Returns the operational status, freshness timestamp, and latency of every external data source.
-    Every entry is either read from the TTL cache (proving a recent real call worked) or
-    actively probed now — never hard-coded.
-    Enforces prime directive §1.4: Every data source must be visible in the UI.
-    """
-    statuses: List[DataSourceStatus] = []
-
-    # 1. Open-Meteo Weather Forecast API — reuse cache if available
-    cached_weather = global_cache.get(
-        f"open_meteo_weather_ist48h_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
+async def _osm_status() -> DataSourceStatus:
+    osm_status = DataSourceStatus(
+        name="OpenStreetMap Overpass API",
+        endpoint=OVERPASS_MIRRORS[0],
+        status="failed",
+        error_message="No Overpass mirror responded.",
     )
-    if cached_weather:
-        _, fetched_at, is_stale = cached_weather
-        statuses.append(DataSourceStatus(
-            name="Open-Meteo Weather Forecast",
-            endpoint=settings.OPEN_METEO_FORECAST_URL,
-            status="stale" if is_stale else "live",
-            last_updated=fetched_at
-        ))
-    else:
-        statuses.append(await _probe(
-            "Open-Meteo Weather Forecast",
-            f"{settings.OPEN_METEO_FORECAST_URL}?latitude={settings.DEFAULT_LAT}&longitude={settings.DEFAULT_LNG}&hourly=precipitation&past_days=2&forecast_days=1",
-            timeout=8.0
-        ))
-
-    # 2. Open-Meteo GloFAS Flood API — reuse cache if available
-    cached_flood = global_cache.get(
-        f"open_meteo_flood_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
-    )
-    if cached_flood:
-        _, fetched_at, is_stale = cached_flood
-        statuses.append(DataSourceStatus(
-            name="Open-Meteo GloFAS Flood API",
-            endpoint=settings.OPEN_METEO_FLOOD_URL,
-            status="stale" if is_stale else "live",
-            last_updated=fetched_at
-        ))
-    else:
-        statuses.append(await _probe(
-            "Open-Meteo GloFAS Flood API",
-            f"{settings.OPEN_METEO_FLOOD_URL}?latitude={settings.DEFAULT_LAT}&longitude={settings.DEFAULT_LNG}&daily=river_discharge&forecast_days=1",
-            timeout=8.0
-        ))
-
-    # 3. Open-Elevation (SRTM) — reuse cache; probe with 10s timeout (endpoint is slow)
-    cached_elev = global_cache.get(
-        f"elevation_points_6_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
-    )
-    if cached_elev:
-        _, fetched_at, is_stale = cached_elev
-        statuses.append(DataSourceStatus(
-            name="Open-Elevation (SRTM)",
-            endpoint=settings.OPEN_ELEVATION_URL,
-            status="stale" if is_stale else "live",
-            last_updated=fetched_at
-        ))
-    else:
-        statuses.append(await _probe(
-            "Open-Elevation (SRTM)",
-            f"{settings.OPEN_ELEVATION_URL}?locations={settings.DEFAULT_LAT},{settings.DEFAULT_LNG}",
-            timeout=10.0  # Increased from 4s — endpoint typically takes 6-9s
-        ))
-
-    # 4. OpenStreetMap Overpass API — REAL probe against first working mirror
-    osm_status = None
     for mirror_url in OVERPASS_MIRRORS:
         t0 = time.time()
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
-                r = await client.post(
+                response = await client.post(
                     mirror_url,
-                    data={"data": "[out:json]; node(1); out;"},  # Minimal valid query
-                    headers=OVERPASS_HEADERS
+                    data={"data": "[out:json]; node(1); out;"},
+                    headers=OVERPASS_HEADERS,
                 )
                 elapsed = round((time.time() - t0) * 1000, 1)
-                if r.status_code == 200:
-                    osm_status = DataSourceStatus(
+                if response.status_code == 200:
+                    return DataSourceStatus(
                         name="OpenStreetMap Overpass API",
                         endpoint=mirror_url,
                         status="live",
                         last_updated=datetime.now(timezone.utc).isoformat(),
-                        response_time_ms=elapsed
+                        response_time_ms=elapsed,
                     )
-                    break
-                else:
-                    osm_status = DataSourceStatus(
-                        name="OpenStreetMap Overpass API",
-                        endpoint=mirror_url,
-                        status="failed",
-                        last_updated=datetime.now(timezone.utc).isoformat(),
-                        error_message=f"HTTP {r.status_code} from {mirror_url}"
-                    )
-        except Exception as e:
+                osm_status = DataSourceStatus(
+                    name="OpenStreetMap Overpass API",
+                    endpoint=mirror_url,
+                    status="failed",
+                    last_updated=datetime.now(timezone.utc).isoformat(),
+                    error_message=f"HTTP {response.status_code} from {mirror_url}",
+                )
+        except Exception as exc:
             osm_status = DataSourceStatus(
                 name="OpenStreetMap Overpass API",
                 endpoint=mirror_url,
                 status="failed",
-                error_message=str(e)[:120]
+                error_message=str(exc)[:120],
             )
-    if osm_status:
-        statuses.append(osm_status)
+    return osm_status
 
-    # 5. OSRM Routing Engine — REAL probe: lightweight route request
-    osrm_probe_url = (
-        f"{settings.OSRM_ROUTE_URL}/{settings.DEFAULT_LNG},{settings.DEFAULT_LAT}"
-        f";{settings.DEFAULT_LNG + 0.01},{settings.DEFAULT_LAT + 0.01}"
-        "?overview=false"
-    )
-    statuses.append(await _probe(
-        "OSRM Routing Engine",
-        osrm_probe_url,
-        timeout=8.0
-    ))
 
-    # Check the actual alert feed, not just the IMD homepage.
+async def _imd_status() -> DataSourceStatus:
     imd_result = await get_real_imd_alerts(settings.CITY_NAME)
-    statuses.append(DataSourceStatus(
+    return DataSourceStatus(
         name="IMD Public Weather Bulletin",
         endpoint="https://mausam.imd.gov.in",
         status=imd_result["status"],
         last_updated=imd_result.get("last_updated"),
         error_message=imd_result.get("error"),
-    ))
+    )
 
+
+async def _collect_source_statuses() -> List[DataSourceStatus]:
+    """Probe independent feeds together. A cached weather or elevation call is not probed again."""
+    cached_weather = global_cache.get(
+        f"open_meteo_weather_ist48h_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
+    )
+    cached_flood = global_cache.get(
+        f"open_meteo_flood_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
+    )
+    cached_elev = global_cache.get(
+        f"elevation_points_6_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
+    )
+
+    async def weather_status():
+        if cached_weather:
+            _, fetched_at, is_stale = cached_weather
+            return DataSourceStatus(name="Open-Meteo Weather Forecast", endpoint=settings.OPEN_METEO_FORECAST_URL, status="stale" if is_stale else "live", last_updated=fetched_at)
+        return await _probe("Open-Meteo Weather Forecast", f"{settings.OPEN_METEO_FORECAST_URL}?latitude={settings.DEFAULT_LAT}&longitude={settings.DEFAULT_LNG}&hourly=precipitation&past_days=2&forecast_days=1", timeout=8.0)
+
+    async def flood_status():
+        if cached_flood:
+            _, fetched_at, is_stale = cached_flood
+            return DataSourceStatus(name="Open-Meteo GloFAS Flood API", endpoint=settings.OPEN_METEO_FLOOD_URL, status="stale" if is_stale else "live", last_updated=fetched_at)
+        return await _probe("Open-Meteo GloFAS Flood API", f"{settings.OPEN_METEO_FLOOD_URL}?latitude={settings.DEFAULT_LAT}&longitude={settings.DEFAULT_LNG}&daily=river_discharge&forecast_days=1", timeout=8.0)
+
+    async def elevation_status():
+        if cached_elev:
+            _, fetched_at, is_stale = cached_elev
+            return DataSourceStatus(name="Open-Elevation (SRTM)", endpoint=settings.OPEN_ELEVATION_URL, status="stale" if is_stale else "live", last_updated=fetched_at)
+        return await _probe("Open-Elevation (SRTM)", f"{settings.OPEN_ELEVATION_URL}?locations={settings.DEFAULT_LAT},{settings.DEFAULT_LNG}", timeout=10.0)
+
+    osrm_probe_url = (
+        f"{settings.OSRM_ROUTE_URL}/{settings.DEFAULT_LNG},{settings.DEFAULT_LAT}"
+        f";{settings.DEFAULT_LNG + 0.01},{settings.DEFAULT_LAT + 0.01}?overview=false"
+    )
+    results = await asyncio.gather(
+        weather_status(), flood_status(), elevation_status(), _osm_status(),
+        _probe("OSRM Routing Engine", osrm_probe_url, timeout=8.0), _imd_status(),
+        return_exceptions=True,
+    )
+    statuses: List[DataSourceStatus] = []
+    for item in results:
+        if isinstance(item, DataSourceStatus):
+            statuses.append(item)
+    return statuses
+
+
+@router.get("/sources", response_model=List[DataSourceStatus])
+async def get_data_sources_status():
+    """Returns the operational status of every external data source.
+    A fresh snapshot is reused for two minutes so the control-room refresh is not blocked on Overpass and IMD.
+    """
+    cached = global_cache.get("source_status_snapshot_v1")
+    if cached and not cached[2]:
+        return [DataSourceStatus(**item) for item in cached[0]]
+    statuses = await _collect_source_statuses()
+    global_cache.set(
+        "source_status_snapshot_v1",
+        [item.model_dump() for item in statuses],
+        120,
+        datetime.now(timezone.utc).isoformat(),
+    )
     return statuses
