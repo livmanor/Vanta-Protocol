@@ -82,9 +82,11 @@ def _source_status_from_zones(zones: List[RiskZone]) -> Dict[str, Dict[str, Any]
     for zone in zones:
         exp = zone.explanation
         # When an explanation exists its fields tell us whether each source delivered data.
-        weather_status = exp.weather_status if exp and exp.weather_status else (
-            "live" if exp and (exp.rainfall_24h_mm is not None or exp.rainfall_48h_mm is not None) else "failed"
-        )
+        has_weather_values = bool(exp and any(value is not None for value in (
+            exp.rainfall_24h_mm, exp.rainfall_48h_mm,
+            exp.max_precipitation_probability, exp.wind_max_kmh,
+        )))
+        weather_status = exp.weather_status if exp and exp.weather_status else ("partial" if has_weather_values else "failed")
         river_ok = exp is not None and exp.river_discharge_m3s is not None
         elev_ok = exp is not None and exp.mean_elevation_m is not None
         ts = zone.computed_at  # ISO timestamp set by compute_real_risk_zones
@@ -403,7 +405,7 @@ class PredictAgent:
         source_gaps = []
         for zone in zones:
             for source in source_status.get(zone.id, {}).values():
-                if source.get("status") in ("failed", "stale"):
+                if source.get("status") in ("failed", "partial", "stale"):
                     source_gaps.append(f"{zone.name}: {source['name']} is {source['status']}.")
         if any(zone.id.startswith("hyd-hotspot-") for zone in zones):
             source_gaps.append("Mapped hotspot locations come from the Hyderabad Traffic Police list dated 2025-08-06; verify that each remains vulnerable.")

@@ -5,9 +5,9 @@ import { useLanguage } from '../i18n.jsx';
 export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute, loadingRoute }) {
   const { language } = useLanguage();
   const words = {
-    en: ['Hotspot assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', "Today's forecast", 'Past 48h rain estimate', 'River discharge', 'Terrain elevation', 'Mapped vulnerability', 'Assessment reason', 'Prepare evacuation route', 'Routing via OSRM…', 'Past 48h rainfall is an Open-Meteo model estimate, not a local rain-gauge reading.'],
-    hi: ['हॉटस्पॉट जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', 'आज का पूर्वानुमान', 'पिछले 48 घंटे की अनुमानित वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'मानचित्रित संवेदनशीलता', 'आकलन कारण', 'निकासी मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…', 'पिछले 48 घंटे की वर्षा Open-Meteo मॉडल का अनुमान है, स्थानीय वर्षामापी की रीडिंग नहीं।'],
-    te: ['హాట్‌స్పాట్ ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', 'ఈ రోజు అంచనా', 'గత 48 గంటల వర్ష అంచనా', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'ముప్పు వివరణ', 'అంచనా కారణం', 'తరలింపు మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…', 'గత 48 గంటల వర్షపాతం Open-Meteo మోడల్ అంచనా; స్థానిక వర్షమాపక కొలత కాదు.'],
+    en: ['Hotspot assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', "Today's forecast", '48h rainfall', 'River discharge', 'Terrain elevation', 'Mapped vulnerability', 'Assessment reason', 'Prepare evacuation route', 'Routing via OSRM…', 'Past 48h rainfall is an Open-Meteo model estimate, not a local rain-gauge reading.'],
+    hi: ['हॉटस्पॉट जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', 'आज का पूर्वानुमान', '48 घंटे की वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'मानचित्रित संवेदनशीलता', 'आकलन कारण', 'निकासी मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…', 'पिछले 48 घंटे की वर्षा Open-Meteo मॉडल का अनुमान है, स्थानीय वर्षामापी की रीडिंग नहीं।'],
+    te: ['హాట్‌స్పాట్ ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', 'ఈ రోజు అంచనా', '48 గంటల వర్షపాతం', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'ముప్పు వివరణ', 'అంచనా కారణం', 'తరలింపు మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…', 'గత 48 గంటల వర్షపాతం Open-Meteo మోడల్ అంచనా; స్థానిక వర్షమాపక కొలత కాదు.'],
   }[language] || [];
   if (!zone) return null;
 
@@ -17,7 +17,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
   const show = (value, unit = '') => value === null || value === undefined ? '—' : `${value}${unit}`;
 
   const getRiskColor = (lvl) => {
-    if (lvl === null || lvl === undefined) return { bg: '#F1F5F9', text: '#64748B', label: 'Unavailable · verify conditions' };
+    if (lvl === null || lvl === undefined) return { bg: '#F1F5F9', text: '#64748B', label: 'Data unavailable' };
     switch (lvl) {
       case 5:
       case 4:
@@ -64,7 +64,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
         <div className="flex items-center justify-between mb-2">
           <span className="text-[12px] font-medium text-[#64748B] uppercase tracking-wider">Open-Meteo Weather</span>
           <span className="text-[12px] text-[#64748B]">
-            {weatherStatus === 'failed' ? 'Unavailable' : weatherStatus === 'stale' ? 'Stale data' : current?.condition || (weatherStatus === 'live' ? 'Live' : 'Status unknown')}
+            {weatherStatus === 'failed' ? 'Unavailable' : weatherStatus === 'partial' ? 'Partial data' : weatherStatus === 'stale' ? 'Stale data' : current?.condition || (weatherStatus === 'live' ? 'Live' : 'Status unknown')}
           </span>
         </div>
 

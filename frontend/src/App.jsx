@@ -29,6 +29,7 @@ export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
+  const [riskZonesError, setRiskZonesError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
   const [agentResults, setAgentResults] = useState({});
@@ -74,7 +75,7 @@ export default function App() {
     try {
       const [srcs, rZones, weather, aStatus, uList, incList, roads] = await Promise.all([
         fetchSources().catch(e => { console.error(e); return []; }),
-        fetchRiskZones().catch(e => { console.error(e); return []; }),
+        fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
@@ -82,7 +83,13 @@ export default function App() {
         fetchBlockedRoads().catch(e => { console.error(e); return []; })
       ]);
       setSources(srcs);
-      setRiskZones(rZones);
+      const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
+      if (normalizedZones) {
+        setRiskZones(normalizedZones);
+        setRiskZonesError('');
+      } else {
+        setRiskZonesError(rZones?.error || 'Unexpected response from the risk-zones API.');
+      }
       setZoneWeather(weather);
       setAgentStatus(aStatus);
       setUnits(uList);
@@ -157,7 +164,7 @@ export default function App() {
 
   const assessedRisks = riskZones.map(z => z.risk_level).filter(level => Number.isFinite(level));
   const maxRisk = assessedRisks.length ? Math.max(...assessedRisks) : null;
-  const alertTone = maxRisk === null ? { dot: '#64748B', label: 'Risk unavailable' } :
+  const alertTone = maxRisk === null ? { dot: '#64748B', label: 'Data unavailable' } :
     maxRisk >= 4 ? { dot: '#DC2626', label: 'Critical' } :
     maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
     { dot: '#16A34A', label: 'Nominal' };
@@ -396,7 +403,7 @@ export default function App() {
 
                     <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
                       <span className="text-[12px] font-medium text-[#64748B]">
-                        {t('monitoredWards')} ({riskZones.length})
+                        {t('monitoredWards')} ({riskZonesError && riskZones.length === 0 ? '—' : riskZones.length})
                       </span>
                     </div>
 
@@ -539,7 +546,7 @@ export default function App() {
                           Active system
                         </span>
                         <span>·</span>
-                        <span>{alertTone.label} risk · {riskZones.length} hotspots monitored</span>
+                        <span>{maxRisk === null ? alertTone.label : `${alertTone.label} risk`} · {riskZonesError && riskZones.length === 0 ? 'Hotspot data unavailable' : `${riskZones.length} hotspots monitored`}</span>
                       </div>
                     </div>
 

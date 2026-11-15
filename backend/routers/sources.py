@@ -49,7 +49,7 @@ async def get_data_sources_status():
 
     # 1. Open-Meteo Weather Forecast API — reuse cache if available
     cached_weather = global_cache.get(
-        f"open_meteo_weather_past48h_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
+        f"open_meteo_weather_ist48h_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
     )
     if cached_weather:
         _, fetched_at, is_stale = cached_weather

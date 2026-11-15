@@ -2,23 +2,25 @@ import httpx
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from backend.config import settings
 from backend.cache import global_cache
 
 logger = logging.getLogger("open_meteo")
+_weather_response_keys_logged = False
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 def sum_hourly_precipitation_last_48h(data: Dict[str, Any]) -> Optional[float]:
-    """Sum the latest 48 complete hourly precipitation values in API-local time."""
+    """Sum hourly precipitation over the rolling 48 hours ending now in IST."""
     hourly = data.get("hourly") or {}
     times = hourly.get("time") or []
     values = hourly.get("precipitation") or []
     if len(times) != len(values):
         return None
     try:
-        tz = ZoneInfo(data.get("timezone") or "Asia/Kolkata")
+        tz = IST
         now = datetime.now(tz)
+        cutoff = now - timedelta(hours=48)
         samples = []
         for stamp, value in zip(times, values):
             if not isinstance(stamp, str):
@@ -26,18 +28,14 @@ def sum_hourly_precipitation_last_48h(data: Dict[str, Any]) -> Optional[float]:
             sample_time = datetime.fromisoformat(stamp)
             if sample_time.tzinfo is None:
                 sample_time = sample_time.replace(tzinfo=tz)
-            if sample_time <= now:
-                samples.append((sample_time, value))
-    except (ValueError, TypeError, ZoneInfoNotFoundError):
+            sample_time = sample_time.astimezone(tz)
+            if cutoff < sample_time <= now and isinstance(value, (int, float)) and not isinstance(value, bool):
+                samples.append(float(value))
+    except (ValueError, TypeError):
         return None
-    if len(samples) < 48:
+    if not samples:
         return None
-    window = samples[-48:]
-    if any(value is None or not isinstance(value, (int, float)) for _, value in window):
-        return None
-    if any((window[index][0] - window[index - 1][0]) != timedelta(hours=1) for index in range(1, 48)):
-        return None
-    return round(sum(float(value) for _, value in window), 1)
+    return round(sum(samples), 1)
 
 
 def today_daily_value(data: Dict[str, Any], key: str) -> Any:
@@ -45,11 +43,11 @@ def today_daily_value(data: Dict[str, Any], key: str) -> Any:
     daily = data.get("daily") or {}
     dates = daily.get("time") or []
     try:
-        today = datetime.now(ZoneInfo(data.get("timezone") or "Asia/Kolkata")).date().isoformat()
+        today = datetime.now(IST).date().isoformat()
         index = dates.index(today)
         values = daily.get(key) or []
         return values[index] if index < len(values) else None
-    except (ValueError, TypeError, ZoneInfoNotFoundError):
+    except (ValueError, TypeError):
         return None
 
 
@@ -96,9 +94,9 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     """Fetches real-time rainfall, precipitation probability, and wind speed from Open-Meteo.
     Respects rate limits via TTL caching and returns metadata including source status.
     """
-    cache_key = f"open_meteo_weather_past48h_{lat:.3f}_{lng:.3f}"
+    cache_key = f"open_meteo_weather_ist48h_{lat:.3f}_{lng:.3f}"
     cached = global_cache.get(cache_key)
-    if cached and not cached[2]:
+    if cached and not cached[2] and _weather_payload_status(cached[0]) == "live":
         data, fetched_at, is_stale = cached
         return {
             "source": "Open-Meteo Forecast API",
@@ -118,11 +116,11 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
             "weather_code", "cloud_cover", "wind_speed_10m",
             "wind_direction_10m", "wind_gusts_10m",
         ]),
-        "hourly": "precipitation,precipitation_probability,rain,showers,weather_code,wind_speed_10m,wind_gusts_10m",
+        "hourly": "precipitation",
         "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max",
         "forecast_days": 3,
         "past_days": 2,
-        "timezone": "auto"
+        "timezone": "Asia/Kolkata"
     }
 
     try:
@@ -130,23 +128,33 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             data = resp.json()
+            global _weather_response_keys_logged
+            if not _weather_response_keys_logged:
+                logger.info(
+                    "Open-Meteo forecast response keys: top=%s current=%s hourly=%s daily=%s",
+                    sorted(data.keys()), sorted((data.get("current") or {}).keys()),
+                    sorted((data.get("hourly") or {}).keys()), sorted((data.get("daily") or {}).keys()),
+                )
+                _weather_response_keys_logged = True
             now_iso = datetime.now(timezone.utc).isoformat()
             global_cache.set(cache_key, data, settings.WEATHER_CACHE_TTL, now_iso)
+            payload_status = _weather_payload_status(data)
             return {
                 "source": "Open-Meteo Forecast API",
-                "status": "live",
+                "status": payload_status,
                 "last_updated": now_iso,
                 "data": data,
-                "error": None
+                "error": None if payload_status == "live" else "Open-Meteo returned incomplete current, daily, or hourly precipitation data."
             }
     except Exception as e:
         logger.error(f"Error fetching Open-Meteo weather: {e}")
         # If cache exists even if expired, return it with stale status
         if cached:
             data, fetched_at, _ = cached
+            cached_status = _weather_payload_status(data)
             return {
                 "source": "Open-Meteo Forecast API",
-                "status": "stale",
+                "status": "stale" if cached_status == "live" else cached_status,
                 "last_updated": fetched_at,
                 "data": data,
                 "error": str(e)
@@ -158,6 +166,20 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
             "data": None,
             "error": str(e)
         }
+
+
+def _weather_payload_status(data: Dict[str, Any]) -> str:
+    current = data.get("current") or {}
+    current_ok = any(current.get(field) is not None for field in ("temperature_2m", "precipitation", "weather_code"))
+    daily_ok = all(today_daily_value(data, field) is not None for field in (
+        "precipitation_sum", "precipitation_probability_max", "wind_speed_10m_max",
+    ))
+    hourly_ok = sum_hourly_precipitation_last_48h(data) is not None
+    if current_ok and daily_ok and hourly_ok:
+        return "live"
+    if current_ok or daily_ok or hourly_ok:
+        return "partial"
+    return "failed"
 
 async def get_real_river_discharge(lat: float, lng: float) -> Dict[str, Any]:
     """Fetches real-time GloFAS river discharge forecast from Open-Meteo Flood API.

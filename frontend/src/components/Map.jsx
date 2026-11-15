@@ -62,7 +62,7 @@ export default function Map({
 
     // Standard high-visibility disaster risk palette on light map
     const getRiskColor = (level) => {
-      if (level === null || level === undefined) return '#64748b';
+      if (level === null || level === undefined) return '#94a3b8';
       switch (level) {
         case 5: return '#dc2626'; // Red (Level 5 Critical)
         case 4: return '#ea580c'; // Deep Orange (Level 4 Severe)
@@ -110,7 +110,7 @@ export default function Map({
         layer.bindTooltip(`
           <div class="font-sans text-xs p-1">
             <div class="font-extrabold text-slate-900">${z.name}</div>
-            <div class="text-indigo-700 font-bold mt-0.5">${z.risk_level == null ? 'Risk unavailable · verify conditions' : 'Risk Level: ' + z.risk_level + ' / 5'}</div>
+            <div class="text-indigo-700 font-bold mt-0.5">${z.risk_level == null ? 'Data unavailable · verify conditions' : 'Risk Level: ' + z.risk_level + ' / 5'}</div>
             <div class="text-[11px] text-slate-500">Weather feed: ${z.explanation?.weather_status || 'unknown'}</div>
             <div class="text-[11px] text-slate-500 mt-1 max-w-[210px]">${z.explanation?.why_this || ''}</div>
           </div>

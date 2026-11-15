@@ -70,7 +70,6 @@ def calculate_zone_risk(
     Screening factors are additive and are not statistically calibrated:
     forecast rainfall, recent 48h accumulation, wind, river discharge, and
     published hotspot history. Elevation is context only for this inland city.
-
     Absolute elevation is retained as context only; it does not rank inland
     Hyderabad hotspots. This is a screening heuristic, not a calibrated forecast.
     """
