@@ -14,11 +14,12 @@ def generate_prepositioning_suggestions(
     
     # Filter available units
     available_units = [u for u in units if u.status == "available"]
-    if not available_units:
+    scored_zones = [zone for zone in risk_zones if zone.risk_level is not None]
+    if not available_units or not scored_zones:
         return []
 
     # Sort risk zones descending by risk level
-    high_risk_zones = sorted(risk_zones, key=lambda z: z.risk_level, reverse=True)
+    high_risk_zones = sorted(scored_zones, key=lambda z: z.risk_level, reverse=True)
 
     assigned_unit_ids = set()
 
@@ -76,7 +77,7 @@ def generate_prepositioning_suggestions(
                 f"Estimated ETA: ~{eta_mins} mins"
             ]
             if best_unit.kind == "rescue_boat":
-                reasons.append("Equipped for waterborne extraction and low-elevation waterlogging")
+                reasons.append("Equipped for waterborne extraction at a historically mapped waterlogging hotspot")
 
             suggestions.append(
                 PrepositionSuggestion(

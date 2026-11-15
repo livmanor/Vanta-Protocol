@@ -155,8 +155,9 @@ export default function App() {
     }
   };
 
-  const maxRisk = riskZones.reduce((m, z) => Math.max(m, z.risk_level || 0), 0);
-  const alertTone =
+  const assessedRisks = riskZones.map(z => z.risk_level).filter(level => Number.isFinite(level));
+  const maxRisk = assessedRisks.length ? Math.max(...assessedRisks) : null;
+  const alertTone = maxRisk === null ? { dot: '#64748B', label: 'Risk unavailable' } :
     maxRisk >= 4 ? { dot: '#DC2626', label: 'Critical' } :
     maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
     { dot: '#16A34A', label: 'Nominal' };
@@ -411,17 +412,17 @@ export default function App() {
                           <div className="min-w-0 pr-2">
                             <div className="text-[14px] font-medium text-[#0F172A] truncate">{z.name}</div>
                             <div className="vp-mono text-[12px] text-[#64748B]">
-                              {t('elevation')} {z.explanation?.mean_elevation_m?.toFixed(1) ?? '–'}m · {t('rain')} {z.explanation?.rainfall_24h_mm?.toFixed(1) ?? '0.0'}mm
+                              {t('elevation')} {z.explanation?.mean_elevation_m?.toFixed(1) ?? '–'}m · 48h est. {zoneWeather.find(item => item.zone_id === z.id)?.rainfall_48h_mm?.toFixed(1) ?? '—'}mm
                             </div>
                           </div>
                           <span
                             className="shrink-0 px-2 py-0.5 rounded-[4px] text-[12px] font-semibold vp-mono"
                             style={{
-                              backgroundColor: z.risk_level >= 4 ? '#FEE2E2' : z.risk_level === 3 ? '#FEF3C7' : '#DCFCE7',
-                              color: z.risk_level >= 4 ? '#DC2626' : z.risk_level === 3 ? '#D97706' : '#16A34A',
+                              backgroundColor: z.risk_level == null ? '#F1F5F9' : z.risk_level >= 4 ? '#FEE2E2' : z.risk_level === 3 ? '#FEF3C7' : '#DCFCE7',
+                              color: z.risk_level == null ? '#64748B' : z.risk_level >= 4 ? '#DC2626' : z.risk_level === 3 ? '#D97706' : '#16A34A',
                             }}
                           >
-                            L{z.risk_level}
+                            {z.risk_level == null ? 'N/A' : `L${z.risk_level}`}
                           </span>
                         </button>
                       ))}

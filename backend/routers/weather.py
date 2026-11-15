@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter
 
-from backend.data_sources.open_meteo import get_real_weather_forecast
+from backend.data_sources.open_meteo import get_real_weather_forecast, sum_hourly_precipitation_last_48h, today_daily_value
 from backend.models import WeatherCurrent, WeatherDaily, ZoneWeather
 from backend.services.risk_engine import REAL_ZONES_METADATA
 
@@ -26,11 +26,6 @@ WEATHER_CODES = {
 def _number(obj: Dict[str, Any], key: str) -> Optional[float]:
     value = obj.get(key)
     return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
-
-
-def _at(obj: Dict[str, Any], key: str, index: int = 0) -> Any:
-    values = obj.get(key)
-    return values[index] if isinstance(values, list) and len(values) > index else None
 
 
 def _condition(code: Any) -> Optional[str]:
@@ -60,19 +55,18 @@ def _current_weather(data: Dict[str, Any]) -> Optional[WeatherCurrent]:
 
 def _today_weather(data: Dict[str, Any]) -> Optional[WeatherDaily]:
     daily = data.get("daily")
-    if not isinstance(daily, dict):
+    date_today = today_daily_value(data, "time")
+    if not isinstance(daily, dict) or date_today is None:
         return None
-    code = _at(daily, "weather_code")
-    if code is None and not daily.get("time"):
-        return None
+    code = today_daily_value(data, "weather_code")
     return WeatherDaily(
-        date=_at(daily, "time"), weather_code=code, condition=_condition(code),
-        temperature_min_c=_at(daily, "temperature_2m_min"),
-        temperature_max_c=_at(daily, "temperature_2m_max"),
-        precipitation_sum_mm=_at(daily, "precipitation_sum"),
-        precipitation_probability_max_pct=_at(daily, "precipitation_probability_max"),
-        wind_speed_max_kmh=_at(daily, "wind_speed_10m_max"),
-        wind_gusts_max_kmh=_at(daily, "wind_gusts_10m_max"),
+        date=date_today, weather_code=code, condition=_condition(code),
+        temperature_min_c=today_daily_value(data, "temperature_2m_min"),
+        temperature_max_c=today_daily_value(data, "temperature_2m_max"),
+        precipitation_sum_mm=today_daily_value(data, "precipitation_sum"),
+        precipitation_probability_max_pct=today_daily_value(data, "precipitation_probability_max"),
+        wind_speed_max_kmh=today_daily_value(data, "wind_speed_10m_max"),
+        wind_gusts_max_kmh=today_daily_value(data, "wind_gusts_10m_max"),
     )
 
 
@@ -89,5 +83,6 @@ async def get_zone_weather():
             status=response["status"], last_updated=response.get("last_updated"),
             error_message=response.get("error"),
             current=_current_weather(data), today=_today_weather(data),
+            rainfall_48h_mm=sum_hourly_precipitation_last_48h(data),
         ))
     return results

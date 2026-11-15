@@ -2,10 +2,55 @@ import httpx
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from backend.config import settings
 from backend.cache import global_cache
 
 logger = logging.getLogger("open_meteo")
+
+
+def sum_hourly_precipitation_last_48h(data: Dict[str, Any]) -> Optional[float]:
+    """Sum the latest 48 complete hourly precipitation values in API-local time."""
+    hourly = data.get("hourly") or {}
+    times = hourly.get("time") or []
+    values = hourly.get("precipitation") or []
+    if len(times) != len(values):
+        return None
+    try:
+        tz = ZoneInfo(data.get("timezone") or "Asia/Kolkata")
+        now = datetime.now(tz)
+        samples = []
+        for stamp, value in zip(times, values):
+            if not isinstance(stamp, str):
+                continue
+            sample_time = datetime.fromisoformat(stamp)
+            if sample_time.tzinfo is None:
+                sample_time = sample_time.replace(tzinfo=tz)
+            if sample_time <= now:
+                samples.append((sample_time, value))
+    except (ValueError, TypeError, ZoneInfoNotFoundError):
+        return None
+    if len(samples) < 48:
+        return None
+    window = samples[-48:]
+    if any(value is None or not isinstance(value, (int, float)) for _, value in window):
+        return None
+    if any((window[index][0] - window[index - 1][0]) != timedelta(hours=1) for index in range(1, 48)):
+        return None
+    return round(sum(float(value) for _, value in window), 1)
+
+
+def today_daily_value(data: Dict[str, Any], key: str) -> Any:
+    """Return a daily value for today's local date, even when past_days shifts the arrays."""
+    daily = data.get("daily") or {}
+    dates = daily.get("time") or []
+    try:
+        today = datetime.now(ZoneInfo(data.get("timezone") or "Asia/Kolkata")).date().isoformat()
+        index = dates.index(today)
+        values = daily.get(key) or []
+        return values[index] if index < len(values) else None
+    except (ValueError, TypeError, ZoneInfoNotFoundError):
+        return None
 
 
 async def get_recent_historical_rain(
@@ -51,7 +96,7 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     """Fetches real-time rainfall, precipitation probability, and wind speed from Open-Meteo.
     Respects rate limits via TTL caching and returns metadata including source status.
     """
-    cache_key = f"open_meteo_weather_{lat:.3f}_{lng:.3f}"
+    cache_key = f"open_meteo_weather_past48h_{lat:.3f}_{lng:.3f}"
     cached = global_cache.get(cache_key)
     if cached and not cached[2]:
         data, fetched_at, is_stale = cached
@@ -76,6 +121,7 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
         "hourly": "precipitation,precipitation_probability,rain,showers,weather_code,wind_speed_10m,wind_gusts_10m",
         "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max",
         "forecast_days": 3,
+        "past_days": 2,
         "timezone": "auto"
     }
 

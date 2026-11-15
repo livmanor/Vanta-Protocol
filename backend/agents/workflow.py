@@ -16,9 +16,11 @@ from backend.services.prepositioning import generate_prepositioning_suggestions
 from backend.services.risk_engine import compute_real_risk_zones
 from backend.db import fetch_units, fetch_incidents, fetch_blocked_roads
 from backend.data_sources.open_meteo import get_recent_historical_rain
+from backend.data_sources.open_meteo import sum_hourly_precipitation_last_48h, today_daily_value
 from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_river_discharge
 from backend.data_sources.elevation import get_real_elevations
 from backend.data_sources.geocoding import resolve_location
+from backend.data_sources.osm import get_real_shelters_and_stations
 from backend.services.risk_engine import REAL_ZONES_METADATA
 from backend.db import DB_PATH
 import aiosqlite
@@ -36,6 +38,9 @@ def _zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, An
         "computed_at": zone.computed_at,
         "metrics": {
             "rainfall_24h_mm": explanation.rainfall_24h_mm,
+            "estimated_rainfall_48h_mm": explanation.rainfall_48h_mm,
+            "weather_status": explanation.weather_status,
+            "weather_last_updated": explanation.weather_last_updated,
             "max_precipitation_probability": explanation.max_precipitation_probability,
             "wind_max_kmh": explanation.wind_max_kmh,
             "river_discharge_m3s": explanation.river_discharge_m3s,
@@ -54,6 +59,7 @@ def _predict_zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict
         "zone_name": zone.name,
         "observed_forecast_metrics": {
             "forecast_precipitation_mm": explanation.rainfall_24h_mm,
+            "estimated_past_48h_precipitation_mm": explanation.rainfall_48h_mm,
             "precipitation_probability_percent": explanation.max_precipitation_probability,
             "forecast_max_wind_kmh": explanation.wind_max_kmh,
             "river_discharge_m3s": explanation.river_discharge_m3s,
@@ -76,15 +82,17 @@ def _source_status_from_zones(zones: List[RiskZone]) -> Dict[str, Dict[str, Any]
     for zone in zones:
         exp = zone.explanation
         # When an explanation exists its fields tell us whether each source delivered data.
-        weather_ok = exp is not None and exp.rainfall_24h_mm is not None
+        weather_status = exp.weather_status if exp and exp.weather_status else (
+            "live" if exp and (exp.rainfall_24h_mm is not None or exp.rainfall_48h_mm is not None) else "failed"
+        )
         river_ok = exp is not None and exp.river_discharge_m3s is not None
         elev_ok = exp is not None and exp.mean_elevation_m is not None
         ts = zone.computed_at  # ISO timestamp set by compute_real_risk_zones
         result[zone.id] = {
             "weather": {
                 "name": "Open-Meteo Weather",
-                "status": "live" if weather_ok else "failed",
-                "last_updated": ts if weather_ok else None,
+                "status": weather_status,
+                "last_updated": exp.weather_last_updated if exp else None,
             },
             "river": {
                 "name": "Open-Meteo GloFAS",
@@ -418,9 +426,10 @@ class PrepareAgent:
         known_roads: List[Dict[str, Any]] | None = None,
         known_shelters: List[Dict[str, Any]] | None = None,
         operations_window: Dict[str, str] | None = None,
+        registered_unit_availability: Dict[str, Any] | None = None,
+        shelter_source_status: Dict[str, Any] | None = None,
     ) -> PrepareAgentOutput:
         allowed_ids = {zone.id for zone in zones}
-        supported_zone_ids = {item.target_zone_id for item in suggestions}
         # Do not send unit IDs, station names, or exact unit coordinates to the model.
         summarized_suggestions = [
             {
@@ -437,11 +446,13 @@ class PrepareAgent:
             {
                 "most_recent_observed_rain_event_and_logged_impacts": recent_rain_impacts,
                 "risk_zones": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
-                "zones_ordered_by_current_risk": [zone.id for zone in sorted(zones, key=lambda item: item.risk_level, reverse=True)],
+                "zones_ordered_by_current_risk": [zone.id for zone in sorted(zones, key=lambda item: item.risk_level or 0, reverse=True)],
                 "deterministic_positioning_recommendations": summarized_suggestions,
+                "registered_unit_availability": registered_unit_availability or {},
                 "officer_incident_or_scenario": officer_query,
                 "previous_predict_agent_structured_output": previous_agent_output,
                 "known_shelters": known_shelters or [],
+                "shelter_source_status": shelter_source_status or {"status": "unknown"},
                 "known_road_records": known_roads or [],
                 "operations_calendar_validity_window": operations_window,
             },
@@ -464,7 +475,7 @@ class PrepareAgent:
         )
         output.zone_notes = [
             item for item in output.zone_notes
-            if item.zone_id in allowed_ids and item.zone_id in supported_zone_ids
+            if item.zone_id in allowed_ids
         ][:6]
         output.readiness_actions = [item for item in output.readiness_actions if not item.zone_id or item.zone_id in allowed_ids][:8]
         output.readiness_gaps = output.readiness_gaps[:5]
@@ -517,17 +528,19 @@ async def _weather_and_history(
             get_real_elevations([(lat, lng)]),
         )
         weather_data = weather.get("data") or {}
-        daily = weather_data.get("daily") or {}
         river_values = (river.get("data") or {}).get("daily", {}).get("river_discharge") or []
         elev_values = elevation.get("data") or []
         explanation = RiskExplanation(
-            rainfall_24h_mm=(daily.get("precipitation_sum") or [None])[0],
-            max_precipitation_probability=(daily.get("precipitation_probability_max") or [None])[0],
-            wind_max_kmh=(daily.get("wind_speed_10m_max") or [None])[0],
+            rainfall_24h_mm=today_daily_value(weather_data, "precipitation_sum"),
+            rainfall_48h_mm=sum_hourly_precipitation_last_48h(weather_data),
+            weather_status=weather.get("status"),
+            weather_last_updated=weather.get("last_updated"),
+            max_precipitation_probability=today_daily_value(weather_data, "precipitation_probability_max"),
+            wind_max_kmh=today_daily_value(weather_data, "wind_speed_10m_max"),
             river_discharge_m3s=river_values[0] if river_values else None,
             mean_elevation_m=elev_values[0].get("elevation") if elev_values else place.get("elevation"),
             historical_flood_prone=False,
-            why_this="Location-specific observations from Open-Meteo; no hotspot score applied.",
+            why_this="Location-specific model estimates from Open-Meteo; rainfall is not a local rain-gauge measurement.",
         )
         now = datetime.now(timezone.utc).isoformat()
         zone = RiskZone(
@@ -580,14 +593,24 @@ async def run_predict_agent(
 
 async def run_prepare_agent(language: str = "en", officer_query: str | None = None, area_query: str | None = None, previous_agent_output: Dict[str, Any] | None = None) -> Dict[str, Any]:
     zones, source_status, recent_rain_impacts = await _weather_and_history(area_query=area_query)
-    units, roads = await asyncio.gather(fetch_units(), fetch_blocked_roads())
+    units, roads, facilities = await asyncio.gather(fetch_units(), fetch_blocked_roads(), get_real_shelters_and_stations())
     suggestions = generate_prepositioning_suggestions(units, zones) if all(zone.risk_level is not None for zone in zones) else []
     now = datetime.now(timezone.utc)
     window = {"valid_from": now.isoformat(), "valid_until": (now + timedelta(hours=72)).isoformat()}
     road_records = [{"name": road.name, "reason": road.reason, "timestamp": road.timestamp} for road in roads]
+    known_shelters = [
+        {"name": item["name"], "latitude": item["lat"], "longitude": item["lng"], "source": "OpenStreetMap; officer must verify suitability"}
+        for item in facilities.get("data", [])
+        if item.get("type") == "shelter" and item.get("lat") is not None and item.get("lng") is not None
+    ]
+    unit_availability = {
+        kind: {state: sum(1 for unit in units if unit.kind == kind and unit.status == state) for state in ("available", "assigned")}
+        for kind in ("patrol", "rescue_boat", "ambulance")
+    }
     preparation = await PrepareAgent().run(
         zones, suggestions, source_status, recent_rain_impacts, language, officer_query,
-        previous_agent_output, road_records, [], window,
+        previous_agent_output, road_records, known_shelters, window, unit_availability,
+        {key: facilities.get(key) for key in ("source", "status", "last_updated", "error")},
     )
     calendar = preparation.operations_calendar
     calendar.valid_from = now
@@ -678,15 +701,25 @@ async def run_respond_agent(language: str = "en", officer_query: str | None = No
 async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
     """Run Predict first, then pass its structured result into Prepare."""
     # PrepareAgent needs the weighted map score; PredictAgent must NOT receive it.
-    predict_zones, prepare_zones, units = await asyncio.gather(
+    predict_zones, prepare_zones, units, roads, facilities = await asyncio.gather(
         compute_real_risk_zones(include_rule_score=False),
         compute_real_risk_zones(include_rule_score=True),
         fetch_units(),
+        fetch_blocked_roads(),
+        get_real_shelters_and_stations(),
     )
     suggestions = generate_prepositioning_suggestions(units, prepare_zones)
     source_status = _source_status_from_zones(predict_zones)
     recent_rain_impacts = await _collect_recent_rain_impacts(predict_zones)
-    roads = await fetch_blocked_roads()
+    known_shelters = [
+        {"name": item["name"], "latitude": item["lat"], "longitude": item["lng"], "source": "OpenStreetMap; officer must verify suitability"}
+        for item in facilities.get("data", [])
+        if item.get("type") == "shelter" and item.get("lat") is not None and item.get("lng") is not None
+    ]
+    unit_availability = {
+        kind: {state: sum(1 for unit in units if unit.kind == kind and unit.status == state) for state in ("available", "assigned")}
+        for kind in ("patrol", "rescue_boat", "ambulance")
+    }
     now = datetime.now(timezone.utc)
     window = {"valid_from": now.isoformat(), "valid_until": (now + timedelta(hours=72)).isoformat()}
 
@@ -697,7 +730,9 @@ async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
         prepare_zones, suggestions, source_status, recent_rain_impacts, language,
         previous_agent_output=prediction.model_dump(mode="json"),
         known_roads=[{"name": road.name, "reason": road.reason, "timestamp": road.timestamp} for road in roads],
-        known_shelters=[], operations_window=window,
+        known_shelters=known_shelters, operations_window=window,
+        registered_unit_availability=unit_availability,
+        shelter_source_status={key: facilities.get(key) for key in ("source", "status", "last_updated", "error")},
     )
     calendar = preparation.operations_calendar
     calendar.valid_from = now

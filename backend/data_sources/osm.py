@@ -65,12 +65,12 @@ async def get_real_shelters_and_stations(bbox: tuple = None) -> Dict[str, Any]:
     overpass_query = f"""
 [out:json][timeout:15];
 (
-  node["amenity"="police"]({min_lat},{min_lng},{max_lat},{max_lng});
-  node["amenity"="shelter"]({min_lat},{min_lng},{max_lat},{max_lng});
-  node["amenity"="community_centre"]({min_lat},{min_lng},{max_lat},{max_lng});
-  node["amenity"="hospital"]({min_lat},{min_lng},{max_lat},{max_lng});
+  nwr["amenity"="police"]({min_lat},{min_lng},{max_lat},{max_lng});
+  nwr["amenity"="shelter"]({min_lat},{min_lng},{max_lat},{max_lng});
+  nwr["amenity"="community_centre"]({min_lat},{min_lng},{max_lat},{max_lng});
+  nwr["amenity"="hospital"]({min_lat},{min_lng},{max_lat},{max_lng});
 );
-out body 25;
+out center tags 25;
 """
 
     raw_data = await _query_overpass(overpass_query)
@@ -86,8 +86,8 @@ out body 25;
                 "id": f"osm-{el.get('id')}",
                 "name": name,
                 "type": tags.get("amenity"),
-                "lat": el.get("lat"),
-                "lng": el.get("lon"),
+                "lat": el.get("lat", (el.get("center") or {}).get("lat")),
+                "lng": el.get("lon", (el.get("center") or {}).get("lon")),
                 "tags": tags
             })
         global_cache.set(cache_key, facilities, settings.OSM_CACHE_TTL, now_iso)

@@ -29,6 +29,12 @@ export default function SourceStatusBar({ sources = [], onRefresh, loading }) {
         Icon: AlertTriangle,
         label: copy[3],
       },
+      failed: {
+        cls: 'bg-rose-50 text-rose-700 border-rose-200',
+        dot: 'bg-rose-500',
+        Icon: XCircle,
+        label: copy[4],
+      },
       unreachable: {
         cls: 'bg-rose-50 text-rose-700 border-rose-200',
         dot: 'bg-rose-500',

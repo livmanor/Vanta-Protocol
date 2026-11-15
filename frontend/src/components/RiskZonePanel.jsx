@@ -5,9 +5,9 @@ import { useLanguage } from '../i18n.jsx';
 export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute, loadingRoute }) {
   const { language } = useLanguage();
   const words = {
-    en: ['Hotspot assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', '24h rainfall', 'River discharge', 'Terrain elevation', 'Mapped vulnerability', 'Assessment reason', 'Prepare evacuation route', 'Routing via OSRM…'],
-    hi: ['हॉटस्पॉट जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', '24 घंटे की वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'मानचित्रित संवेदनशीलता', 'आकलन कारण', 'निकासी मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…'],
-    te: ['హాట్‌స్పాట్ ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', '24 గంటల వర్షపాతం', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'ముప్పు వివరణ', 'అంచనా కారణం', 'తరలింపు మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…'],
+    en: ['Hotspot assessment', 'Assessed risk severity', 'Temperature', 'Feels like', 'Humidity', 'Rain now', 'Wind', 'Gusts', 'Today', "Today's forecast", 'Past 48h rain estimate', 'River discharge', 'Terrain elevation', 'Mapped vulnerability', 'Assessment reason', 'Prepare evacuation route', 'Routing via OSRM…', 'Past 48h rainfall is an Open-Meteo model estimate, not a local rain-gauge reading.'],
+    hi: ['हॉटस्पॉट जोखिम आकलन', 'आकलित जोखिम गंभीरता', 'तापमान', 'अनुभूत तापमान', 'आर्द्रता', 'अभी वर्षा', 'हवा', 'झोंके', 'आज', 'आज का पूर्वानुमान', 'पिछले 48 घंटे की अनुमानित वर्षा', 'नदी प्रवाह', 'भूभाग की ऊँचाई', 'मानचित्रित संवेदनशीलता', 'आकलन कारण', 'निकासी मार्ग तैयार करें', 'मार्ग बनाया जा रहा है…', 'पिछले 48 घंटे की वर्षा Open-Meteo मॉडल का अनुमान है, स्थानीय वर्षामापी की रीडिंग नहीं।'],
+    te: ['హాట్‌స్పాట్ ప్రమాద అంచనా', 'అంచనా ప్రమాద తీవ్రత', 'ఉష్ణోగ్రత', 'అనుభూతి ఉష్ణోగ్రత', 'తేమ', 'ప్రస్తుత వర్షం', 'గాలి', 'గాలి వేగం', 'ఈ రోజు', 'ఈ రోజు అంచనా', 'గత 48 గంటల వర్ష అంచనా', 'నది ప్రవాహం', 'భూభాగ ఎత్తు', 'ముప్పు వివరణ', 'అంచనా కారణం', 'తరలింపు మార్గం సిద్ధం చేయండి', 'మార్గం రూపొందుతోంది…', 'గత 48 గంటల వర్షపాతం Open-Meteo మోడల్ అంచనా; స్థానిక వర్షమాపక కొలత కాదు.'],
   }[language] || [];
   if (!zone) return null;
 
@@ -17,6 +17,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
   const show = (value, unit = '') => value === null || value === undefined ? '—' : `${value}${unit}`;
 
   const getRiskColor = (lvl) => {
+    if (lvl === null || lvl === undefined) return { bg: '#F1F5F9', text: '#64748B', label: 'Unavailable · verify conditions' };
     switch (lvl) {
       case 5:
       case 4:
@@ -29,6 +30,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
   };
 
   const riskBadge = getRiskColor(zone.risk_level);
+  const weatherStatus = weather?.status || exp.weather_status;
 
   return (
     <div className="flex flex-col gap-4 text-[14px]">
@@ -62,7 +64,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
         <div className="flex items-center justify-between mb-2">
           <span className="text-[12px] font-medium text-[#64748B] uppercase tracking-wider">Open-Meteo Weather</span>
           <span className="text-[12px] text-[#64748B]">
-            {current?.condition || (weather?.status === 'failed' ? 'Unavailable' : 'Live')}
+            {weatherStatus === 'failed' ? 'Unavailable' : weatherStatus === 'stale' ? 'Stale data' : current?.condition || (weatherStatus === 'live' ? 'Live' : 'Status unknown')}
           </span>
         </div>
 
@@ -102,10 +104,14 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
       <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
         <div className="min-h-[40px] flex items-center justify-between text-[14px]">
           <span className="text-[#64748B]">{words[9]}</span>
-          <span className="font-medium text-[#0F172A] vp-mono">{exp.rainfall_24h_mm?.toFixed(1) ?? '0.0'} mm</span>
+          <span className="font-medium text-[#0F172A] vp-mono">{show(today?.precipitation_sum_mm ?? exp.rainfall_24h_mm, ' mm')}</span>
         </div>
         <div className="min-h-[40px] flex items-center justify-between text-[14px]">
           <span className="text-[#64748B]">{words[10]}</span>
+          <span className="font-medium text-[#0F172A] vp-mono">{show(weather?.rainfall_48h_mm ?? exp.rainfall_48h_mm, ' mm')}</span>
+        </div>
+        <div className="min-h-[40px] flex items-center justify-between text-[14px]">
+          <span className="text-[#64748B]">{words[11]}</span>
           <span className="font-medium text-[#0F172A] vp-mono">
             {exp.river_discharge_m3s !== null && exp.river_discharge_m3s !== undefined
               ? `${exp.river_discharge_m3s.toFixed(1)} m³/s`
@@ -113,7 +119,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
           </span>
         </div>
         <div className="min-h-[40px] flex items-center justify-between text-[14px]">
-          <span className="text-[#64748B]">{words[11]}</span>
+          <span className="text-[#64748B]">{words[12]}</span>
           <span className="font-medium text-[#0F172A] vp-mono">
             {exp.mean_elevation_m !== null && exp.mean_elevation_m !== undefined
               ? `${exp.mean_elevation_m.toFixed(1)} m`
@@ -121,16 +127,17 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
           </span>
         </div>
         <div className="min-h-[40px] flex items-center justify-between text-[14px]">
-          <span className="text-[#64748B]">{words[12]}</span>
+          <span className="text-[#64748B]">{words[13]}</span>
           <span className="font-medium text-[#0F172A]">
             {exp.historical_flood_prone ? 'HTP Hotspot' : 'None'}
           </span>
         </div>
       </div>
+      <p className="text-[11px] text-[#64748B]">{words[17]}</p>
 
       {/* Assessment Reason */}
       <div className="flex flex-col gap-1">
-        <div className="text-[12px] font-medium text-[#475569]">{words[13]}</div>
+        <div className="text-[12px] font-medium text-[#475569]">{words[14]}</div>
         <p className="text-[14px] text-[#475569] leading-relaxed">
           {exp.why_this || 'Normal conditions recorded across public weather and elevation telemetry.'}
         </p>
@@ -143,7 +150,7 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
         className="vp-btn vp-btn-primary w-full"
       >
         <Navigation className={`w-4 h-4 ${loadingRoute ? 'animate-spin' : ''}`} strokeWidth={1.5} />
-        <span>{loadingRoute ? words[15] : words[14]}</span>
+        <span>{loadingRoute ? words[16] : words[15]}</span>
       </button>
     </div>
   );

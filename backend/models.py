@@ -60,6 +60,9 @@ class BlockedRoadCreate(BaseModel):
 
 class RiskExplanation(BaseModel):
     rainfall_24h_mm: Optional[float] = None
+    rainfall_48h_mm: Optional[float] = None
+    weather_status: Optional[Literal["live", "stale", "failed"]] = None
+    weather_last_updated: Optional[str] = None
     max_precipitation_probability: Optional[float] = None
     wind_max_kmh: Optional[float] = None
     river_discharge_m3s: Optional[float] = None
@@ -159,4 +162,5 @@ class ZoneWeather(BaseModel):
     error_message: Optional[str] = None
     current: Optional[WeatherCurrent] = None
     today: Optional[WeatherDaily] = None
+    rainfall_48h_mm: Optional[float] = None
 

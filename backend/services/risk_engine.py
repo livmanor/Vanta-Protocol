@@ -3,9 +3,8 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from backend.config import settings
 from backend.models import RiskZone, RiskExplanation
-from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_river_discharge
+from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_river_discharge, sum_hourly_precipitation_last_48h, today_daily_value
 from backend.data_sources.elevation import get_real_elevations
-from backend.data_sources.imd import get_real_imd_alerts
 
 # Geocoded major waterlogging points published by Hyderabad Traffic Police.
 # Source list is dated 2025-08-06. These points are historical vulnerability
@@ -56,38 +55,62 @@ REAL_ZONES_METADATA = [
 ]
 
 def calculate_zone_risk(
-    rainfall_24h: float,
-    precip_prob_max: float,
-    wind_max_kmh: float,
+    rainfall_24h: Optional[float],
+    precip_prob_max: Optional[float],
+    wind_max_kmh: Optional[float],
     river_discharge: Optional[float],
     elevation_m: Optional[float],
-    historical_flood: bool
-) -> tuple[int, RiskExplanation]:
+    historical_flood: bool,
+    rainfall_48h: Optional[float] = None,
+    weather_status: Optional[str] = None,
+    weather_last_updated: Optional[str] = None,
+) -> tuple[Optional[int], RiskExplanation]:
     """Calculates risk level 1-5 with transparent explainability.
     
-    Formula weights:
-    - 24h Rainfall: 35%
-    - Wind gust / Cyclone intensity: 20%
-    - River discharge anomaly: 20%
-    - Low elevation (< 10m): 15%
-    - Published major waterlogging hotspot: 10%
+    Screening factors are additive and are not statistically calibrated:
+    forecast rainfall, recent 48h accumulation, wind, river discharge, and
+    published hotspot history. Elevation is context only for this inland city.
+
+    Absolute elevation is retained as context only; it does not rank inland
+    Hyderabad hotspots. This is a screening heuristic, not a calibrated forecast.
     """
+    if rainfall_24h is None and rainfall_48h is None:
+        explanation = RiskExplanation(
+            rainfall_24h_mm=None, rainfall_48h_mm=None,
+            weather_status=weather_status or "failed", weather_last_updated=weather_last_updated,
+            max_precipitation_probability=precip_prob_max, wind_max_kmh=wind_max_kmh,
+            river_discharge_m3s=river_discharge, mean_elevation_m=elevation_m,
+            historical_flood_prone=historical_flood,
+            why_this="Rainfall data unavailable; numerical risk withheld. Verify the weather feed and local conditions.",
+        )
+        return None, explanation
+
     score = 1.0  # Base level 1 (Low)
 
     # 1. Rainfall score (0 to 1.5)
     # IMD standards: >64.5mm Heavy, >115.5mm Very Heavy, >204.4mm Extremely Heavy
-    if rainfall_24h >= 115.5:
+    if rainfall_24h is not None and rainfall_24h >= 115.5:
         score += 1.5
-    elif rainfall_24h >= 64.5:
+    elif rainfall_24h is not None and rainfall_24h >= 64.5:
         score += 1.0
-    elif rainfall_24h >= 25.0:
+    elif rainfall_24h is not None and rainfall_24h >= 25.0:
         score += 0.5
+
+    # Past accumulation adds context when prolonged rain persists. These are
+    # transparent demonstration thresholds, not locally validated triggers.
+    if rainfall_48h is not None:
+        if rainfall_48h >= 100.0:
+            score += 0.75
+        elif rainfall_48h >= 50.0:
+            score += 0.5
+        elif rainfall_48h >= 25.0:
+            score += 0.25
 
     # 2. Wind / Cyclone factor (0 to 1.0)
     # >62 km/h is deep depression / cyclonic storm
-    if wind_max_kmh >= 62.0:
+    if wind_max_kmh is not None and wind_max_kmh >= 62.0:
         score += 1.0
-    elif wind_max_kmh >= 45.0:
+    elif wind_max_kmh is not None and wind_max_kmh >= 45.0:
         score += 0.5
 
     # 3. River discharge (0 to 1.0)
@@ -96,35 +119,33 @@ def calculate_zone_risk(
     elif river_discharge is not None and river_discharge > 10.0:
         score += 0.5
 
-    # 4. Low elevation / coastal depression (0 to 0.75)
-    if elevation_m is not None:
-        if elevation_m <= 4.0:
-            score += 0.75
-        elif elevation_m <= 10.0:
-            score += 0.35
-
-    # 5. Published major waterlogging hotspot (0 to 0.5)
+    # 4. Published major waterlogging hotspot (0 to 0.5)
     if historical_flood:
         score += 0.5
 
     final_level = min(5, max(1, round(score)))
 
     reasons = []
-    if rainfall_24h > 20:
+    if rainfall_24h is not None and rainfall_24h > 20:
         reasons.append(f"Forecast 24h rainfall: {rainfall_24h:.1f} mm")
-    if wind_max_kmh > 40:
+    if rainfall_48h is not None:
+        reasons.append(f"Estimated past 48h rainfall: {rainfall_48h:.1f} mm")
+    if wind_max_kmh is not None and wind_max_kmh > 40:
         reasons.append(f"Max wind gusts: {wind_max_kmh:.1f} km/h")
     if river_discharge is not None:
         reasons.append(f"River discharge: {river_discharge:.1f} m³/s")
     if elevation_m is not None:
-        reasons.append(f"Terrain elevation: {elevation_m:.1f} m (low-lying: {'Yes' if elevation_m < 10 else 'No'})")
+        reasons.append(f"Terrain elevation context: {elevation_m:.1f} m; not used as an absolute flood threshold")
     if historical_flood:
         reasons.append("Hyderabad Traffic Police major waterlogging hotspot (2025 list)")
 
-    why_this = " | ".join(reasons) if reasons else "Normal meteorological conditions, minimal flood/cyclone hazard"
+    why_this = " | ".join(reasons) if reasons else "No elevated screening threshold crossed by the available weather and operational inputs."
 
     explanation = RiskExplanation(
         rainfall_24h_mm=rainfall_24h,
+        rainfall_48h_mm=rainfall_48h,
+        weather_status=weather_status,
+        weather_last_updated=weather_last_updated,
         max_precipitation_probability=precip_prob_max,
         wind_max_kmh=wind_max_kmh,
         river_discharge_m3s=river_discharge,
@@ -164,16 +185,12 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
         weather_res, flood_res = zone_results[i]
 
         weather_data = weather_res.get("data") or {}
-        daily = weather_data.get("daily", {})
+        rainfall_24h = today_daily_value(weather_data, "precipitation_sum")
+        rainfall_48h = sum_hourly_precipitation_last_48h(weather_data)
 
-        precip_sums = daily.get("precipitation_sum", [0.0])
-        rainfall_24h = precip_sums[0] if precip_sums and precip_sums[0] is not None else 0.0
+        precip_prob_max = today_daily_value(weather_data, "precipitation_probability_max")
 
-        precip_probs = daily.get("precipitation_probability_max", [0.0])
-        precip_prob_max = precip_probs[0] if precip_probs and precip_probs[0] is not None else 0.0
-
-        wind_speeds = daily.get("wind_speed_10m_max", [0.0])
-        wind_max = wind_speeds[0] if wind_speeds and wind_speeds[0] is not None else 0.0
+        wind_max = today_daily_value(weather_data, "wind_speed_10m_max")
 
         flood_data = flood_res.get("data") or {}
         river_daily = flood_data.get("daily", {}).get("river_discharge", [None])
@@ -191,12 +208,18 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                 wind_max_kmh=wind_max,
                 river_discharge=river_discharge,
                 elevation_m=elev_m,
-                historical_flood=zone_meta["historical_flood_prone"]
+                historical_flood=zone_meta["historical_flood_prone"],
+                rainfall_48h=rainfall_48h,
+                weather_status=weather_res.get("status"),
+                weather_last_updated=weather_res.get("last_updated"),
             )
         else:
             risk_level = None
             explanation = RiskExplanation(
                 rainfall_24h_mm=rainfall_24h,
+                rainfall_48h_mm=rainfall_48h,
+                weather_status=weather_res.get("status"),
+                weather_last_updated=weather_res.get("last_updated"),
                 max_precipitation_probability=precip_prob_max,
                 wind_max_kmh=wind_max,
                 river_discharge_m3s=river_discharge,
