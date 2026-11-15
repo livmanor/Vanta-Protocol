@@ -17,6 +17,8 @@ class AgentRunApproval(BaseModel):
     officer_query: Optional[str] = None
     area_query: Optional[str] = None
     previous_agent_output: Optional[dict] = None
+    event_start: Optional[str] = None
+    event_end: Optional[str] = None
 
 
 @router.get("/status")
@@ -74,9 +76,22 @@ async def run_single_agent(agent_id: Literal["predict", "prepare", "respond"], a
         raise HTTPException(status_code=403, detail=f"Confirm processing of this agent's summarized operational inputs by {provider_name} for this run.")
     try:
         if agent_id == "predict":
-            return await run_predict_agent(approval.language, officer_query=approval.officer_query, area_query=approval.area_query)
+            return await run_predict_agent(
+                approval.language,
+                event_start=approval.event_start,
+                event_end=approval.event_end,
+                officer_query=approval.officer_query,
+                area_query=approval.area_query,
+            )
         elif agent_id == "prepare":
-            return await run_prepare_agent(approval.language, approval.officer_query, approval.area_query, approval.previous_agent_output)
+            return await run_prepare_agent(
+                approval.language,
+                approval.officer_query,
+                approval.area_query,
+                approval.previous_agent_output,
+                approval.event_start,
+                approval.event_end,
+            )
         else:
             return await run_respond_agent(approval.language, approval.officer_query, approval.area_query, approval.previous_agent_output)
     except AgentConfigurationError as exc:

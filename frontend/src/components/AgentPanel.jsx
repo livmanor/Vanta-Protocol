@@ -73,7 +73,7 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
     if (!historyQuery.trim() || !groqConsent || !geminiConsent || !status?.groq_configured || !status?.configured || commandRunning || loading) return;
     setCommandRunning(true);
     setCommandStates({});
-    const inputs = { officer_query: historyQuery.trim(), area_query: areaQuery.trim() || null };
+    let inputs = { officer_query: historyQuery.trim(), area_query: areaQuery.trim() || null };
     const previous = {};
     try {
       for (const id of ['predict', 'prepare', 'respond']) {
@@ -82,6 +82,9 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
         const result = await onRun(id, id === 'predict' ? groqConsent : geminiConsent, language, { ...inputs, previous_agent_output: Object.keys(previous).length ? { ...previous } : undefined });
         setCommandStates(previous => ({ ...previous, [id]: result ? 'complete' : 'failed' }));
         if (result) previous[id] = result[id] || result;
+        if (result?.history_selection?.start && result?.history_selection?.end) {
+          inputs = { ...inputs, event_start: result.history_selection.start, event_end: result.history_selection.end };
+        }
       }
     } finally {
       setCommandRunning(false);
