@@ -7,6 +7,7 @@ from backend.models import DataSourceStatus
 from backend.config import settings
 from backend.cache import global_cache
 from backend.data_sources.osm import OVERPASS_MIRRORS, OVERPASS_HEADERS
+from backend.data_sources.imd import get_real_imd_alerts
 
 router = APIRouter(prefix="/api", tags=["Source Health & Freshness"])
 
@@ -48,7 +49,7 @@ async def get_data_sources_status():
 
     # 1. Open-Meteo Weather Forecast API — reuse cache if available
     cached_weather = global_cache.get(
-        f"open_meteo_weather_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
+        f"open_meteo_weather_ist48h_{settings.DEFAULT_LAT:.3f}_{settings.DEFAULT_LNG:.3f}"
     )
     if cached_weather:
         _, fetched_at, is_stale = cached_weather
@@ -61,7 +62,7 @@ async def get_data_sources_status():
     else:
         statuses.append(await _probe(
             "Open-Meteo Weather Forecast",
-            f"{settings.OPEN_METEO_FORECAST_URL}?latitude={settings.DEFAULT_LAT}&longitude={settings.DEFAULT_LNG}&hourly=precipitation&forecast_days=1",
+            f"{settings.OPEN_METEO_FORECAST_URL}?latitude={settings.DEFAULT_LAT}&longitude={settings.DEFAULT_LNG}&hourly=precipitation&past_days=2&forecast_days=1",
             timeout=8.0
         ))
 
@@ -154,25 +155,14 @@ async def get_data_sources_status():
         timeout=8.0
     ))
 
-    # 6. IMD Public Weather Bulletin — reuse cache; probe the working base domain
-    cached_imd = global_cache.get(f"imd_alerts_{settings.CITY_NAME.lower()}")
-    if cached_imd:
-        _, fetched_at, is_stale = cached_imd
-        statuses.append(DataSourceStatus(
-            name="IMD Public Weather Bulletin",
-            endpoint="https://mausam.imd.gov.in",
-            status="stale" if is_stale else "live",
-            last_updated=fetched_at
-        ))
-    else:
-        # Probe the IMD homepage (200) and report honestly
-        s = await _probe(
-            "IMD Public Weather Bulletin",
-            "https://mausam.imd.gov.in/",
-            timeout=8.0
-        )
-        # Override endpoint to show the domain, not the probe path
-        s.endpoint = "https://mausam.imd.gov.in"
-        statuses.append(s)
+    # Check the actual alert feed, not just the IMD homepage.
+    imd_result = await get_real_imd_alerts(settings.CITY_NAME)
+    statuses.append(DataSourceStatus(
+        name="IMD Public Weather Bulletin",
+        endpoint="https://mausam.imd.gov.in",
+        status=imd_result["status"],
+        last_updated=imd_result.get("last_updated"),
+        error_message=imd_result.get("error"),
+    ))
 
     return statuses

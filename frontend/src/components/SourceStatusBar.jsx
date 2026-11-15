@@ -23,11 +23,23 @@ export default function SourceStatusBar({ sources = [], onRefresh, loading }) {
         Icon: CheckCircle2,
         label: copy[2],
       },
+      partial: {
+        cls: 'bg-amber-50 text-amber-700 border-amber-200',
+        dot: 'bg-amber-500',
+        Icon: AlertTriangle,
+        label: 'PARTIAL',
+      },
       stale: {
         cls: 'bg-amber-50 text-amber-700 border-amber-200',
         dot: 'bg-amber-500',
         Icon: AlertTriangle,
         label: copy[3],
+      },
+      failed: {
+        cls: 'bg-rose-50 text-rose-700 border-rose-200',
+        dot: 'bg-rose-500',
+        Icon: XCircle,
+        label: copy[4],
       },
       unreachable: {
         cls: 'bg-rose-50 text-rose-700 border-rose-200',

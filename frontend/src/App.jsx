@@ -29,6 +29,7 @@ export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
+  const [riskZonesError, setRiskZonesError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
   const [agentResults, setAgentResults] = useState({});
@@ -54,7 +55,6 @@ export default function App() {
   const [view, setView] = useState('agents'); // 'map' | 'agents'
   const [entered, setEntered] = useState(false);
   const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
-  const [clock, setClock] = useState(new Date());
 
   const newMenuRef = useRef(null);
 
@@ -75,7 +75,7 @@ export default function App() {
     try {
       const [srcs, rZones, weather, aStatus, uList, incList, roads] = await Promise.all([
         fetchSources().catch(e => { console.error(e); return []; }),
-        fetchRiskZones().catch(e => { console.error(e); return []; }),
+        fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
@@ -83,7 +83,13 @@ export default function App() {
         fetchBlockedRoads().catch(e => { console.error(e); return []; })
       ]);
       setSources(srcs);
-      setRiskZones(rZones);
+      const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
+      if (normalizedZones) {
+        setRiskZones(normalizedZones);
+        setRiskZonesError('');
+      } else {
+        setRiskZonesError(rZones?.error || 'Unexpected response from the risk-zones API.');
+      }
       setZoneWeather(weather);
       setAgentStatus(aStatus);
       setUnits(uList);
@@ -124,11 +130,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  useEffect(() => {
-    const timer = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const handleRegisterUnit = async (unitData) => {
     await registerUnit(unitData);
     await loadData();
@@ -161,8 +162,10 @@ export default function App() {
     }
   };
 
-  const maxRisk = riskZones.reduce((m, z) => Math.max(m, z.risk_level || 0), 0);
-  const alertTone =
+  const assessedRisks = riskZones.map(z => z.risk_level).filter(level => Number.isFinite(level));
+  const maxRisk = assessedRisks.length ? Math.max(...assessedRisks) : null;
+  const allWeatherLive = riskZones.length > 0 && riskZones.every(zone => zone.explanation?.weather_status === 'live');
+  const alertTone = maxRisk === null ? { dot: '#D97706', label: 'Data unavailable' } :
     maxRisk >= 4 ? { dot: '#DC2626', label: 'Critical' } :
     maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
     { dot: '#16A34A', label: 'Nominal' };
@@ -187,37 +190,10 @@ export default function App() {
               <div className="text-[12px] text-[#64748B] leading-tight">{t('area')}</div>
             </div>
           </div>
-
-          <div className="h-4 w-px bg-[#E2E8F0] mx-1" />
-
-          {/* AI Engine Status Text */}
-          <div className="hidden sm:flex items-center gap-2 text-[12px] text-[#475569]">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: aiEngineOnline ? '#16A34A' : '#64748B' }}
-            />
-            <span>AI engine: {aiEngineOnline ? 'online' : 'offline'}</span>
-          </div>
-
-          <div className="h-4 w-px bg-[#E2E8F0] mx-1 hidden sm:block" />
-
-          {/* Risk Level */}
-          <div className="hidden md:flex items-center gap-2 text-[12px] text-[#475569]">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: alertTone.dot }}
-            />
-            <span>Risk: {alertTone.label}</span>
-          </div>
         </div>
 
         {/* Right side controls */}
         <div className="flex items-center gap-4">
-          {/* Clock */}
-          <span className="hidden sm:inline vp-mono text-[12px] text-[#64748B]">
-            {clock.toLocaleTimeString('en-IN', { hour12: false })}
-          </span>
-
           {/* Language Switch: Segmented control 14px */}
           <div
             className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]"
@@ -428,7 +404,7 @@ export default function App() {
 
                     <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
                       <span className="text-[12px] font-medium text-[#64748B]">
-                        {t('monitoredWards')} ({riskZones.length})
+                        {t('monitoredWards')} ({riskZonesError && riskZones.length === 0 ? '—' : riskZones.length})
                       </span>
                     </div>
 
@@ -444,17 +420,17 @@ export default function App() {
                           <div className="min-w-0 pr-2">
                             <div className="text-[14px] font-medium text-[#0F172A] truncate">{z.name}</div>
                             <div className="vp-mono text-[12px] text-[#64748B]">
-                              {t('elevation')} {z.explanation?.mean_elevation_m?.toFixed(1) ?? '–'}m · {t('rain')} {z.explanation?.rainfall_24h_mm?.toFixed(1) ?? '0.0'}mm
+                              {t('elevation')} {z.explanation?.mean_elevation_m?.toFixed(1) ?? '–'}m · 48h est. {zoneWeather.find(item => item.zone_id === z.id)?.rainfall_48h_mm?.toFixed(1) ?? '—'}mm
                             </div>
                           </div>
                           <span
                             className="shrink-0 px-2 py-0.5 rounded-[4px] text-[12px] font-semibold vp-mono"
                             style={{
-                              backgroundColor: z.risk_level >= 4 ? '#FEE2E2' : z.risk_level === 3 ? '#FEF3C7' : '#DCFCE7',
-                              color: z.risk_level >= 4 ? '#DC2626' : z.risk_level === 3 ? '#D97706' : '#16A34A',
+                              backgroundColor: z.risk_level == null ? '#F1F5F9' : z.risk_level >= 4 ? '#FEE2E2' : z.risk_level === 3 ? '#FEF3C7' : '#DCFCE7',
+                              color: z.risk_level == null ? '#64748B' : z.risk_level >= 4 ? '#DC2626' : z.risk_level === 3 ? '#D97706' : '#16A34A',
                             }}
                           >
-                            L{z.risk_level}
+                            {z.risk_level == null ? 'N/A' : `L${z.risk_level}`}
                           </span>
                         </button>
                       ))}
@@ -566,12 +542,12 @@ export default function App() {
                         Hyderabad Police Disaster Response
                       </h1>
                       <div className="flex items-center gap-3 mt-1 text-[12px] text-[#64748B]">
-                        <span className="flex items-center gap-1.5 text-[#16A34A] font-medium">
-                          <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                          Active system
+                        <span className="flex items-center gap-1.5 font-medium" style={{ color: allWeatherLive ? '#16A34A' : '#D97706' }}>
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: allWeatherLive ? '#16A34A' : '#D97706' }} />
+                          {allWeatherLive ? 'Active system' : 'Data status: partial'}
                         </span>
                         <span>·</span>
-                        <span>{alertTone.label} risk · {riskZones.length} hotspots monitored</span>
+                        <span>{maxRisk === null ? alertTone.label : `${alertTone.label} risk`} · {riskZonesError && riskZones.length === 0 ? 'Hotspot data unavailable' : `${riskZones.length} hotspots monitored`}</span>
                       </div>
                     </div>
 

@@ -31,14 +31,14 @@ export default function Map({
       center: [17.3914, 78.4702],
       zoom: 12,
       zoomControl: true,
-      attributionControl: false
+      attributionControl: true
     });
 
-    // Muted light gray style: CartoDB Positron tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20
+    // Keyless OpenStreetMap tiles. Keep this to interactive viewport requests;
+    // the public tile service is best-effort and must not be used for prefetching.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -62,6 +62,7 @@ export default function Map({
 
     // Standard high-visibility disaster risk palette on light map
     const getRiskColor = (level) => {
+      if (level === null || level === undefined) return '#94a3b8';
       switch (level) {
         case 5: return '#dc2626'; // Red (Level 5 Critical)
         case 4: return '#ea580c'; // Deep Orange (Level 4 Severe)
@@ -109,7 +110,8 @@ export default function Map({
         layer.bindTooltip(`
           <div class="font-sans text-xs p-1">
             <div class="font-extrabold text-slate-900">${z.name}</div>
-            <div class="text-indigo-700 font-bold mt-0.5">Risk Level: ${z.risk_level} / 5</div>
+            <div class="text-indigo-700 font-bold mt-0.5">${z.risk_level == null ? 'Data unavailable · verify conditions' : 'Risk Level: ' + z.risk_level + ' / 5'}</div>
+            <div class="text-[11px] text-slate-500">Weather feed: ${z.explanation?.weather_status || 'unknown'}</div>
             <div class="text-[11px] text-slate-500 mt-1 max-w-[210px]">${z.explanation?.why_this || ''}</div>
           </div>
         `, { sticky: true, className: 'leaflet-tooltip-light' });

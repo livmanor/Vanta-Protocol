@@ -3,3 +3,14 @@
 !.env.example
 __pycache__/
 *.py[cod]
+*.db
+*.db-shm
+*.db-wal
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.cursor/
+.vite/
+coverage/
+*.log

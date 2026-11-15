@@ -11,7 +11,8 @@ logger = logging.getLogger("elevation")
 
 async def get_real_elevations(points: List[Tuple[float, float]]) -> Dict[str, Any]:
     """Fetches real elevation in meters for a list of (lat, lng) points from Open-Elevation API.
-    Points in coastal river basins with elevation < 5m-10m have high inundation vulnerability.
+    Returns terrain elevation as context; absolute elevation alone does not
+    establish flood vulnerability for inland Hyderabad locations.
     """
     if not points:
         return {"source": "Open-Elevation API", "status": "live", "data": [], "last_updated": datetime.now(timezone.utc).isoformat()}

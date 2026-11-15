@@ -60,6 +60,9 @@ class BlockedRoadCreate(BaseModel):
 
 class RiskExplanation(BaseModel):
     rainfall_24h_mm: Optional[float] = None
+    rainfall_48h_mm: Optional[float] = None
+    weather_status: Optional[Literal["live", "partial", "stale", "failed"]] = None
+    weather_last_updated: Optional[str] = None
     max_precipitation_probability: Optional[float] = None
     wind_max_kmh: Optional[float] = None
     river_discharge_m3s: Optional[float] = None
@@ -116,7 +119,7 @@ class PrepositionSuggestion(BaseModel):
 class DataSourceStatus(BaseModel):
     name: str
     endpoint: str
-    status: Literal["live", "stale", "failed"]
+    status: Literal["live", "partial", "stale", "failed"]
     last_updated: Optional[str] = None
     response_time_ms: Optional[float] = None
     error_message: Optional[str] = None
@@ -154,9 +157,10 @@ class ZoneWeather(BaseModel):
     zone_name: str
     latitude: float
     longitude: float
-    status: Literal["live", "stale", "failed"]
+    status: Literal["live", "partial", "stale", "failed"]
     last_updated: Optional[str] = None
     error_message: Optional[str] = None
     current: Optional[WeatherCurrent] = None
     today: Optional[WeatherDaily] = None
+    rainfall_48h_mm: Optional[float] = None
 
