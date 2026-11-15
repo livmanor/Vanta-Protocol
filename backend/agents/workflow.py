@@ -575,6 +575,11 @@ async def run_predict_agent(
     officer_query: str | None = None,
     area_query: str | None = None,
 ) -> Dict[str, Any]:
+    # Predict defaults to a recent, bounded history window when the officer
+    # does not select dates. Keep the end date inclusive through today's IST date.
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+    event_end = event_end or ist_now.isoformat()
+    event_start = event_start or (ist_now - timedelta(days=7)).isoformat()
     zones, source_status, recent_rain_impacts = await _weather_and_history(
         event_start,
         event_end,

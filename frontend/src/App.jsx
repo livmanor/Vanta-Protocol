@@ -164,7 +164,8 @@ export default function App() {
 
   const assessedRisks = riskZones.map(z => z.risk_level).filter(level => Number.isFinite(level));
   const maxRisk = assessedRisks.length ? Math.max(...assessedRisks) : null;
-  const alertTone = maxRisk === null ? { dot: '#64748B', label: 'Data unavailable' } :
+  const allWeatherLive = riskZones.length > 0 && riskZones.every(zone => zone.explanation?.weather_status === 'live');
+  const alertTone = maxRisk === null ? { dot: '#D97706', label: 'Data unavailable' } :
     maxRisk >= 4 ? { dot: '#DC2626', label: 'Critical' } :
     maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
     { dot: '#16A34A', label: 'Nominal' };
@@ -541,9 +542,9 @@ export default function App() {
                         Hyderabad Police Disaster Response
                       </h1>
                       <div className="flex items-center gap-3 mt-1 text-[12px] text-[#64748B]">
-                        <span className="flex items-center gap-1.5 text-[#16A34A] font-medium">
-                          <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                          Active system
+                        <span className="flex items-center gap-1.5 font-medium" style={{ color: allWeatherLive ? '#16A34A' : '#D97706' }}>
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: allWeatherLive ? '#16A34A' : '#D97706' }} />
+                          {allWeatherLive ? 'Active system' : 'Data status: partial'}
                         </span>
                         <span>·</span>
                         <span>{maxRisk === null ? alertTone.label : `${alertTone.label} risk`} · {riskZonesError && riskZones.length === 0 ? 'Hotspot data unavailable' : `${riskZones.length} hotspots monitored`}</span>

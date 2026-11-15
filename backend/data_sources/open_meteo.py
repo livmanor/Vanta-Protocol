@@ -117,7 +117,7 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
             "wind_direction_10m", "wind_gusts_10m",
         ]),
         "hourly": "precipitation",
-        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max",
+        "daily": "precipitation_sum,precipitation_probability_max,wind_speed_10m_max,weather_code,temperature_2m_max,temperature_2m_min,wind_gusts_10m_max",
         "forecast_days": 3,
         "past_days": 2,
         "timezone": "Asia/Kolkata"
@@ -131,9 +131,10 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
             global _weather_response_keys_logged
             if not _weather_response_keys_logged:
                 logger.info(
-                    "Open-Meteo forecast response keys: top=%s current=%s hourly=%s daily=%s",
+                    "Open-Meteo forecast response keys: top=%s current=%s hourly=%s daily=%s daily.time=%s",
                     sorted(data.keys()), sorted((data.get("current") or {}).keys()),
                     sorted((data.get("hourly") or {}).keys()), sorted((data.get("daily") or {}).keys()),
+                    (data.get("daily") or {}).get("time"),
                 )
                 _weather_response_keys_logged = True
             now_iso = datetime.now(timezone.utc).isoformat()
