@@ -79,6 +79,34 @@ class RiskZone(BaseModel):
     derived_from: List[str]
     computed_at: str
     explanation: Optional[RiskExplanation] = None
+    cell_type: Literal["hotspot", "grid"] = "hotspot"
+
+
+class RiskGridCell(BaseModel):
+    id: str
+    name: str
+    lat: float
+    lon: float
+    cell_type: Literal["grid"] = "grid"
+    risk_level: Optional[int] = Field(default=None, ge=1, le=5)
+    score: Optional[float] = None
+    rain_48h: Optional[float] = None
+    forecast_24h: Optional[float] = None
+    elevation_m: Optional[float] = None
+    low_lying: bool = False
+    emerging: bool = False
+    source_status: Literal["live", "partial", "stale", "failed"]
+    why_this: str
+
+
+class RiskGridResponse(BaseModel):
+    cell_count: int
+    hotspot_count: int
+    emerging_count: int
+    spacing_km: float
+    lat_step: float
+    lon_step: float
+    cells: List[RiskGridCell]
 
 # --- Preparedness Models ---
 

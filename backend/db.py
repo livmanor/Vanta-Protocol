@@ -79,6 +79,13 @@ async def init_db():
             message TEXT NOT NULL, recipients_json TEXT NOT NULL, status TEXT NOT NULL,
             test_mode INTEGER NOT NULL
         )""")
+        await db.execute("""CREATE TABLE IF NOT EXISTS grid_cells (
+            id TEXT PRIMARY KEY,
+            lat REAL NOT NULL,
+            lon REAL NOT NULL,
+            elevation_m REAL,
+            fetched_at TEXT
+        )""")
         await db.commit()
 
 # --- Incidents CRUD ---
@@ -205,6 +212,38 @@ async def log_officer_decision(decision_id: str, decision_type: str, details: di
             VALUES (?, ?, ?, ?, ?)
             """,
             (decision_id, decision_type, json.dumps(details), officer_id, now_iso)
+        )
+        await db.commit()
+
+
+async def fetch_grid_elevations() -> dict:
+    """Return cached grid elevations keyed by cell id. Missing elevation stays null."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT id, lat, lon, elevation_m, fetched_at FROM grid_cells") as cursor:
+            rows = await cursor.fetchall()
+    return {row["id"]: {"lat": row["lat"], "lon": row["lon"], "elevation_m": row["elevation_m"], "fetched_at": row["fetched_at"]} for row in rows}
+
+
+async def save_grid_elevations(rows: list) -> None:
+    """Store elevation once. A later call does not overwrite a value already saved."""
+    if not rows:
+        return
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.executemany(
+            """
+            INSERT INTO grid_cells (id, lat, lon, elevation_m, fetched_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                lat = excluded.lat,
+                lon = excluded.lon,
+                elevation_m = COALESCE(grid_cells.elevation_m, excluded.elevation_m),
+                fetched_at = CASE
+                    WHEN grid_cells.elevation_m IS NULL THEN excluded.fetched_at
+                    ELSE grid_cells.fetched_at
+                END
+            """,
+            rows,
         )
         await db.commit()
 

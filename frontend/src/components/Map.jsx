@@ -1,8 +1,20 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+
+const riskColor = (level) => {
+  if (level === null || level === undefined) return '#94a3b8';
+  switch (level) {
+    case 5: return '#dc2626';
+    case 4: return '#ea580c';
+    case 3: return '#d97706';
+    case 2: return '#2563eb';
+    default: return '#059669';
+  }
+};
 
 export default function Map({
   riskZones,
+  riskGrid,
   selectedZone,
   onSelectZone,
   activeRoute,
@@ -13,7 +25,11 @@ export default function Map({
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const [showGrid, setShowGrid] = useState(true);
+  const onSelectRef = useRef(onSelectZone);
+  onSelectRef.current = onSelectZone;
   const layersRef = useRef({
+    grid: null,
     zones: null,
     route: null,
     shelter: null,
@@ -49,6 +65,55 @@ export default function Map({
     };
   }, []);
 
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (layersRef.current.grid && map.hasLayer(layersRef.current.grid)) {
+      map.removeLayer(layersRef.current.grid);
+    }
+    layersRef.current.grid = null;
+    if (!showGrid || !riskGrid?.cells?.length) return;
+
+    const halfLat = riskGrid.lat_step / 2;
+    const halfLon = riskGrid.lon_step / 2;
+    const group = L.layerGroup();
+    riskGrid.cells.forEach((cell) => {
+      const color = riskColor(cell.risk_level);
+      const unavailable = cell.risk_level == null;
+      const rectangle = L.rectangle(
+        [[cell.lat - halfLat, cell.lon - halfLon], [cell.lat + halfLat, cell.lon + halfLon]],
+        { color, weight: 0.5, fillColor: color, fillOpacity: unavailable ? 0.18 : 0.38 }
+      );
+      const rain = cell.rain_48h == null ? 'data unavailable' : `${cell.rain_48h} mm`;
+      const forecast = cell.forecast_24h == null ? 'data unavailable' : `${cell.forecast_24h} mm`;
+      rectangle.bindTooltip(`
+        <div class="font-sans text-xs p-1">
+          <div class="font-extrabold text-slate-900">${cell.name}</div>
+          <div class="text-indigo-700 font-bold mt-0.5">${unavailable ? 'Data unavailable' : 'Risk Level: ' + cell.risk_level + ' / 5'}${cell.emerging ? ' · emerging' : ''}</div>
+          <div class="text-[11px] text-slate-500">48h ${rain} · forecast ${forecast}</div>
+        </div>
+      `, { sticky: true, className: 'leaflet-tooltip-light' });
+      rectangle.on('click', () => onSelectRef.current?.({
+        id: cell.id,
+        name: cell.name,
+        risk_level: cell.risk_level,
+        cell_type: 'grid',
+        polygon: { type: 'Point', coordinates: [cell.lon, cell.lat] },
+        explanation: {
+          weather_status: cell.source_status,
+          rainfall_24h_mm: cell.forecast_24h,
+          rainfall_48h_mm: cell.rain_48h,
+          mean_elevation_m: cell.elevation_m,
+          why_this: cell.why_this,
+        },
+      }));
+      group.addLayer(rectangle);
+    });
+    group.addTo(map);
+    layersRef.current.grid = group;
+    if (layersRef.current.zones) layersRef.current.zones.bringToFront();
+  }, [riskGrid, showGrid]);
+
   // Update Risk Zones GeoJSON Layer
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -61,17 +126,6 @@ export default function Map({
     if (!riskZones || riskZones.length === 0) return;
 
     // Standard high-visibility disaster risk palette on light map
-    const getRiskColor = (level) => {
-      if (level === null || level === undefined) return '#94a3b8';
-      switch (level) {
-        case 5: return '#dc2626'; // Red (Level 5 Critical)
-        case 4: return '#ea580c'; // Deep Orange (Level 4 Severe)
-        case 3: return '#d97706'; // Amber (Level 3 Moderate)
-        case 2: return '#2563eb'; // Blue (Level 2 Elevated)
-        default: return '#059669'; // Emerald (Level 1 Low)
-      }
-    };
-
     const zoneLayer = L.geoJSON(riskZones.map(z => ({
       type: "Feature",
       geometry: z.polygon,
@@ -79,7 +133,7 @@ export default function Map({
     })), {
       pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
         radius: 10,
-        fillColor: getRiskColor(feature.properties.risk_level),
+        fillColor: riskColor(feature.properties.risk_level),
         color: '#ffffff',
         weight: 2.5,
         opacity: 1,
@@ -87,7 +141,7 @@ export default function Map({
       }),
       style: (feature) => {
         const isSelected = selectedZone && selectedZone.id === feature.properties.id;
-        const color = getRiskColor(feature.properties.risk_level);
+        const color = riskColor(feature.properties.risk_level);
         return {
           fillColor: color,
           weight: isSelected ? 3.5 : 2,
@@ -119,6 +173,7 @@ export default function Map({
     }).addTo(map);
 
     layersRef.current.zones = zoneLayer;
+    zoneLayer.bringToFront();
   }, [riskZones, selectedZone, onSelectZone]);
 
   // Update Evacuation Route & Shelter Pin
@@ -374,6 +429,16 @@ export default function Map({
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
+      <button
+        type="button"
+        onClick={() => setShowGrid((current) => !current)}
+        aria-pressed={showGrid}
+        className={`absolute top-4 right-4 z-[400] h-8 px-3 rounded-[6px] border text-[12px] font-medium shadow-sm ${
+          showGrid ? 'bg-[#4338CA] text-white border-[#4338CA]' : 'bg-white text-[#475569] border-[#E2E8F0]'
+        }`}
+      >
+        City grid
+      </button>
 
       {/* Floating map legend: green/amber/red */}
       <div className="absolute bottom-4 left-4 z-[400] bg-white border border-[#E2E8F0] rounded-[6px] px-3 py-2 text-[12px] shadow-sm flex items-center gap-4">

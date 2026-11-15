@@ -14,7 +14,7 @@ import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
 import { useLanguage } from './i18n.jsx';
 import {
-  fetchSources, fetchRiskZones, fetchUnits, registerUnit,
+  fetchSources, fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit,
   fetchIncidents, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent
@@ -30,6 +30,8 @@ export default function App() {
   const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
   const [riskZonesError, setRiskZonesError] = useState('');
+  const [riskGrid, setRiskGrid] = useState(null);
+  const [riskGridError, setRiskGridError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
   const [agentResults, setAgentResults] = useState({});
@@ -73,9 +75,10 @@ export default function App() {
     setLoadingSources(true);
     setLoadingRisk(true);
     try {
-      const [srcs, rZones, weather, aStatus, uList, incList, roads] = await Promise.all([
+      const [srcs, rZones, grid, weather, aStatus, uList, incList, roads] = await Promise.all([
         fetchSources().catch(e => { console.error(e); return []; }),
         fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
+        fetchRiskGrid().catch(e => { console.error(e); return { error: e.message }; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
@@ -89,6 +92,13 @@ export default function App() {
         setRiskZonesError('');
       } else {
         setRiskZonesError(rZones?.error || 'Unexpected response from the risk-zones API.');
+      }
+      if (grid && Array.isArray(grid.cells)) {
+        setRiskGrid(grid);
+        setRiskGridError('');
+      } else {
+        setRiskGrid(null);
+        setRiskGridError(grid?.error || 'City grid unavailable');
       }
       setZoneWeather(weather);
       setAgentStatus(aStatus);
@@ -187,7 +197,11 @@ export default function App() {
             </div>
             <div>
               <div className="font-semibold text-[14px] text-[#0F172A] leading-tight">Vanta Protocol</div>
-              <div className="text-[12px] text-[#64748B] leading-tight">{t('area')}</div>
+              <div className="vp-mono text-[12px] text-[#475569] leading-tight whitespace-nowrap">
+                {riskGrid
+                  ? `${riskGrid.cell_count} cells · ${riskGrid.hotspot_count} hotspots · ${riskGrid.emerging_count} emerging`
+                  : riskGridError || t('area')}
+              </div>
             </div>
           </div>
         </div>
@@ -333,6 +347,7 @@ export default function App() {
             <div className="flex-1 h-full relative">
               <Map
                 riskZones={riskZones}
+                riskGrid={riskGrid}
                 selectedZone={selectedZone}
                 onSelectZone={(zone) => { setSelectedZone(zone); setView('map'); setActiveTab('zones'); }}
                 activeRoute={activeRoute}
