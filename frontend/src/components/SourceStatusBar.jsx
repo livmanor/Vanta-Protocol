@@ -62,9 +62,9 @@ export default function SourceStatusBar({ sources = [], onRefresh, loading }) {
         <span className={`w-1.5 h-1.5 rounded-full ${map.dot}`} />
         <span className="text-slate-800 font-medium">{source.name}</span>
         <span className="uppercase text-[9.5px] font-extrabold tracking-wider">{map.label}</span>
-        {source.updated_at && (
+        {(source.last_updated || source.updated_at) && (
           <span className="vp-mono text-[10px] text-slate-400 font-normal">
-            {new Date(source.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(source.last_updated || source.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
       </div>

@@ -168,8 +168,22 @@ export async function generateEvacuationRoute(zoneId, zoneName, lat, lng) {
       lng
     })
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to generate evacuation route`);
-  return res.json();
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = payload.detail;
+    throw new Error(typeof detail === 'string' ? detail : `HTTP ${res.status}: Failed to generate evacuation route`);
+  }
+  return payload;
+}
+
+export async function refreshOperationsPlan() {
+  const res = await fetch(`${API_BASE}/operations-calendar/refresh`, { method: 'POST' });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = payload.detail;
+    throw new Error(typeof detail === 'string' ? detail : 'Could not draft the operations calendar');
+  }
+  return payload;
 }
 
 export async function fetchBlockedRoads() {

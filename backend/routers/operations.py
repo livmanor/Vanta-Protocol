@@ -12,6 +12,9 @@ from pydantic import BaseModel, Field, field_validator
 
 from backend.config import settings
 from backend.db import DB_PATH
+from backend.services.operations_plan import refresh_operations_plan
+from backend.services.risk_engine import compute_real_risk_zones
+from backend.services.grid import compute_risk_grid
 from backend.services.sms import send_sms
 
 router = APIRouter(prefix="/api", tags=["Operations and SOS"])
@@ -95,6 +98,14 @@ async def get_operations_calendar():
         async with db.execute("SELECT event_json FROM operations_calendar ORDER BY updated_at DESC") as cur:
             rows = await cur.fetchall()
     return sorted((json.loads(row["event_json"]) for row in rows), key=lambda event: event.get("start", ""))
+
+
+@router.post("/operations-calendar/refresh")
+async def refresh_operations_calendar(force: bool = False):
+    """Draft the next window from live rain and real routes. Approved events are left unchanged."""
+    zones = await compute_real_risk_zones()
+    grid = await compute_risk_grid()
+    return await refresh_operations_plan(zones, grid.cells, force=force)
 
 
 @router.patch("/operations-calendar/{event_id}")
