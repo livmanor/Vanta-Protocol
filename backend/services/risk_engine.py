@@ -1,58 +1,32 @@
 import asyncio
+import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from backend.config import settings
 from backend.models import RiskZone, RiskExplanation
 from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_river_discharge, sum_hourly_precipitation_last_48h, today_daily_value
 from backend.data_sources.elevation import get_real_elevations
 
-# Geocoded major waterlogging points published by Hyderabad Traffic Police.
-# Source list is dated 2025-08-06. These points are historical vulnerability
-# locations, not administrative boundaries or reports of current inundation.
-REAL_ZONES_METADATA = [
-    {
-        "id": "hyd-hotspot-nampally-metro",
-        "name": "Nampally Metro Underpass",
-        "centroid": (17.391440, 78.470213),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-banjara-rd12",
-        "name": "Banjara Hills · Road No. 12",
-        "centroid": (17.411480, 78.435294),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-gun-park",
-        "name": "Gun Park / Hyderabad Traffic Police",
-        "centroid": (17.4008462, 78.4698862),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-chatrinaka",
-        "name": "Chatrinaka Police Station",
-        "centroid": (17.343282, 78.478107),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-kachiguda",
-        "name": "Kachiguda · 6 No. Junction",
-        "centroid": (17.391500, 78.511201),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-moosarambagh-bridge",
-        "name": "Moosarambagh Bridge · Ali Café",
-        "centroid": (17.381185, 78.517900),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    }
-]
+def load_hotspot_catalog() -> List[Dict[str, Any]]:
+    """Published HTP points. The file is a static reference list, not a live flood report."""
+    path = Path(__file__).resolve().parents[2] / "data" / "hyderabad_hotspots.json"
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    zones = []
+    for item in catalog["hotspots"]:
+        lat, lon = item["centroid"]
+        zones.append({
+            **item,
+            "centroid": (lat, lon),
+            "list_label": catalog["label"],
+            "list_as_of": catalog["as_of"],
+            "list_source": catalog["source"],
+        })
+    return zones
+
+
+REAL_ZONES_METADATA = load_hotspot_catalog()
+
 
 def score_observations(
     rainfall_24h: Optional[float],

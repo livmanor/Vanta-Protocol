@@ -12,12 +12,10 @@ logger = logging.getLogger("routing")
 
 # A shelter farther than this is not a usable Hyderabad evacuation destination.
 MAX_SHELTER_DISTANCE_KM = 30
-# Used only when Overpass returns nothing inside the city. These are hospitals, not a GHMC camp list.
-HYDERABAD_HOSPITALS = [
-    {"name": "Osmania General Hospital", "lat": 17.3725, "lng": 78.4742, "type": "hospital"},
-    {"name": "Gandhi Hospital", "lat": 17.4249, "lng": 78.5036, "type": "hospital"},
-    {"name": "Nizam's Institute of Medical Sciences", "lat": 17.4259, "lng": 78.4504, "type": "hospital"},
-]
+NO_VERIFIED_DESTINATION = (
+    "No verified destination found. OpenStreetMap did not return a shelter, "
+    "community centre, or hospital inside Hyderabad."
+)
 
 def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 6371.0
@@ -46,10 +44,11 @@ async def find_evacuation_route(
         f for f in facilities
         if f.get("type") in ("shelter", "community_centre", "hospital")
     ]
+    shelter_status = facilities_res.get("status")
+    shelter_updated = facilities_res.get("last_updated")
 
     best_shelter = None
     min_dist = float("inf")
-    used_hospital_fallback = False
     for s in shelters:
         s_lat = s.get("lat")
         s_lng = s.get("lng")
@@ -60,15 +59,12 @@ async def find_evacuation_route(
                 best_shelter = s
 
     if not best_shelter:
-        used_hospital_fallback = True
-        for s in HYDERABAD_HOSPITALS:
-            dist = haversine_distance_km(start_lat, start_lng, s["lat"], s["lng"])
-            if dist < min_dist:
-                min_dist = dist
-                best_shelter = s
-
-    if not best_shelter:
+        logger.warning(NO_VERIFIED_DESTINATION)
         return None
+
+    cache_note = ""
+    if shelter_status == "stale" and shelter_updated:
+        cache_note = f" Using the last successful OpenStreetMap shelter list from {shelter_updated}."
 
     dest_lat = best_shelter["lat"]
     dest_lng = best_shelter["lng"]
@@ -95,9 +91,7 @@ async def find_evacuation_route(
                         "type": "LineString",
                         "coordinates": [[start_lng, start_lat], [dest_lng, dest_lat]]
                     })
-                    why_this = f"Route calculated via OSRM to '{shelter_name}' ({distance_m/1000:.1f} km). "
-                    if used_hospital_fallback:
-                        why_this += "OpenStreetMap returned no shelter inside Hyderabad, so this corridor uses a city hospital. "
+                    why_this = f"Route calculated via OSRM to '{shelter_name}' ({distance_m/1000:.1f} km).{cache_note} "
                     if has_diversions:
                         why_this += f"Active diversions acknowledged ({len(blocked_roads)} blocked roads noted by control room)."
 
@@ -132,8 +126,8 @@ async def find_evacuation_route(
             "coordinates": [[start_lng, start_lat], [dest_lng, dest_lat]]
         },
         why_this=(
-            f"Direct corridor to '{shelter_name}' ({min_dist:.2f} km). OSRM was unreachable. "
-            + ("OpenStreetMap returned no shelter inside Hyderabad, so this corridor uses a city hospital." if used_hospital_fallback else "")
+            f"Direct line to verified shelter '{shelter_name}' ({min_dist:.2f} km). "
+            f"OSRM was unreachable, so this is not a driven route.{cache_note}"
         ),
         computed_at=now_iso
     )

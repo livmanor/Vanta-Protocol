@@ -12,6 +12,18 @@ const riskColor = (level) => {
   }
 };
 
+// IMD 24-hour classes. 25 mm opens the operations window; 64.5 mm opens the longer one.
+const forecastBand = (mm) => {
+  if (mm === null || mm === undefined) return { color: '#94a3b8', label: 'No data' };
+  if (mm >= 204.5) return { color: '#7f1d1d', label: 'Extremely heavy' };
+  if (mm >= 115.6) return { color: '#dc2626', label: 'Very heavy' };
+  if (mm >= 64.5) return { color: '#ea580c', label: 'Heavy' };
+  if (mm >= 15.6) return { color: '#d97706', label: 'Moderate' };
+  if (mm >= 2.5) return { color: '#2563eb', label: 'Light' };
+  if (mm > 0) return { color: '#93c5fd', label: 'Very light' };
+  return { color: '#e2e8f0', label: 'No rain' };
+};
+
 export default function Map({
   riskZones,
   riskGrid,
@@ -26,6 +38,7 @@ export default function Map({
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const [showGrid, setShowGrid] = useState(true);
+  const [gridMode, setGridMode] = useState('risk');
   const onSelectRef = useRef(onSelectZone);
   onSelectRef.current = onSelectZone;
   const layersRef = useRef({
@@ -78,19 +91,24 @@ export default function Map({
     const halfLon = riskGrid.lon_step / 2;
     const group = L.layerGroup();
     riskGrid.cells.forEach((cell) => {
-      const color = riskColor(cell.risk_level);
-      const unavailable = cell.risk_level == null;
+      const forecast = forecastBand(cell.forecast_24h);
+      const color = gridMode === 'forecast' ? forecast.color : riskColor(cell.risk_level);
+      const unavailable = gridMode === 'forecast' ? cell.forecast_24h == null : cell.risk_level == null;
       const rectangle = L.rectangle(
         [[cell.lat - halfLat, cell.lon - halfLon], [cell.lat + halfLat, cell.lon + halfLon]],
         { color, weight: 0.5, fillColor: color, fillOpacity: unavailable ? 0.18 : 0.38 }
       );
       const rain = cell.rain_48h == null ? 'data unavailable' : `${cell.rain_48h} mm`;
-      const forecast = cell.forecast_24h == null ? 'data unavailable' : `${cell.forecast_24h} mm`;
+      const forecastText = cell.forecast_24h == null ? 'No data' : `${cell.forecast_24h} mm · ${forecast.label}`;
+      const headline = gridMode === 'forecast'
+        ? (unavailable ? 'No data' : `Open-Meteo forecast · ${forecast.label}`)
+        : (unavailable ? 'Data unavailable' : `Risk Level: ${cell.risk_level} / 5`);
       rectangle.bindTooltip(`
         <div class="font-sans text-xs p-1">
           <div class="font-extrabold text-slate-900">${cell.name}</div>
-          <div class="text-indigo-700 font-bold mt-0.5">${unavailable ? 'Data unavailable' : 'Risk Level: ' + cell.risk_level + ' / 5'}${cell.emerging ? ' · emerging' : ''}</div>
-          <div class="text-[11px] text-slate-500">48h ${rain} · forecast ${forecast}</div>
+          <div class="text-indigo-700 font-bold mt-0.5">${headline}${cell.emerging ? ' · emerging' : ''}</div>
+          <div class="text-[11px] text-slate-500">48h ${rain} · forecast ${forecastText}</div>
+          <div class="text-[11px] text-slate-500">25 mm opens an evacuation window. 64.5 mm opens the longer one.</div>
         </div>
       `, { sticky: true, className: 'leaflet-tooltip-light' });
       rectangle.on('click', () => onSelectRef.current?.({
@@ -112,7 +130,7 @@ export default function Map({
     group.addTo(map);
     layersRef.current.grid = group;
     if (layersRef.current.zones) layersRef.current.zones.bringToFront();
-  }, [riskGrid, showGrid]);
+  }, [riskGrid, showGrid, gridMode]);
 
   // Update Risk Zones GeoJSON Layer
   useEffect(() => {
@@ -429,23 +447,47 @@ export default function Map({
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
-      <button
-        type="button"
-        onClick={() => setShowGrid((current) => !current)}
-        aria-pressed={showGrid}
-        className={`absolute top-4 right-4 z-[400] h-8 px-3 rounded-[6px] border text-[12px] font-medium shadow-sm ${
-          showGrid ? 'bg-[#4338CA] text-white border-[#4338CA]' : 'bg-white text-[#475569] border-[#E2E8F0]'
-        }`}
-      >
-        City grid
-      </button>
+      <div className="absolute top-4 right-4 z-[400] flex flex-col items-end gap-2">
+        <button
+          type="button"
+          onClick={() => setShowGrid((current) => !current)}
+          aria-pressed={showGrid}
+          className={`h-8 px-3 rounded-[6px] border text-[12px] font-medium shadow-sm ${
+            showGrid ? 'bg-[#4338CA] text-white border-[#4338CA]' : 'bg-white text-[#475569] border-[#E2E8F0]'
+          }`}
+        >
+          City grid
+        </button>
+        <button
+          type="button"
+          onClick={() => setGridMode((current) => current === 'forecast' ? 'risk' : 'forecast')}
+          aria-pressed={gridMode === 'forecast'}
+          disabled={!showGrid}
+          className={`h-8 px-3 rounded-[6px] border text-[12px] font-medium shadow-sm disabled:opacity-40 ${
+            gridMode === 'forecast' ? 'bg-[#4338CA] text-white border-[#4338CA]' : 'bg-white text-[#475569] border-[#E2E8F0]'
+          }`}
+        >
+          Forecast rainfall (mm)
+        </button>
+      </div>
 
-      {/* Floating map legend: green/amber/red */}
-      <div className="absolute bottom-4 left-4 z-[400] bg-white border border-[#E2E8F0] rounded-[6px] px-3 py-2 text-[12px] shadow-sm flex items-center gap-4">
-        <span className="font-medium text-[#0F172A]">Risk:</span>
-        <span className="flex items-center gap-1.5 text-[#16A34A]"><span className="w-2 h-2 rounded-full bg-[#16A34A]" /> L1–L2 Nominal</span>
-        <span className="flex items-center gap-1.5 text-[#D97706]"><span className="w-2 h-2 rounded-full bg-[#D97706]" /> L3 Watch</span>
-        <span className="flex items-center gap-1.5 text-[#DC2626]"><span className="w-2 h-2 rounded-full bg-[#DC2626]" /> L4–L5 Critical</span>
+      <div className="absolute bottom-4 left-4 z-[400] bg-white border border-[#E2E8F0] rounded-[6px] px-3 py-2 text-[12px] shadow-sm flex flex-wrap items-center gap-3 max-w-[520px]">
+        {gridMode === 'forecast' ? (
+          <>
+            <span className="font-medium text-[#0F172A]">Open-Meteo 24h forecast</span>
+            <span className="flex items-center gap-1.5 text-[#64748B]"><span className="w-2 h-2 rounded-full bg-[#94A3B8]" /> No data</span>
+            <span className="flex items-center gap-1.5 text-[#D97706]"><span className="w-2 h-2 rounded-full bg-[#D97706]" /> 15.6–64.4 moderate</span>
+            <span className="flex items-center gap-1.5 text-[#EA580C]"><span className="w-2 h-2 rounded-full bg-[#EA580C]" /> ≥64.5 heavy</span>
+            <span className="text-[#64748B]">Window at 25 mm. Longer window at 64.5 mm.</span>
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-[#0F172A]">Risk:</span>
+            <span className="flex items-center gap-1.5 text-[#16A34A]"><span className="w-2 h-2 rounded-full bg-[#16A34A]" /> L1–L2 Nominal</span>
+            <span className="flex items-center gap-1.5 text-[#D97706]"><span className="w-2 h-2 rounded-full bg-[#D97706]" /> L3 Watch</span>
+            <span className="flex items-center gap-1.5 text-[#DC2626]"><span className="w-2 h-2 rounded-full bg-[#DC2626]" /> L4–L5 Critical</span>
+          </>
+        )}
       </div>
     </div>
   );

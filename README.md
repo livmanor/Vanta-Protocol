@@ -2,6 +2,8 @@
 
 Real-time disaster-response planning tool for police control rooms, built for the **CipherCop 2026 AI Disaster Response track**.
 
+This is the watch officer's decision loop, not a weather map. Live rain on six published Hyderabad Traffic Police hotspots and a 120-cell GHMC grid decides whether an evacuation window opens. A verified OpenStreetMap shelter and an OSRM corridor are attached only when one exists. The officer approves the calendar entry and any SMS. Nothing is dispatched automatically.
+
 ---
 
 ## Prime Directive & Real Data Policy
@@ -26,7 +28,12 @@ Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar*
 | 4 | **Shelters & Police Stations** | **OpenStreetMap Overpass API** | `https://overpass-api.de/api/interpreter` | Queries verified civic shelters, community halls, hospitals, and police stations. | [`backend/data_sources/osm.py`](backend/data_sources/osm.py) |
 | 5 | **Evacuation Routing & ETAs** | **OSRM (Open Source Routing Machine)** | `https://router.project-osrm.org/route/v1/driving` | Computes road-network evacuation corridors and turn-by-turn GeoJSON geometries to safe shelters. | [`backend/services/routing.py`](backend/services/routing.py) |
 | 6 | **Official Bulletins & Warnings** | **IMD (India Meteorological Department)** | `https://mausam.imd.gov.in` | Checks the public IMD feed and reports its availability in source status. IMD alerts are not currently inputs to the risk score or agent reports. | [`backend/data_sources/imd.py`](backend/data_sources/imd.py) |
-| 7 | **Map Display** | **OpenStreetMap Carto Tiles** | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Dark-mode interactive basemap tiles. | [`frontend/src/components/Map.jsx`](frontend/src/components/Map.jsx) |
+| 7 | **Map Display** | **OpenStreetMap Carto Tiles** | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Basemap tiles. | [`frontend/src/components/Map.jsx`](frontend/src/components/Map.jsx) |
+| 8 | **City grid** | **Open-Meteo**, batched | `GET /api/risk-grid` | 120 GHMC cells. `forecast_24h` is the evidence for the evacuation window. A failed cell stays null. | [`backend/services/grid.py`](backend/services/grid.py) |
+| 9 | **Operations calendar** | Derived from the live risk grid | `POST /api/operations-calendar/refresh` | Under 25 mm: no evacuation window. At 25 mm or level 3: a 4-hour window. At 64.5 mm or level 4: a longer window. Officer approval required. | [`backend/services/operations_plan.py`](backend/services/operations_plan.py) |
+| 10 | **Predict** | **Groq** | Officer-consented chat completion | Interprets the history question and writes the qualitative forecast. The question and summarized observations are sent only after consent. | [`backend/agents/groq.py`](backend/agents/groq.py) |
+| 11 | **Prepare and Respond** | **Google Gemini** | `gemini-3.8-flash` by default | Readiness actions and the SOS draft. `gemini-2.5-flash` is deprecated for new use and reroutes on 2026-12-01. | [`backend/agents/gemini.py`](backend/agents/gemini.py) |
+| 12 | **Contacts and SOS** | **Twilio or MSG91** | Officer-approved `POST /api/sos/send` | Phone numbers are stored in SQLite for the officer's contact book and send record. They are not written to application logs. `SMS_TEST_MODE` defaults to on, so no SMS leaves the server until an officer turns it off and confirms a send. | [`backend/services/sms.py`](backend/services/sms.py) |
 
 ---
 
@@ -64,43 +71,25 @@ Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar*
 
 ```
 Vanta Protocol/
+├── data/hyderabad_hotspots.json   # Static HTP reference list, dated 2025-08-06
+├── tests/                         # Pytest. HTTP is mocked only here
 ├── backend/
-│   ├── main.py                # FastAPI entrypoint, lifespan & CORS
-│   ├── config.py              # Environment settings (Pydantic Settings)
-│   ├── models.py              # Frozen Pydantic data contracts (Incident, Unit, RiskZone, BlockedRoad)
-│   ├── db.py                  # SQLite database (aiosqlite) for incidents, units, roads, audit log
-│   ├── cache.py               # TTL cache with freshness & source tracking
-│   ├── data_sources/
-│   │   ├── open_meteo.py      # Open-Meteo Weather Forecast & GloFAS Flood client
-│   │   ├── elevation.py       # Open-Elevation SRTM client
-│   │   ├── osm.py             # OpenStreetMap Overpass API client
-│   │   └── imd.py             # IMD public feed parser
+│   ├── main.py
+│   ├── config.py
+│   ├── models.py                  # RiskZone.risk_level is null when rainfall is missing
+│   ├── db.py
+│   ├── agents/                    # Predict (Groq), Prepare and Respond (Gemini)
+│   ├── data_sources/              # Open-Meteo, elevation, Overpass, IMD
 │   ├── services/
-│   │   ├── risk_engine.py     # Derives RiskZone 1-5 from live telemetry
-│   │   ├── routing.py         # OSRM evacuation & emergency routing
-│   │   └── prepositioning.py  # Unit-to-zone matching & ETA calculation
-│   └── routers/
-│       ├── risk.py            # GET /api/risk-zones
-│       ├── routes.py          # POST /api/evacuation-route, /api/blocked-roads
-│       ├── units.py           # CRUD /api/units, /api/prepositioning
-│       ├── incidents.py       # CRUD /api/incidents
-│       └── sources.py         # GET /api/sources (Live status of all APIs)
-│
-└── frontend/
-    ├── src/
-    │   ├── App.jsx            # Control room workspace & tactical ribbon
-    │   ├── api.js             # API wrapper
-    │   └── components/
-    │       ├── Map.jsx        # Leaflet map with hotspot markers, polygons, vectors
-    │       ├── SourceStatusBar.jsx   # Live feed integrity & freshness indicators
-    │       ├── RiskZonePanel.jsx     # "Why this?" metrics & route trigger
-    │       ├── EvacuationPanel.jsx   # OSRM route & shelter ETA
-    │       ├── PrepositionPanel.jsx  # AI recommendations & officer approval
-    │       ├── UnitRegisterModal.jsx # Register unit + browser GPS
-    │       ├── IncidentIntakeModal.jsx # Officer incident intake form
-    │       └── BlockedRoadModal.jsx  # Road diversion reporting
-    ├── index.html
-    └── vite.config.js
+│   │   ├── risk_engine.py
+│   │   ├── grid.py                # 120-cell GHMC grid
+│   │   ├── routing.py             # Verified shelter or a clear failure
+│   │   └── operations_plan.py     # Rainfall to evacuation window
+│   └── routers/                   # risk, risk-grid, routes, operations, agents
+└── frontend/src/
+    ├── App.jsx
+    ├── api.js
+    └── components/                # Map, calendar, SMS approval, intake modals
 ```
 
 ---
@@ -112,15 +101,31 @@ Vanta Protocol/
 - Node.js 18+ and npm
 
 ### 1. Start the Backend (FastAPI)
+
+Windows, from the project root:
+
 ```powershell
-# From the project root
 .\venv\Scripts\python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
-- API Health: `http://127.0.0.1:8000/api/health`
-- Interactive OpenAPI Docs: `http://127.0.0.1:8000/docs`
-- Live weather by hotspot: `http://127.0.0.1:8000/api/weather`
-- Hotspot risk levels: `http://127.0.0.1:8000/api/risk-zones`
+
+Linux or macOS, from the project root:
+
+```bash
+source venv/bin/activate
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+- API health: `http://127.0.0.1:8000/api/health`
+- OpenAPI docs: `http://127.0.0.1:8000/docs`
+- Six hotspots: `http://127.0.0.1:8000/api/risk-zones`
+- City grid: `http://127.0.0.1:8000/api/risk-grid`
 - Feed health: `http://127.0.0.1:8000/api/sources`
+
+Tests, from the project root, do not call live providers:
+
+```bash
+python -m pytest tests
+```
 
 ### Agent provider setup
 If you do not already have a project-root `.env`, copy `.env.example` to `.env`. Set `GROQ_API_KEY` for Predict and `GEMINI_API_KEY` for Prepare and Respond. Keep real keys out of source control and restart the backend after changing them. Public Open-Meteo endpoints do not require an API key.
@@ -131,3 +136,13 @@ cd frontend
 npm run dev
 ```
 - Control Room UI: `http://127.0.0.1:5173`
+
+On Linux or macOS the same frontend command is `cd frontend && npm run dev`.
+
+## Roadmap
+
+These are not connected. They are not inputs to the risk score or the evacuation window.
+
+- Windy API for an independent wind and precipitation cross-check.
+- IMD cyclone bulletins as a structured alert, beyond the current public-feed availability check.
+- A backtest of the 25 mm and 64.5 mm window rules against past Hyderabad rainfall and logged incidents.

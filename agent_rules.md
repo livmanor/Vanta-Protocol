@@ -83,8 +83,10 @@ Incident:    { id, lat, lng, type: "flood"|"trapped"|"medical"|"fire"|"road_bloc
 Unit:        { id, kind: "patrol"|"rescue_boat"|"ambulance", lat, lng,
                capacity: int, status: "available"|"assigned", station: string,
                position_updated_at }
-RiskZone:    { id, name, risk_level: 1-5, polygon: GeoJSON, population: int | null,
-               derived_from: [source names], computed_at }
+RiskZone:    { id, name, risk_level: 1-5 | null, polygon: GeoJSON, population: int | null,
+               derived_from: [source names], computed_at, explanation,
+               cell_type: "hotspot" | "grid" }
+               risk_level is null when rainfall is missing. Never substitute 0 mm or level 1 for a failed feed.
 BlockedRoad: { id, name, geometry: GeoJSON LineString, reason, reported_by, timestamp }
 ```
 `population` may be `null` when no real source is available. Do not guess it.

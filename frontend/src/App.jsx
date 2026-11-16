@@ -48,6 +48,7 @@ export default function App() {
 
   const [selectedZone, setSelectedZone] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
+  const [routeNotice, setRouteNotice] = useState(null);
 
   const [loadingSources, setLoadingSources] = useState(false);
   const [loadingRisk, setLoadingRisk] = useState(false);
@@ -178,15 +179,17 @@ export default function App() {
     const lat = zone?.lat ?? coordinates?.[1];
     const lng = zone?.lng ?? zone?.lon ?? coordinates?.[0];
     if (!zone?.id || lat == null || lng == null) {
-      alert('This location has no coordinates, so a route cannot be calculated.');
+      setRouteNotice('This location has no coordinates, so a route cannot be calculated.');
       return;
     }
     setLoadingRoute(true);
+    setRouteNotice(null);
     try {
       const res = await generateEvacuationRoute(zone.id, zone.name || zone.id, lat, lng);
       setActiveRoute(res);
     } catch (err) {
-      alert(`Routing failed: ${err.message}`);
+      setActiveRoute(null);
+      setRouteNotice(err.message);
     } finally {
       setLoadingRoute(false);
     }
@@ -378,6 +381,13 @@ export default function App() {
                 prepositionSuggestions={prepositionSuggestions}
               />
 
+              {routeNotice && (
+                <div className="absolute bottom-6 left-6 z-[500] w-80 bg-white border border-[#E2E8F0] rounded-[8px] shadow-sm p-3">
+                  <div className="text-[12px] font-semibold text-[#0F172A]">Route</div>
+                  <p className="mt-1 text-[12px] leading-5 text-[#475569]">{routeNotice}</p>
+                  <button type="button" onClick={() => setRouteNotice(null)} className="mt-2 text-[12px] font-medium text-[#4338CA]">Dismiss</button>
+                </div>
+              )}
               {activeRoute && (
                 <div className="absolute bottom-6 left-6 z-[500] w-80">
                   <EvacuationPanel
