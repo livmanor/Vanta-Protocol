@@ -4,7 +4,7 @@ const messages = {
   en: {
     controlRoom: 'POLICE CONTROL ROOM', area: 'Hyderabad · hotspot pilot',
     logIncident: 'Log Incident', registerUnit: 'Register Unit', roadBlock: 'Road Block / Diversion',
-    zones: 'Risk Zones', prepare: 'Prepare', agents: 'AI Agents', incidents: 'Incidents',
+    zones: 'Risk Zones', prepare: 'Prepare', agents: 'AI Agents', incidents: 'Incidents', windy: 'Windy Radar',
     inspectMap: 'Select a mapped waterlogging hotspot to review forecast risk and weather, then plan a route.',
     monitoredWards: 'Monitored Hotspots', refresh: 'Refresh', elevation: 'Elevation', rain: 'Rain',
     risk: 'Risk', lvl: 'Level', loggedIncidents: 'Logged Incidents', addIncident: 'Add Incident',
@@ -29,7 +29,7 @@ const messages = {
   hi: {
     controlRoom: 'पुलिस नियंत्रण कक्ष', area: 'हैदराबाद · हॉटस्पॉट पायलट',
     logIncident: 'घटना दर्ज करें', registerUnit: 'दल पंजीकृत करें', roadBlock: 'सड़क बंद / मार्ग परिवर्तन',
-    zones: 'जोखिम क्षेत्र', prepare: 'तैयारी', agents: 'एआई एजेंट', incidents: 'घटनाएँ',
+    zones: 'जोखिम क्षेत्र', prepare: 'तैयारी', agents: 'एआई एजेंट', incidents: 'घटनाएँ', windy: 'विंडी रडार',
     inspectMap: 'पूर्वानुमान जोखिम और मौसम देखने तथा मार्ग बनाने के लिए मानचित्र पर जलभराव हॉटस्पॉट चुनें।',
     monitoredWards: 'निगरानी वाले हॉटस्पॉट', refresh: 'रीफ्रेश', elevation: 'ऊँचाई', rain: 'वर्षा',
     risk: 'जोखिम', lvl: 'स्तर', loggedIncidents: 'दर्ज घटनाएँ', addIncident: 'घटना जोड़ें',
@@ -54,7 +54,7 @@ const messages = {
   te: {
     controlRoom: 'పోలీస్ నియంత్రణ గది', area: 'హైదరాబాద్ · హాట్‌స్పాట్ పైలట్',
     logIncident: 'ఘటన నమోదు', registerUnit: 'బృందం నమోదు', roadBlock: 'రోడ్డు మూసివేత / మళ్లింపు',
-    zones: 'ప్రమాద ప్రాంతాలు', prepare: 'సన్నద్ధత', agents: 'ఏఐ ఏజెంట్లు', incidents: 'ఘటనలు',
+    zones: 'ప్రమాద ప్రాంతాలు', prepare: 'సన్నద్ధత', agents: 'ఏఐ ఏజెంట్లు', incidents: 'ఘటనలు', windy: 'విండీ రాడార్',
     inspectMap: 'అంచనా ప్రమాదం, వాతావరణం చూడటానికి మరియు మార్గం రూపొందించడానికి మ్యాప్‌లో నీరు నిలిచే ప్రాంతాన్ని ఎంచుకోండి.',
     monitoredWards: 'పర్యవేక్షణలోని హాట్‌స్పాట్‌లు', refresh: 'రిఫ్రెష్', elevation: 'ఎత్తు', rain: 'వర్షం',
     risk: 'ప్రమాదం', lvl: 'స్థాయి', loggedIncidents: 'నమోదైన ఘటనలు', addIncident: 'ఘటన జోడించు',

@@ -21,7 +21,8 @@ export default function Map({
   units,
   incidents,
   blockedRoads,
-  prepositionSuggestions
+  prepositionSuggestions,
+  onOpenWindy
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -429,6 +430,17 @@ export default function Map({
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
+      {onOpenWindy && (
+        <button
+          type="button"
+          onClick={onOpenWindy}
+          title="Open live Windy weather radar and overlays"
+          className="absolute top-4 right-28 z-[400] h-8 px-3 rounded-[6px] border border-[#E2E8F0] bg-white text-[#475569] hover:text-[#4338CA] hover:border-[#C7D2FE] text-[12px] font-medium shadow-sm flex items-center gap-1.5 transition"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Windy Overlay</span>
+        </button>
+      )}
       <button
         type="button"
         onClick={() => setShowGrid((current) => !current)}
