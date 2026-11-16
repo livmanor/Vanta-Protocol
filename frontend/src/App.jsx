@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Activity, Bot, CheckCircle2, ChevronDown, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
-  ShieldAlert, Siren
+  ShieldAlert, Siren, Wind
 } from 'lucide-react';
 import Landing from './components/Landing';
 import Map from './components/Map';
 import AgentPanel from './components/AgentPanel';
+import WindyOverlay from './components/WindyOverlay';
 import SourceStatusBar from './components/SourceStatusBar';
 import OperationsCalendar from './components/OperationsCalendar';
 import RiskZonePanel from './components/RiskZonePanel';
@@ -26,6 +27,7 @@ import {
 const NAV = [
   { id: 'agents', label: 'AI Agents', Icon: Bot },
   { id: 'map', label: 'Tactical Map', Icon: MapIcon },
+  { id: 'windy', label: 'Windy Radar', Icon: Wind },
 ];
 
 export default function App() {
@@ -376,6 +378,7 @@ export default function App() {
                 incidents={incidents}
                 blockedRoads={blockedRoads}
                 prepositionSuggestions={prepositionSuggestions}
+                onOpenWindy={() => setActiveTab('windy')}
               />
 
               {activeRoute && (
@@ -397,6 +400,7 @@ export default function App() {
                   { id: 'zones', label: t('zones') },
                   { id: 'preposition', label: t('prepare'), badge: prepositionSuggestions.length },
                   { id: 'incidents', label: t('incidents'), badge: incidents.length },
+                  { id: 'windy', label: 'Windy' },
                 ].map(({ id, label, badge }) => (
                   <button
                     key={id}
@@ -565,6 +569,12 @@ export default function App() {
                     )}
                   </div>
                 )}
+
+                {activeTab === 'windy' && (
+                  <div className="flex-1 flex flex-col h-full min-h-[480px]">
+                    <WindyOverlay compact onExpand={() => setView('windy')} />
+                  </div>
+                )}
               </div>
             </aside>
           </div>
@@ -640,6 +650,13 @@ export default function App() {
                   <span>Powered by Groq Qwen & Google Gemini 2.5 · Officer verification required prior to dispatch.</span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* WINDY RADAR & ATMOSPHERIC OVERLAYS VIEW */}
+          {view === 'windy' && (
+            <div className="absolute inset-0 z-[450] flex flex-col bg-[#F8FAFC]">
+              <WindyOverlay />
             </div>
           )}
         </main>
