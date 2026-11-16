@@ -16,36 +16,39 @@ In strict accordance with [`agent_rules.md`](./agent_rules.md):
 
 ## Connected Live Data Sources (All Free & Public)
 
-Every data source is connected at runtime and displayed in the UI's **Source Status Bar** with its endpoint, live/stale/unreachable status badge, and update timestamp:
+Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar** with live, partial, stale, or failed status and an update timestamp. A reachable endpoint is not proof that every requested field was returned.
 
 | # | Domain | External Source | Endpoint | How It's Used | Implementation File |
 |---|---|---|---|---|---|
-| 1 | **Rainfall & Weather** | **Open-Meteo Weather Forecast API** | `https://api.open-meteo.com/v1/forecast` | Fetches current WMO weather condition, temperature, feels-like temperature, humidity, rain, cloud cover, wind and gusts, plus today's and the next two days' forecast at each monitored location. No API key is required for this public endpoint. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
+| 1 | **Rainfall & Weather** | **Open-Meteo Weather Forecast API** | `https://api.open-meteo.com/v1/forecast` | Fetches current conditions, today's daily precipitation/probability/wind, and hourly precipitation for a rolling past-48-hour sum at each monitored location. Requests use `Asia/Kolkata`, two past days, and three forecast days. No API key is required for this public endpoint. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
 | 2 | **River Discharge & Flooding** | **Open-Meteo GloFAS Flood API** | `https://flood-api.open-meteo.com/v1/flood` | Fetches real-time river discharge ($\text{m}^3/\text{s}$) to detect basin overflow hazards. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
-| 3 | **Terrain Elevation** | **Open-Elevation (SRTM)** | `https://api.open-elevation.com/api/v1/lookup` | Measures topographical elevation; identifies low-lying coastal depressions ($\le 10\text{ m}$). | [`backend/data_sources/elevation.py`](backend/data_sources/elevation.py) |
+| 3 | **Terrain Elevation** | **Open-Elevation (SRTM)** | `https://api.open-elevation.com/api/v1/lookup` | Provides terrain context. Hyderabad hotspot scoring does not use a coastal absolute-elevation cutoff; the city grid may compare cells against the city median elevation. | [`backend/data_sources/elevation.py`](backend/data_sources/elevation.py) |
 | 4 | **Shelters & Police Stations** | **OpenStreetMap Overpass API** | `https://overpass-api.de/api/interpreter` | Queries verified civic shelters, community halls, hospitals, and police stations. | [`backend/data_sources/osm.py`](backend/data_sources/osm.py) |
 | 5 | **Evacuation Routing & ETAs** | **OSRM (Open Source Routing Machine)** | `https://router.project-osrm.org/route/v1/driving` | Computes road-network evacuation corridors and turn-by-turn GeoJSON geometries to safe shelters. | [`backend/services/routing.py`](backend/services/routing.py) |
-| 6 | **Official Bulletins & Warnings** | **IMD (India Meteorological Department)** | `https://mausam.imd.gov.in` | Ingests official regional weather bulletins and disaster alerts. | [`backend/data_sources/imd.py`](backend/data_sources/imd.py) |
+| 6 | **Official Bulletins & Warnings** | **IMD (India Meteorological Department)** | `https://mausam.imd.gov.in` | Checks the public IMD feed and reports its availability in source status. IMD alerts are not currently inputs to the risk score or agent reports. | [`backend/data_sources/imd.py`](backend/data_sources/imd.py) |
 | 7 | **Map Display** | **OpenStreetMap Carto Tiles** | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Dark-mode interactive basemap tiles. | [`frontend/src/components/Map.jsx`](frontend/src/components/Map.jsx) |
 
 ---
 
 ## Core Capabilities (V1)
 
-### Gemini Agent Workbench
+### Agent Workbench
 - The **Agents** workspace offers three separately selectable and independently run agents: Weather Predict, Prepare and Respond. Each has its own goal, data disclosure and report; one agent does not silently run the others.
-- The **Predict** agent uses Groq to interpret a freeform history question and produce a qualitative, per-hotspot forecast assessment from supplied observations. The Predict LLM receives raw forecast/history evidence without the shared map's fixed weighted risk score. It retrieves rainfall plus app-recorded effects before the officer chooses an event to analyze. `POST /api/agents/predict/search` parses intent and retrieves history; `POST /api/agents/predict/run` runs the selected event.
+- The **Predict** agent uses Groq to interpret a freeform history question and produce a qualitative, per-hotspot forecast assessment from supplied observations. Its default history window is the last seven days through today's Hyderabad local date; officers can specify a different window. The Predict LLM receives forecast/history evidence without the shared map's fixed weighted risk score. `POST /api/agents/predict/search` parses a history question; `POST /api/agents/predict/run` runs a selected historical window.
 - The **Prepare** agent uses the forecast, those historical impacts, resource availability and deterministic positioning recommendations to produce evidence-linked pre-event readiness actions and officer checks. It can provide checks when no units are registered; it never creates units, changes assignments, or dispatches.
 - The workflow is manually started from the **Agents** tab; it does not call Gemini during automatic dashboard refreshes.
 - Each agent run requires provider-specific operator consent: Predict uses Groq, while Prepare and Respond use Gemini. Predict sends the officer's question for interpretation first, then sends selected forecast/history summaries only after separate run consent. Raw incident reports, unit IDs, station names and exact responder locations are excluded.
 - Historical rainfall is reanalysis rather than rain-gauge observation. Traffic evidence is limited to records entered in this app; no live traffic or external traffic archive is connected. No record means unknown/unreported, not that roads were clear.
+- For each location, `GET /api/weather` returns current conditions, a `today` daily forecast, and `rainfall_48h_mm` from hourly precipitation in the rolling interval `(now IST - 48 hours, now IST]`. Today's daily values are selected by matching the IST date in Open-Meteo's `daily.time`; arrays can begin in the past because the request includes `past_days=2`.
+- Weather status is `live` only when current, today's required daily fields, and rolling 48-hour precipitation are available; partial data is marked `partial`. Feed failures are `failed` or `stale` when only cached data is available. Missing rainfall is kept null (shown as `—`) and is never interpreted as zero. The numeric risk score is withheld if both today's and 48-hour rainfall are missing.
+- Risk levels are transparent screening heuristics, not a trained or locally calibrated flood prediction model. A live weather status means the requested fields were returned; it does not mean a gauge or officer verified conditions on the ground.
 - The event explorer shows the archive's actual available-through date because historical product freshness can vary. Event totals are point samples at six mapped waterlogging hotspots, not citywide rainfall totals. Only incidents and blocked roads recorded in Vanta during the selected dates appear as local effects.
-- Configure `GROQ_API_KEY` and optionally `GROQ_MODEL` in backend `.env` for Predict. `GEMINI_API_KEY` continues to power Prepare and Respond. The search question itself is sent to Groq for intent parsing; the UI asks for consent before that request and separately before sending summarized forecast/history evidence for analysis.
-- Configure `GEMINI_API_KEY` in the local backend `.env` file (never commit the key). `GEMINI_MODEL` can select the model.
+- Configure `GROQ_API_KEY` and optionally `GROQ_MODEL` in the project-root `.env` for Predict. `GEMINI_API_KEY` continues to power Prepare and Respond. The search question itself is sent to Groq for intent parsing; the UI asks for consent before that request and separately before sending summarized forecast/history evidence for analysis.
+- Configure `GEMINI_API_KEY` in the project-root `.env` file (never commit the key). `GEMINI_MODEL` can select the model.
 - `GET /api/agents/status` reports each provider's configuration and agent goals. `POST /api/agents/run/predict`, `/prepare` or `/respond` runs only the selected agent. The legacy `POST /api/agents/run` combined endpoint requires both provider keys and both consents. Without a provider key, the UI reports setup is required.
 
 ### 1. Predict Milestone
-- **Hyderabad Waterlogging Hotspot Risk**: Derives forecast-based risk scores ($1\text{ to }5$) at six geocoded major waterlogging points from the [Hyderabad Traffic Police list](https://echallan.tspolice.gov.in/htp/water_logging.html) (dated 2025-08-06). These are point locations, not ward boundaries, and indicate historical vulnerability rather than current flooding. The current pilot covers only these six published points.
+- **Hyderabad Waterlogging Hotspot Risk**: Derives screening risk levels ($1\text{ to }5$) at six geocoded major waterlogging points from the [Hyderabad Traffic Police list](https://echallan.tspolice.gov.in/htp/water_logging.html) (dated 2025-08-06). These are point locations, not ward boundaries, and indicate historical vulnerability rather than current flooding. The current pilot covers only these six published points.
 - **Explainable Model Output**: Every hotspot displays a transparent "Why this?" breakdown of available weather, discharge, elevation and published vulnerability inputs.
 - **Hotspot Weather Conditions**: Selecting a mapped hotspot shows Open-Meteo weather and forecast at that point; the panel includes feed status and update time. `GET /api/weather` exposes these readings per monitored location.
 
@@ -115,6 +118,12 @@ Vanta Protocol/
 ```
 - API Health: `http://127.0.0.1:8000/api/health`
 - Interactive OpenAPI Docs: `http://127.0.0.1:8000/docs`
+- Live weather by hotspot: `http://127.0.0.1:8000/api/weather`
+- Hotspot risk levels: `http://127.0.0.1:8000/api/risk-zones`
+- Feed health: `http://127.0.0.1:8000/api/sources`
+
+### Agent provider setup
+If you do not already have a project-root `.env`, copy `.env.example` to `.env`. Set `GROQ_API_KEY` for Predict and `GEMINI_API_KEY` for Prepare and Respond. Keep real keys out of source control and restart the backend after changing them. Public Open-Meteo endpoints do not require an API key.
 
 ### 2. Start the Frontend (React + Vite)
 ```powershell
