@@ -128,6 +128,10 @@ async def _collect_recent_rain_impacts(
     zone_id: str | None = None,
 ) -> Dict[str, Any]:
     """Join archive rainfall with locally logged reports for the selected event window."""
+    if not (start_date and end_date):
+        local_today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+        start_date = (local_today - timedelta(days=6)).isoformat()
+        end_date = local_today.isoformat()
     history_metadata = []
     for zone in zones:
         if zone_id and zone.id != zone_id:
@@ -160,37 +164,10 @@ async def _collect_recent_rain_impacts(
             if value is not None:
                 rainfall_by_date[day][meta["id"]] = float(value)
 
-    wet_dates = sorted(day for day, values in rainfall_by_date.items() if any(value > 0 for value in values.values()))
-    if start_date and end_date:
-        branch = "explicit_dates"
-        start = datetime.fromisoformat(start_date).date()
-        end = datetime.fromisoformat(end_date).date()
-        event_dates = sorted(day for day in rainfall_by_date if start_date <= day <= end_date)
-    elif wet_dates:
-        branch = "latest_wet_cluster"
-        end = datetime.fromisoformat(wet_dates[-1]).date()
-        start = end
-        for day in reversed(wet_dates[:-1]):
-            date = datetime.fromisoformat(day).date()
-            # Gap is measured from the previous included day. Comparing with the
-            # final day clips any spell longer than two days (Nov 5 was dropped).
-            if (start - date).days > 1:
-                break
-            start = date
-        event_dates = [day for day in wet_dates if start.isoformat() <= day <= end.isoformat()]
-    else:
-        branch = "no_rain"
-        start = end = None
-        event_dates = []
-    # #region agent log
-    try:
-        _log_payload = {"sessionId": "2e74f4", "runId": __import__("os").environ.get("VANTA_DEBUG_RUN", "pre-fix"), "hypothesisId": "B", "location": "workflow.py:_collect_recent_rain_impacts", "message": "history window branch", "data": {"incoming_start": start_date, "incoming_end": end_date, "branch": branch, "window_start": start.isoformat() if start else None, "window_end": end.isoformat() if end else None, "event_dates": event_dates, "wet_tail": wet_dates[-8:], "zone_count": len(zones)}, "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)}
-        with open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-2e74f4.log", "a", encoding="utf-8") as _log_file:
-            _log_file.write(json.dumps(_log_payload) + "\n")
-    except Exception:
-        pass
-    # #endregion
-
+    branch = "explicit_dates"
+    start = datetime.fromisoformat(start_date).date()
+    end = datetime.fromisoformat(end_date).date()
+    event_dates = sorted(day for day in rainfall_by_date if start_date <= day <= end_date)
     impact_counts: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"incident_count": 0, "incident_types": {}, "blocked_road_reports": 0})
     if event_dates:
         incidents, roads = await asyncio.gather(fetch_incidents(), fetch_blocked_roads())
@@ -223,15 +200,6 @@ async def _collect_recent_rain_impacts(
             "event_max_daily_precipitation_mm": round(max(event_rain), 1) if event_rain else None,
             **impact_counts.get(zone.id, {"incident_count": 0, "incident_types": {}, "blocked_road_reports": 0}),
         })
-    # #region agent log
-    try:
-        _totals = {item["zone_name"]: item["event_precipitation_total_mm"] for item in profile}
-        _log_payload = {"sessionId": "2e74f4", "runId": __import__("os").environ.get("VANTA_DEBUG_RUN", "pre-fix"), "hypothesisId": "D", "location": "workflow.py:_collect_recent_rain_impacts:return", "message": "history totals for chosen window", "data": {"window_start": start.isoformat() if start else None, "window_end": end.isoformat() if end else None, "totals_mm": _totals}, "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)}
-        with open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-2e74f4.log", "a", encoding="utf-8") as _log_file:
-            _log_file.write(json.dumps(_log_payload) + "\n")
-    except Exception:
-        pass
-    # #endregion
     return {
         "source": "Open-Meteo Historical Weather API and Vanta officer-entered incident / blocked-road records",
         "status": "live" if any(item.get("status") == "live" for item in source_status.values()) else "stale" if any(item.get("status") == "stale" for item in source_status.values()) else "failed",
@@ -239,7 +207,7 @@ async def _collect_recent_rain_impacts(
         "rain_archive_sources": source_status,
         "window_start": start.isoformat() if start else None,
         "window_end": end.isoformat() if end else None,
-        "window_basis": "requested_dates" if branch == "explicit_dates" else "latest_observed_rainfall" if branch == "latest_wet_cluster" else "none",
+        "window_basis": "requested_dates",
         "selected_zone_id": zone_id,
         "zones": profile,
         "traffic_data_note": "Traffic impacts are limited to real logged blocked-road and flood/trapped incident reports. No traffic feed is connected; zero reports means none are recorded, not that roads were clear.",
@@ -371,7 +339,7 @@ class PredictAgent:
         }, ensure_ascii=False)
         system_instruction = (
             "You are Vanta's Predict analyst. Independently interpret the supplied live forecast observations, source freshness, the historical rainfall window, and app-recorded impacts. "
-            "Cite window_start and window_end exactly. Describe that range as the officer's requested period only when window_basis is officer_query. When window_basis is latest_observed_rainfall, say the instruction did not name a date range and this is the latest contiguous observed rainfall. Do not substitute any other dates. "
+            "Cite window_start and window_end exactly. Describe that range as the officer's requested period only when window_basis is officer_query. When window_basis is default_recent_history, say it is the default recent seven-day history window. Do not substitute any other dates. "
             "Do not copy or calculate any fixed weighted risk score. Produce qualitative per-zone assessments as low, moderate, high, severe, or insufficient_data, grounded in the values and provenance supplied. Do not invent a numeric probability or claim model calibration. "
             "Use incident and blocked-road counts only when supplied. Zero reports means no matching report was recorded in this app, not that no impact occurred or roads are clear. "
             "Historical rainfall is reanalysis at mapped points, not a rain-gauge observation; local traffic evidence is incomplete officer-entered logs, not a live traffic feed. Interpret only supplied facts. "
@@ -627,8 +595,8 @@ async def run_predict_agent(
     area_query: str | None = None,
 ) -> Dict[str, Any]:
     # A caller-supplied range wins. Otherwise read a period from the officer's
-    # question. With no period, leave the dates empty so history falls back to
-    # the latest contiguous observed rainfall instead of a fixed calendar week.
+    # question. If no period is stated, use the documented rolling seven-day
+    # window instead of jumping to an older wet spell.
     ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
     window_basis = "caller_dates" if event_start and event_end else None
     if officer_query and str(officer_query).strip() and not (event_start and event_end):
@@ -646,17 +614,12 @@ async def run_predict_agent(
                 event_end = intent.end_date.isoformat()
                 window_basis = "officer_query"
             else:
-                window_basis = "latest_observed_rainfall"
+                window_basis = "default_recent_history"
     elif not window_basis:
-        window_basis = "latest_observed_rainfall"
-    # #region agent log
-    try:
-        _log_payload = {"sessionId": "2e74f4", "runId": __import__("os").environ.get("VANTA_DEBUG_RUN", "pre-fix"), "hypothesisId": "A", "location": "workflow.py:run_predict_agent", "message": "predict dates before history fetch", "data": {"officer_query": officer_query, "event_start": event_start, "event_end": event_end, "query_used_for_dates": window_basis == "officer_query", "window_basis": window_basis}, "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)}
-        with open(r"c:\Users\NEELS\Desktop\Vanta Protocol\.cursor\debug-2e74f4.log", "a", encoding="utf-8") as _log_file:
-            _log_file.write(json.dumps(_log_payload) + "\n")
-    except Exception:
-        pass
-    # #endregion
+        window_basis = "default_recent_history"
+    if window_basis == "default_recent_history":
+        event_end = ist_now.isoformat()
+        event_start = (ist_now - timedelta(days=6)).isoformat()
     zones, source_status, recent_rain_impacts = await _weather_and_history(
         event_start,
         event_end,
@@ -670,6 +633,8 @@ async def run_predict_agent(
         source_status.update(emerging_status)
     if window_basis == "officer_query":
         recent_rain_impacts["window_basis"] = "officer_query"
+    elif window_basis == "default_recent_history":
+        recent_rain_impacts["window_basis"] = "default_recent_history"
     elif window_basis == "caller_dates":
         recent_rain_impacts["window_basis"] = "requested_dates"
     prediction = await PredictAgent().run(zones, source_status, recent_rain_impacts, language, officer_query)
