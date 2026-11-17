@@ -183,6 +183,19 @@ MSG91 also requires an approved DLT flow template. The status callback above is 
 
 Phone numbers stay in the SQLite contact book and the send log. They are not written to application logs. Rotate any key that was shared, pasted into a chat, or placed in a zip.
 
+## Waterlogging labels
+
+There is no trained flood model. `data/labels/hyderabad_events.csv` is the place to record documented Hyderabad days. The six rows already in it are location seeds copied from the Traffic Police list. Their dates are blank, so they are not labels.
+
+A row counts only when `scripts/validate_labels.py` accepts it: a `YYYY-MM-DD` date, label `1` or `0`, a `label_type`, coordinates inside the GHMC box, and a source that is a URL or a citation with a year. Open-Meteo and ERA5 text is rejected. Coordinates outside `17.30–17.56 N, 78.30–78.62 E` are rejected, which drops the Chennai rows in the unused `vanta.db`.
+
+`python scripts/propose_negative_candidates.py --start YYYY-MM-DD --end YYYY-MM-DD` writes `data/labels/negative_candidates.csv`. Those rows keep `label` and `source` blank.
+
+- `dry_day_negative` lists the same six locations on days with an archive daily total at or below 0.1 mm. The cutoff only chooses which days to review.
+- `heavy_rain_no_report_negative` lists other GHMC cells on a day that already has a confirmed positive somewhere else. A missing report is not proof the cell was dry. Many waterlogged streets are never written down, so these candidates are uncertain and stay out of training until someone adds a source for an actual check.
+
+Training does not start below 30 sourced positives and 3 distinct events. The rule-based score in `backend/services/risk_engine.py` is unchanged.
+
 ## Roadmap
 
 These are not inputs to the live risk score.
