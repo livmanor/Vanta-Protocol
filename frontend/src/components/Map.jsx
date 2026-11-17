@@ -1,5 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import { Search, X, MapPin, Loader2 } from 'lucide-react';
+import { HYDERABAD_LOCATIONS, searchHyderabadLocations } from '../data/hyderabadLocations';
 
 const riskColor = (level) => {
   if (level === null || level === undefined) return '#94a3b8';
@@ -36,6 +38,218 @@ export default function Map({
   onLogIncidentRef.current = onLogIncidentAtPin;
   const pinnedLocationRef = useRef(pinnedLocation);
   pinnedLocationRef.current = pinnedLocation;
+
+  // Location Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchContainerRef = useRef(null);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setIsSearchOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Search the local location directory and live hotspots before using Nominatim.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      // Default / empty search: show top key pilot locations & hotspots
+      const defaults = HYDERABAD_LOCATIONS.slice(0, 8).map(loc => ({
+        id: `default-${loc.name}`,
+        name: loc.name,
+        subText: loc.subText,
+        lat: loc.lat,
+        lng: loc.lng,
+        category: loc.category,
+        type: loc.category.toLowerCase()
+      }));
+      setSearchResults(defaults);
+      setIsSearching(false);
+      return;
+    }
+
+    // Check if query is raw coordinates: e.g. "17.3914, 78.4702" or "17.3914 78.4702"
+    const coordMatch = q.match(/^([-+]?\d{1,2}(?:\.\d+)?)[,\s]+([-+]?\d{1,3}(?:\.\d+)?)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        setSearchResults([{
+          id: 'coord-direct',
+          name: `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          subText: 'Custom GPS Coordinate Point',
+          lat,
+          lng,
+          category: 'GPS',
+          type: 'coord'
+        }]);
+        setIsSearching(false);
+        setIsSearchOpen(true);
+        return;
+      }
+    }
+
+    // 1. Instant match from comprehensive Hyderabad directory
+    const catalogMatches = searchHyderabadLocations(q).map(loc => ({
+      id: `dir-${loc.name}`,
+      name: loc.name,
+      subText: loc.subText,
+      lat: loc.lat,
+      lng: loc.lng,
+      category: loc.category,
+      type: loc.category.toLowerCase()
+    }));
+
+    // 2. Local search from live riskZones (HTP Hotspots)
+    const zoneMatches = [];
+    if (riskZones && Array.isArray(riskZones)) {
+      riskZones.forEach(z => {
+        if (z.name && z.name.toLowerCase().includes(q.toLowerCase())) {
+          const coords = z.polygon?.coordinates;
+          const lat = z.lat ?? coords?.[1];
+          const lng = z.lng ?? z.lon ?? coords?.[0];
+          if (lat != null && lng != null) {
+            zoneMatches.push({
+              id: `zone-${z.id}`,
+              name: z.name,
+              subText: `Waterlogging Hotspot · Risk Level ${z.risk_level ?? 'N/A'}`,
+              lat,
+              lng,
+              category: 'Hotspot',
+              type: 'hotspot',
+              raw: z
+            });
+          }
+        }
+      });
+    }
+
+    // Combine all instant local matches
+    const initialList = [...zoneMatches];
+    catalogMatches.forEach(cm => {
+      if (!initialList.some(item => Math.abs(item.lat - cm.lat) < 0.003 && Math.abs(item.lng - cm.lng) < 0.003)) {
+        initialList.push(cm);
+      }
+    });
+
+    setSearchResults(initialList);
+    if (initialList.length > 0) {
+      setIsSearchOpen(true);
+    }
+
+    // 4. Remote pan-India geocoding search on OpenStreetMap Nominatim with street-level resolution
+    setIsSearching(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=in&addressdetails=1&limit=10`;
+        const res = await fetch(url, {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const remoteMatches = data
+            .map((item, idx) => {
+              const lat = parseFloat(item.lat);
+              const lon = parseFloat(item.lon);
+              if (isNaN(lat) || isNaN(lon)) return null;
+
+              const addr = item.address || {};
+              const parts = item.display_name.split(',');
+
+              // Determine name and category
+              let title = parts[0].trim();
+              let category = 'Location';
+
+              if (addr.road || addr.pedestrian || addr.footway || item.class === 'highway') {
+                category = 'Street';
+                title = addr.road || addr.pedestrian || parts[0].trim();
+              } else if (addr.hospital || addr.clinic || item.type === 'hospital') {
+                category = 'Hospital';
+              } else if (addr.police || item.type === 'police') {
+                category = 'Police';
+              } else if (addr.suburb || addr.neighbourhood || addr.residential) {
+                category = 'Area';
+              } else if (addr.city || addr.town || addr.village) {
+                category = 'City';
+              }
+
+              // Build informative subtext: neighbourhood, city, state, pincode
+              const localityParts = [
+                addr.suburb || addr.neighbourhood,
+                addr.city || addr.town || addr.village || addr.county,
+                addr.state,
+                addr.postcode
+              ].filter(Boolean);
+
+              const subText = localityParts.length > 0 ? localityParts.join(', ') : parts.slice(1, 4).join(',').trim();
+
+              return {
+                id: `nominatim-${idx}-${item.place_id}`,
+                name: title,
+                subText,
+                lat,
+                lng: lon,
+                category,
+                type: category.toLowerCase()
+              };
+            })
+            .filter(Boolean);
+
+          const merged = [...initialList];
+          remoteMatches.forEach(rm => {
+            if (!merged.some(c => Math.abs(c.lat - rm.lat) < 0.0015 && Math.abs(c.lng - rm.lng) < 0.0015)) {
+              merged.push(rm);
+            }
+          });
+          setSearchResults(merged);
+          setIsSearchOpen(true);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.warn('Pan-India geocoding search failed:', err);
+        }
+      } finally {
+        setIsSearching(false);
+      }
+    }, 280);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery, riskZones]);
+
+  const handleSelectLocation = (loc) => {
+    setIsSearchOpen(false);
+    setSearchQuery(loc.name);
+
+    const map = mapInstanceRef.current;
+    if (map) {
+      // Zoom dynamically: street-level gets close zoom 17, areas zoom 15, cities zoom 12
+      const targetZoom = loc.category === 'Street' ? 17 : loc.category === 'City' ? 12 : 15;
+      map.flyTo([loc.lat, loc.lng], targetZoom, { animate: true, duration: 1.2 });
+    }
+
+    // Automatically drop pin at searched location
+    onPinLocationRef.current?.({
+      lat: Number(loc.lat.toFixed(6)),
+      lng: Number(loc.lng.toFixed(6))
+    });
+
+    if (loc.raw) {
+      onSelectRef.current?.(loc.raw);
+    }
+  };
 
   const layersRef = useRef({
     zones: null,
@@ -495,6 +709,104 @@ export default function Map({
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
+      {/* Location Search Bar */}
+      <div ref={searchContainerRef} className="absolute top-4 left-14 z-[500] w-72 sm:w-80 md:w-96">
+        <div className="relative flex items-center bg-white rounded-[6px] border border-[#CBD5E1] shadow-md hover:border-[#4338CA] focus-within:border-[#4338CA] focus-within:ring-2 focus-within:ring-[#4338CA]/20 transition">
+          <div className="pl-3 pr-2 text-[#64748B] flex items-center justify-center">
+            {isSearching ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[#4338CA]" />
+            ) : (
+              <Search className="w-4 h-4" />
+            )}
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setIsSearchOpen(true);
+            }}
+            onFocus={() => setIsSearchOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchResults.length > 0) {
+                handleSelectLocation(searchResults[0]);
+              }
+            }}
+            placeholder="Search any street, area, city in India, or lat,lng…"
+            className="w-full h-8 text-[13px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none bg-transparent pr-2"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setIsSearchOpen(true);
+              }}
+              className="p-1.5 text-[#94A3B8] hover:text-[#0F172A] transition"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Dropdown Results */}
+        {isSearchOpen && (
+          <div className="absolute left-0 right-0 mt-1 bg-white border border-[#CBD5E1] rounded-[6px] shadow-xl max-h-72 overflow-y-auto divide-y divide-[#F1F5F9] z-[600]">
+            {!searchQuery.trim() && (
+              <div className="px-3 py-1.5 bg-[#F8FAFC] text-[10px] font-semibold uppercase tracking-wider text-[#64748B]">
+                Key Pilot Hotspots & Stations
+              </div>
+            )}
+
+            {searchResults.length > 0 ? (
+              searchResults.map((loc) => {
+                const cat = loc.category || 'Location';
+                const badgeStyle =
+                  cat === 'Street' ? 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]' :
+                  cat === 'City' ? 'bg-[#FAF5FF] text-[#7E22CE] border-[#E9D5FF]' :
+                  cat === 'Hotspot' ? 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]' :
+                  cat === 'Hospital' ? 'bg-[#DCFCE7] text-[#16A34A] border-[#BBF7D0]' :
+                  cat === 'Police' ? 'bg-[#EEF2FF] text-[#4338CA] border-[#C7D2FE]' :
+                  cat === 'Water Body' ? 'bg-[#E0F2FE] text-[#0284C7] border-[#BAE6FD]' :
+                  cat === 'GPS' ? 'bg-[#F3E8FF] text-[#9333EA] border-[#E9D5FF]' :
+                  'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]';
+
+                return (
+                  <button
+                    key={loc.id}
+                    type="button"
+                    onClick={() => handleSelectLocation(loc)}
+                    className="w-full text-left px-3 py-2.5 hover:bg-[#F8FAFC] transition flex items-center justify-between gap-2 group cursor-pointer"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-medium text-[#0F172A] group-hover:text-[#4338CA] truncate flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#4338CA] shrink-0" />
+                        <span>{loc.name}</span>
+                      </div>
+                      {loc.subText && (
+                        <div className="text-[11px] text-[#64748B] truncate pl-5">
+                          {loc.subText}
+                        </div>
+                      )}
+                    </div>
+                    <div className="shrink-0 flex items-center">
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] border ${badgeStyle}`}>
+                        {cat}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
+            ) : !isSearching ? (
+              <div className="px-3 py-4 text-center text-[12px] text-[#64748B]">
+                No matching location found. Enter a nearby area name or exact coordinates (lat, lng).
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+
       {/* Top right floating toolbar */}
       <div className="absolute top-4 right-4 z-[400] flex items-center gap-2">
         {pinnedLocation && (

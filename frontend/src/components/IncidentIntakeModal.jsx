@@ -139,7 +139,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport, pinnedL
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
-                Coordinates (Hyderabad)
+                Coordinates (GPS / Pin Location)
               </span>
               {pinnedLocation?.lat != null ? (
                 <span className="text-[11px] font-medium text-[#4338CA] bg-[#EEF2FF] px-2 py-0.5 rounded-[4px] border border-[#C7D2FE] flex items-center gap-1">
