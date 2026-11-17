@@ -1,5 +1,5 @@
 import React from 'react';
-import { CloudRain, Compass, Siren, ArrowRight, ShieldCheck, Database, Activity } from 'lucide-react';
+import { CloudRain, Compass, Siren, ArrowRight, ShieldCheck, Database } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
 
 export default function Landing({ onEnter }) {
@@ -21,9 +21,6 @@ export default function Landing({ onEnter }) {
           </div>
           <span className="font-semibold text-[14px] text-[#0F172A] tracking-tight">
             Vanta Protocol
-          </span>
-          <span className="text-[12px] text-[#64748B] border-l border-[#E2E8F0] pl-3 ml-1">
-            Hyderabad Police Control Room
           </span>
         </div>
 
@@ -54,11 +51,6 @@ export default function Landing({ onEnter }) {
       {/* Main hero */}
       <main className="relative flex-1 overflow-y-auto flex items-center justify-center px-8 z-10 pb-8">
         <div className="w-full max-w-[1200px] py-12 flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[6px] border border-[#E2E8F0] bg-white text-[#475569] text-[12px] font-medium mb-6">
-            <Activity className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
-            <span>{t('landingKicker')}</span>
-          </div>
-
           <h1 className="text-[40px] font-semibold text-[#0F172A] tracking-tight leading-[1.2] max-w-3xl">
             {t('landingTitle')}
           </h1>
@@ -109,11 +101,6 @@ export default function Landing({ onEnter }) {
         </div>
       </main>
 
-      {/* Footer: 12px, #64748B, no monospace */}
-      <footer className="px-8 h-[48px] border-t border-[#E2E8F0] bg-white flex items-center justify-between text-[12px] shrink-0 text-[#64748B] z-10">
-        <span>CipherCop 2026 · Track 2 · Hyderabad AI Disaster Response</span>
-        <span>{t('landingFooter')}</span>
-      </footer>
     </div>
   );
 }

@@ -1,58 +1,32 @@
 import asyncio
+import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from backend.config import settings
 from backend.models import RiskZone, RiskExplanation
 from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_river_discharge, sum_hourly_precipitation_last_48h, today_daily_value
 from backend.data_sources.elevation import get_real_elevations
 
-# Geocoded major waterlogging points published by Hyderabad Traffic Police.
-# Source list is dated 2025-08-06. These points are historical vulnerability
-# locations, not administrative boundaries or reports of current inundation.
-REAL_ZONES_METADATA = [
-    {
-        "id": "hyd-hotspot-nampally-metro",
-        "name": "Nampally Metro Underpass",
-        "centroid": (17.391440, 78.470213),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-banjara-rd12",
-        "name": "Banjara Hills · Road No. 12",
-        "centroid": (17.411480, 78.435294),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-gun-park",
-        "name": "Gun Park / Hyderabad Traffic Police",
-        "centroid": (17.4008462, 78.4698862),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-chatrinaka",
-        "name": "Chatrinaka Police Station",
-        "centroid": (17.343282, 78.478107),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-kachiguda",
-        "name": "Kachiguda · 6 No. Junction",
-        "centroid": (17.391500, 78.511201),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    },
-    {
-        "id": "hyd-hotspot-moosarambagh-bridge",
-        "name": "Moosarambagh Bridge · Ali Café",
-        "centroid": (17.381185, 78.517900),
-        "historical_flood_prone": True,
-        "source_severity": "Major",
-    }
-]
+def load_hotspot_catalog() -> List[Dict[str, Any]]:
+    """Published HTP points. The file is a static reference list, not a live flood report."""
+    path = Path(__file__).resolve().parents[2] / "data" / "hyderabad_hotspots.json"
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    zones = []
+    for item in catalog["hotspots"]:
+        lat, lon = item["centroid"]
+        zones.append({
+            **item,
+            "centroid": (lat, lon),
+            "list_label": catalog["label"],
+            "list_as_of": catalog["as_of"],
+            "list_source": catalog["source"],
+        })
+    return zones
+
+
+REAL_ZONES_METADATA = load_hotspot_catalog()
+
 
 def score_observations(
     rainfall_24h: Optional[float],
@@ -65,6 +39,8 @@ def score_observations(
     weather_status: Optional[str] = None,
     weather_last_updated: Optional[str] = None,
     low_lying: bool = False,
+    temperature_max_c: Optional[float] = None,
+    apparent_temperature_max_c: Optional[float] = None,
 ) -> tuple[Optional[int], Optional[float], RiskExplanation]:
     """Calculates risk level 1-5 with transparent explainability.
     
@@ -74,6 +50,8 @@ def score_observations(
     Absolute elevation is retained as context only; it does not rank inland
     Hyderabad hotspots. This is a screening heuristic, not a calibrated forecast.
     """
+    heat_note = describe_heat(temperature_max_c, apparent_temperature_max_c)
+
     if rainfall_24h is None and rainfall_48h is None:
         explanation = RiskExplanation(
             rainfall_24h_mm=None, rainfall_48h_mm=None,
@@ -81,7 +59,10 @@ def score_observations(
             max_precipitation_probability=precip_prob_max, wind_max_kmh=wind_max_kmh,
             river_discharge_m3s=river_discharge, mean_elevation_m=elevation_m,
             historical_flood_prone=historical_flood,
-            why_this="Rainfall data unavailable; numerical risk withheld. Verify the weather feed and local conditions.",
+            why_this="Rainfall data unavailable; numerical risk withheld. Verify the weather feed and local conditions. " + heat_note,
+            heat_temperature_max_c=temperature_max_c,
+            heat_apparent_max_c=apparent_temperature_max_c,
+            heat_note=heat_note,
         )
         return None, None, explanation
 
@@ -148,6 +129,7 @@ def score_observations(
         reasons.append("Hyderabad Traffic Police major waterlogging hotspot (2025 list)")
 
     why_this = " | ".join(reasons) if reasons else "No elevated screening threshold crossed by the available weather and operational inputs."
+    why_this = f"{why_this} {heat_note}"
 
     explanation = RiskExplanation(
         rainfall_24h_mm=rainfall_24h,
@@ -159,9 +141,32 @@ def score_observations(
         river_discharge_m3s=river_discharge,
         mean_elevation_m=elevation_m,
         historical_flood_prone=historical_flood,
-        why_this=why_this
+        why_this=why_this,
+        heat_temperature_max_c=temperature_max_c,
+        heat_apparent_max_c=apparent_temperature_max_c,
+        heat_note=heat_note,
     )
     return final_level, raw_score, explanation
+
+
+def describe_heat(temperature_max_c: Optional[float], apparent_temperature_max_c: Optional[float]) -> str:
+    """Separate heat screen. A missing temperature stays missing and does not become 0 C."""
+    if temperature_max_c is None and apparent_temperature_max_c is None:
+        return "Heat screening unavailable."
+    plain = settings.HEAT_PLAIN_THRESHOLD_C
+    severe = settings.HEAT_SEVERE_APPARENT_THRESHOLD_C
+    temp_text = "unavailable" if temperature_max_c is None else f"{temperature_max_c:.1f} C"
+    feels_text = "unavailable" if apparent_temperature_max_c is None else f"{apparent_temperature_max_c:.1f} C"
+    crossed = []
+    if temperature_max_c is not None and temperature_max_c >= plain:
+        crossed.append(f"daily maximum meets the {plain:g} C plain heatwave screen")
+    if apparent_temperature_max_c is not None and apparent_temperature_max_c >= severe:
+        crossed.append(f"feels-like maximum meets the {severe:g} C severe-heat screen")
+    outcome = "; ".join(crossed) if crossed else f"below the {plain:g} C plain heatwave screen"
+    return (
+        "Heat screening heuristic, separate from the flood level. "
+        f"Daily maximum {temp_text}. Feels-like maximum {feels_text}. {outcome}."
+    )
 
 
 def calculate_zone_risk(
@@ -175,6 +180,8 @@ def calculate_zone_risk(
     weather_status: Optional[str] = None,
     weather_last_updated: Optional[str] = None,
     low_lying: bool = False,
+    temperature_max_c: Optional[float] = None,
+    apparent_temperature_max_c: Optional[float] = None,
 ) -> tuple[Optional[int], RiskExplanation]:
     """Level and explanation for the six named hotspots. Grid scoring uses score_observations."""
     level, _score, explanation = score_observations(
@@ -188,6 +195,8 @@ def calculate_zone_risk(
         weather_status=weather_status,
         weather_last_updated=weather_last_updated,
         low_lying=low_lying,
+        temperature_max_c=temperature_max_c,
+        apparent_temperature_max_c=apparent_temperature_max_c,
     )
     return level, explanation
 
@@ -227,6 +236,8 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
         precip_prob_max = today_daily_value(weather_data, "precipitation_probability_max")
 
         wind_max = today_daily_value(weather_data, "wind_speed_10m_max")
+        temperature_max = today_daily_value(weather_data, "temperature_2m_max")
+        apparent_max = today_daily_value(weather_data, "apparent_temperature_max")
 
         flood_data = flood_res.get("data") or {}
         river_daily = flood_data.get("daily", {}).get("river_discharge", [None])
@@ -248,9 +259,12 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                 rainfall_48h=rainfall_48h,
                 weather_status=weather_res.get("status"),
                 weather_last_updated=weather_res.get("last_updated"),
+                temperature_max_c=temperature_max,
+                apparent_temperature_max_c=apparent_max,
             )
         else:
             risk_level = None
+            heat_note = describe_heat(temperature_max, apparent_max)
             explanation = RiskExplanation(
                 rainfall_24h_mm=rainfall_24h,
                 rainfall_48h_mm=rainfall_48h,
@@ -261,7 +275,10 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                 river_discharge_m3s=river_discharge,
                 mean_elevation_m=elev_m,
                 historical_flood_prone=zone_meta["historical_flood_prone"],
-                why_this="Raw live observations only; no weighted map score calculated for Predict.",
+                why_this="Raw live observations only; no weighted map score calculated for Predict. " + heat_note,
+                heat_temperature_max_c=temperature_max,
+                heat_apparent_max_c=apparent_max,
+                heat_note=heat_note,
             )
 
         sources = ["Open-Meteo Weather API", "Open-Meteo GloFAS Flood API"]

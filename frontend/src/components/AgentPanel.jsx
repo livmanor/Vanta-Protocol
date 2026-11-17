@@ -411,7 +411,6 @@ export default function AgentPanel({ status, results = {}, errors = {}, loadingA
             </div>
             {selected === 'prepare' && (selectedResult.operations_calendar || selectedResult.prepare?.operations_calendar)?.events?.length > 0 && <><p className="text-[12px] font-medium text-[#B45309]">Additional draft from the Prepare agent. Officer approval is still required.</p><OperationsCalendar calendar={selectedResult.operations_calendar || selectedResult.prepare?.operations_calendar} model={selectedResult.model || selectedResult.provider} /></>}
             {selected === 'respond' && <RespondSmsPanel draft={selectedResult.respond?.sms_draft} model={selectedResult.model || selectedResult.provider} testMode={status?.sms_test_mode ?? true} sender={status?.sms_sender} />}
-            <div className="pt-2 text-[11px] text-[#64748B]">Model: {selectedResult.model || selectedResult.provider || 'Not available'}</div>
           </section>
         )}
       </section>

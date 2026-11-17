@@ -1,0 +1,51 @@
+{
+  "label": "static reference list",
+  "source": "Hyderabad Traffic Police waterlogging points",
+  "source_url": "https://echallan.tspolice.gov.in/htp/water_logging.html",
+  "as_of": "2025-08-06",
+  "note": "Published historical vulnerability points. These coordinates are not a live flood report. Risk levels are computed at runtime from weather, river discharge and elevation.",
+  "hotspots": [
+    {
+      "id": "hyd-hotspot-nampally-metro",
+      "name": "Nampally Metro Underpass",
+      "centroid": [17.39144, 78.470213],
+      "historical_flood_prone": true,
+      "source_severity": "Major"
+    },
+    {
+      "id": "hyd-hotspot-banjara-rd12",
+      "name": "Banjara Hills · Road No. 12",
+      "centroid": [17.41148, 78.435294],
+      "historical_flood_prone": true,
+      "source_severity": "Major"
+    },
+    {
+      "id": "hyd-hotspot-gun-park",
+      "name": "Gun Park / Hyderabad Traffic Police",
+      "centroid": [17.4008462, 78.4698862],
+      "historical_flood_prone": true,
+      "source_severity": "Major"
+    },
+    {
+      "id": "hyd-hotspot-chatrinaka",
+      "name": "Chatrinaka Police Station",
+      "centroid": [17.343282, 78.478107],
+      "historical_flood_prone": true,
+      "source_severity": "Major"
+    },
+    {
+      "id": "hyd-hotspot-kachiguda",
+      "name": "Kachiguda · 6 No. Junction",
+      "centroid": [17.3915, 78.511201],
+      "historical_flood_prone": true,
+      "source_severity": "Major"
+    },
+    {
+      "id": "hyd-hotspot-moosarambagh-bridge",
+      "name": "Moosarambagh Bridge · Ali Café",
+      "centroid": [17.381185, 78.5179],
+      "historical_flood_prone": true,
+      "source_severity": "Major"
+    }
+  ]
+}

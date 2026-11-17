@@ -156,8 +156,15 @@ async def refresh_operations_plan(zones, cells, force: bool = False) -> dict:
             rain_text = "rain unavailable" if rain is None else f"{rain:.1f} mm forecast or past 48h"
             if route:
                 minutes = max(1, round(route.duration_seconds / 60))
+                warning = ""
+                if route.blocked_road_conflicts:
+                    warning = (
+                        "WARNING: this route crosses "
+                        + ", ".join(route.blocked_road_conflicts)
+                        + "; verify on the ground. Officer-entered blocks have no resolved status, so confirm they are still active. "
+                    )
                 details = (
-                    f"{item.name} has {rain_text}. Open the corridor to {route.shelter_name} "
+                    f"{warning}{item.name} has {rain_text}. Open the corridor to {route.shelter_name} "
                     f"({route.distance_meters / 1000:.1f} km, about {minutes} min). {route.why_this}"
                 )
                 route_lines.append(f"{item.name} → {route.shelter_name}")

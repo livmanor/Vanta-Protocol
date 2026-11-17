@@ -27,7 +27,7 @@ async def generate_evacuation_route(req: EvacuationRequest):
         zone_name=req.zone_name
     )
     if not route:
-        raise HTTPException(status_code=404, detail="No suitable emergency shelter found within reachable range.")
+        raise HTTPException(status_code=404, detail="No verified destination found. OpenStreetMap did not return a shelter, community centre, or hospital inside Hyderabad.")
     return route
 
 @router.get("/blocked-roads", response_model=List[BlockedRoad])

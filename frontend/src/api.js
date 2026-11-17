@@ -1,20 +1,8 @@
 const API_BASE = '/api';
 
-export async function fetchSources() {
-  const res = await fetch(`${API_BASE}/sources`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch source health`);
-  return res.json();
-}
-
 export async function fetchRiskZones() {
   const res = await fetch(`${API_BASE}/risk-zones`);
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute risk zones`);
-  return res.json();
-}
-
-export async function fetchRiskGrid() {
-  const res = await fetch(`${API_BASE}/risk-grid`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute the city risk grid`);
   return res.json();
 }
 
@@ -124,6 +112,12 @@ export async function registerUnit(unitData) {
 export async function fetchIncidents() {
   const res = await fetch(`${API_BASE}/incidents`);
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch incidents`);
+  return res.json();
+}
+
+export async function fetchIncidentTriage() {
+  const res = await fetch(`${API_BASE}/incidents/triage`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to rank incidents`);
   return res.json();
 }
 

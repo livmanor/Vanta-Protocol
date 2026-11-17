@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
 const riskColor = (level) => {
@@ -14,7 +14,6 @@ const riskColor = (level) => {
 
 export default function Map({
   riskZones,
-  riskGrid,
   selectedZone,
   onSelectZone,
   activeRoute,
@@ -29,7 +28,6 @@ export default function Map({
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const [showGrid, setShowGrid] = useState(true);
   const onSelectRef = useRef(onSelectZone);
   onSelectRef.current = onSelectZone;
   const onPinLocationRef = useRef(onPinLocation);
@@ -40,7 +38,6 @@ export default function Map({
   pinnedLocationRef.current = pinnedLocation;
 
   const layersRef = useRef({
-    grid: null,
     zones: null,
     route: null,
     shelter: null,
@@ -105,63 +102,6 @@ export default function Map({
       mapInstanceRef.current = null;
     };
   }, []);
-
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-    if (layersRef.current.grid && map.hasLayer(layersRef.current.grid)) {
-      map.removeLayer(layersRef.current.grid);
-    }
-    layersRef.current.grid = null;
-    if (!showGrid || !riskGrid?.cells?.length) return;
-
-    const halfLat = riskGrid.lat_step / 2;
-    const halfLon = riskGrid.lon_step / 2;
-    const group = L.layerGroup();
-    riskGrid.cells.forEach((cell) => {
-      const color = riskColor(cell.risk_level);
-      const unavailable = cell.risk_level == null;
-      const rectangle = L.rectangle(
-        [[cell.lat - halfLat, cell.lon - halfLon], [cell.lat + halfLat, cell.lon + halfLon]],
-        { color, weight: 0.5, fillColor: color, fillOpacity: unavailable ? 0.18 : 0.38 }
-      );
-      const rain = cell.rain_48h == null ? 'data unavailable' : `${cell.rain_48h} mm`;
-      const forecast = cell.forecast_24h == null ? 'data unavailable' : `${cell.forecast_24h} mm`;
-      rectangle.bindTooltip(`
-        <div class="font-sans text-xs p-1">
-          <div class="font-extrabold text-slate-900">${cell.name}</div>
-          <div class="text-indigo-700 font-bold mt-0.5">${unavailable ? 'Data unavailable' : 'Risk Level: ' + cell.risk_level + ' / 5'}${cell.emerging ? ' · emerging' : ''}</div>
-          <div class="text-[11px] text-slate-500">48h ${rain} · forecast ${forecast}</div>
-        </div>
-      `, { sticky: true, className: 'leaflet-tooltip-light' });
-      rectangle.on('click', (e) => {
-        if (e.latlng) {
-          onPinLocationRef.current?.({
-            lat: Number(e.latlng.lat.toFixed(6)),
-            lng: Number(e.latlng.lng.toFixed(6))
-          });
-        }
-        onSelectRef.current?.({
-          id: cell.id,
-          name: cell.name,
-          risk_level: cell.risk_level,
-          cell_type: 'grid',
-          polygon: { type: 'Point', coordinates: [cell.lon, cell.lat] },
-          explanation: {
-            weather_status: cell.source_status,
-            rainfall_24h_mm: cell.forecast_24h,
-            rainfall_48h_mm: cell.rain_48h,
-            mean_elevation_m: cell.elevation_m,
-            why_this: cell.why_this,
-          },
-        });
-      });
-      group.addLayer(rectangle);
-    });
-    group.addTo(map);
-    layersRef.current.grid = group;
-    if (layersRef.current.zones) layersRef.current.zones.bringToFront();
-  }, [riskGrid, showGrid]);
 
   // Update Risk Zones GeoJSON Layer
   useEffect(() => {
@@ -555,7 +495,6 @@ export default function Map({
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
-      
       {/* Top right floating toolbar */}
       <div className="absolute top-4 right-4 z-[400] flex items-center gap-2">
         {pinnedLocation && (
@@ -593,16 +532,6 @@ export default function Map({
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={() => setShowGrid((current) => !current)}
-          aria-pressed={showGrid}
-          className={`h-8 px-3 rounded-[6px] border text-[12px] font-medium shadow-sm ${
-            showGrid ? 'bg-[#4338CA] text-white border-[#4338CA]' : 'bg-white text-[#475569] border-[#E2E8F0]'
-          }`}
-        >
-          City grid
-        </button>
       </div>
 
       {/* Floating map legend: green/amber/red & Pin guide */}

@@ -12,6 +12,8 @@ node_modules/
 dist/
 **/dist/
 .cursor/
+.pytest_cache/
 .vite/
 coverage/
 *.log
+data/labels/cache/
