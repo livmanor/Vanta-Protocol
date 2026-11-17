@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertCircle, X, MapPin } from 'lucide-react';
 
-export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
+export default function IncidentIntakeModal({ isOpen, onClose, onReport, pinnedLocation }) {
   const [type, setType] = useState('flood');
   const [urgency, setUrgency] = useState(3);
   const [people, setPeople] = useState(2);
@@ -10,6 +10,15 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
   const [lat, setLat] = useState('17.3914');
   const [lng, setLng] = useState('78.4702');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (pinnedLocation?.lat != null && pinnedLocation?.lng != null) {
+        setLat(Number(pinnedLocation.lat).toFixed(6));
+        setLng(Number(pinnedLocation.lng).toFixed(6));
+      }
+    }
+  }, [isOpen, pinnedLocation]);
 
   if (!isOpen) return null;
 
@@ -127,10 +136,22 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport }) {
           </div>
 
           <div className="flex flex-col gap-2 pt-2 border-t border-[#E2E8F0]">
-            <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
-              Coordinates (Hyderabad)
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
+                Coordinates (Hyderabad)
+              </span>
+              {pinnedLocation?.lat != null ? (
+                <span className="text-[11px] font-medium text-[#4338CA] bg-[#EEF2FF] px-2 py-0.5 rounded-[4px] border border-[#C7D2FE] flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4338CA] animate-pulse" />
+                  Auto-filled from map pin
+                </span>
+              ) : (
+                <span className="text-[11px] text-[#64748B]">
+                  Click map to place pin
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] text-[#64748B]">Latitude</label>

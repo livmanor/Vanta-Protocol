@@ -50,6 +50,7 @@ export default function App() {
 
   const [selectedZone, setSelectedZone] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
+  const [pinnedLocation, setPinnedLocation] = useState(null);
 
   const [loadingSources, setLoadingSources] = useState(false);
   const [loadingRisk, setLoadingRisk] = useState(false);
@@ -162,6 +163,7 @@ export default function App() {
 
   const handleReportIncident = async (incidentData) => {
     await reportIncident(incidentData);
+    setPinnedLocation(null);
     await loadData();
   };
 
@@ -379,6 +381,12 @@ export default function App() {
                 blockedRoads={blockedRoads}
                 prepositionSuggestions={prepositionSuggestions}
                 onOpenWindy={() => setActiveTab('windy')}
+                pinnedLocation={pinnedLocation}
+                onPinLocation={setPinnedLocation}
+                onLogIncidentAtPin={(coords) => {
+                  setPinnedLocation(coords);
+                  setIsIncidentModalOpen(true);
+                }}
               />
 
               {activeRoute && (
@@ -664,7 +672,12 @@ export default function App() {
 
       {/* Modals */}
       <UnitRegisterModal isOpen={isUnitModalOpen} onClose={() => setIsUnitModalOpen(false)} onRegister={handleRegisterUnit} />
-      <IncidentIntakeModal isOpen={isIncidentModalOpen} onClose={() => setIsIncidentModalOpen(false)} onReport={handleReportIncident} />
+      <IncidentIntakeModal
+        isOpen={isIncidentModalOpen}
+        onClose={() => setIsIncidentModalOpen(false)}
+        onReport={handleReportIncident}
+        pinnedLocation={pinnedLocation}
+      />
       <BlockedRoadModal isOpen={isRoadModalOpen} onClose={() => setIsRoadModalOpen(false)} onReport={handleReportRoad} />
     </div>
   );
