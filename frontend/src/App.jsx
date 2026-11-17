@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Activity, Bot, CheckCircle2, ChevronDown, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
-  ShieldAlert, Siren
+  ShieldAlert, Siren, Wind
 } from 'lucide-react';
 import Landing from './components/Landing';
 import Map from './components/Map';
 import AgentPanel from './components/AgentPanel';
+import WindyOverlay from './components/WindyOverlay';
 import OperationsCalendar from './components/OperationsCalendar';
 import RiskZonePanel from './components/RiskZonePanel';
 import EvacuationPanel from './components/EvacuationPanel';
@@ -25,6 +26,7 @@ import {
 const NAV = [
   { id: 'agents', label: 'AI Agents', Icon: Bot },
   { id: 'map', label: 'Tactical Map', Icon: MapIcon },
+  { id: 'windy', label: 'Windy Radar', Icon: Wind },
 ];
 
 export default function App() {
@@ -46,6 +48,7 @@ export default function App() {
   const [selectedZone, setSelectedZone] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
   const [routeNotice, setRouteNotice] = useState(null);
+  const [pinnedLocation, setPinnedLocation] = useState(null);
 
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [loadingRoute, setLoadingRoute] = useState(false);
@@ -140,6 +143,7 @@ export default function App() {
 
   const handleReportIncident = async (incidentData) => {
     await reportIncident(incidentData);
+    setPinnedLocation(null);
     await loadData();
   };
 
@@ -348,6 +352,13 @@ export default function App() {
                 incidents={incidents}
                 blockedRoads={blockedRoads}
                 prepositionSuggestions={prepositionSuggestions}
+                onOpenWindy={() => setActiveTab('windy')}
+                pinnedLocation={pinnedLocation}
+                onPinLocation={setPinnedLocation}
+                onLogIncidentAtPin={(coords) => {
+                  setPinnedLocation(coords);
+                  setIsIncidentModalOpen(true);
+                }}
               />
 
               {routeNotice && (
@@ -376,6 +387,7 @@ export default function App() {
                   { id: 'zones', label: t('zones') },
                   { id: 'preposition', label: t('prepare'), badge: prepositionSuggestions.length },
                   { id: 'incidents', label: t('incidents'), badge: incidents.length },
+                  { id: 'windy', label: 'Windy' },
                 ].map(({ id, label, badge }) => (
                   <button
                     key={id}
@@ -552,6 +564,12 @@ export default function App() {
                     )}
                   </div>
                 )}
+
+                {activeTab === 'windy' && (
+                  <div className="flex-1 flex flex-col h-full min-h-[480px]">
+                    <WindyOverlay compact onExpand={() => setView('windy')} />
+                  </div>
+                )}
               </div>
             </aside>
           </div>
@@ -624,12 +642,24 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* WINDY RADAR & ATMOSPHERIC OVERLAYS VIEW */}
+          {view === 'windy' && (
+            <div className="absolute inset-0 z-[450] flex flex-col bg-[#F8FAFC]">
+              <WindyOverlay />
+            </div>
+          )}
         </main>
       </div>
 
       {/* Modals */}
       <UnitRegisterModal isOpen={isUnitModalOpen} onClose={() => setIsUnitModalOpen(false)} onRegister={handleRegisterUnit} />
-      <IncidentIntakeModal isOpen={isIncidentModalOpen} onClose={() => setIsIncidentModalOpen(false)} onReport={handleReportIncident} />
+      <IncidentIntakeModal
+        isOpen={isIncidentModalOpen}
+        onClose={() => setIsIncidentModalOpen(false)}
+        onReport={handleReportIncident}
+        pinnedLocation={pinnedLocation}
+      />
       <BlockedRoadModal isOpen={isRoadModalOpen} onClose={() => setIsRoadModalOpen(false)} onReport={handleReportRoad} />
     </div>
   );

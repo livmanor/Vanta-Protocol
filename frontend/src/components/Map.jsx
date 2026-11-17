@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
 const riskColor = (level) => {
@@ -20,12 +20,23 @@ export default function Map({
   units,
   incidents,
   blockedRoads,
-  prepositionSuggestions
+  prepositionSuggestions,
+  onOpenWindy,
+  pinnedLocation,
+  onPinLocation,
+  onLogIncidentAtPin
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const onSelectRef = useRef(onSelectZone);
   onSelectRef.current = onSelectZone;
+  const onPinLocationRef = useRef(onPinLocation);
+  onPinLocationRef.current = onPinLocation;
+  const onLogIncidentRef = useRef(onLogIncidentAtPin);
+  onLogIncidentRef.current = onLogIncidentAtPin;
+  const pinnedLocationRef = useRef(pinnedLocation);
+  pinnedLocationRef.current = pinnedLocation;
+
   const layersRef = useRef({
     zones: null,
     route: null,
@@ -33,7 +44,8 @@ export default function Map({
     units: null,
     incidents: null,
     blockedRoads: null,
-    prepositions: null
+    prepositions: null,
+    pin: null
   });
 
   // Initialize Map
@@ -53,6 +65,35 @@ export default function Map({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(map);
+
+    // Drop pin on map click
+    map.on('click', (e) => {
+      const coords = {
+        lat: Number(e.latlng.lat.toFixed(6)),
+        lng: Number(e.latlng.lng.toFixed(6))
+      };
+      onPinLocationRef.current?.(coords);
+    });
+
+    // Handle button clicks inside pin popups
+    map.on('popupopen', (e) => {
+      const popupEl = e.popup?.getElement();
+      if (!popupEl) return;
+      const logBtn = popupEl.querySelector('#btn-log-incident-pin');
+      if (logBtn) {
+        logBtn.onclick = () => {
+          if (pinnedLocationRef.current) {
+            onLogIncidentRef.current?.(pinnedLocationRef.current);
+          }
+        };
+      }
+      const clearBtn = popupEl.querySelector('#btn-clear-pin');
+      if (clearBtn) {
+        clearBtn.onclick = () => {
+          onPinLocationRef.current?.(null);
+        };
+      }
+    });
 
     mapInstanceRef.current = map;
 
@@ -102,7 +143,15 @@ export default function Map({
       onEachFeature: (feature, layer) => {
         const z = feature.properties;
         layer.on({
-          click: () => onSelectZone(z),
+          click: (e) => {
+            if (e.latlng) {
+              onPinLocationRef.current?.({
+                lat: Number(e.latlng.lat.toFixed(6)),
+                lng: Number(e.latlng.lng.toFixed(6))
+              });
+            }
+            onSelectZone(z);
+          },
           mouseover: () => layer.setStyle({ fillOpacity: 0.6 }),
           mouseout: () => {
             const isSelected = selectedZone && selectedZone.id === z.id;
@@ -374,9 +423,128 @@ export default function Map({
     layersRef.current.blockedRoads = roadGroup;
   }, [blockedRoads]);
 
+  // Update Pin Marker Layer
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (layersRef.current.pin) {
+      map.removeLayer(layersRef.current.pin);
+      layersRef.current.pin = null;
+    }
+
+    if (!pinnedLocation || pinnedLocation.lat == null || pinnedLocation.lng == null) return;
+
+    const pinIcon = L.divIcon({
+      className: 'custom-pin-marker',
+      html: `
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; pointer-events: auto;">
+          <div style="position: absolute; bottom: 0; left: 50%; transform: translate(-50%, -100%); width: 36px; height: 36px; border-radius: 50% 50% 50% 0; transform-origin: 0% 100%; transform: rotate(-45deg) translate(9px, -9px); background: #4338CA; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
+            <div style="transform: rotate(45deg); color: #ffffff; font-size: 16px; line-height: 1;">📍</div>
+          </div>
+          <div style="width: 12px; height: 12px; background: rgba(67, 56, 202, 0.45); border-radius: 50%; box-shadow: 0 0 8px #4338CA;"></div>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -38]
+    });
+
+    const marker = L.marker([pinnedLocation.lat, pinnedLocation.lng], {
+      icon: pinIcon,
+      draggable: true,
+      zIndexOffset: 1200
+    });
+
+    marker.on('dragend', (e) => {
+      const pos = e.target.getLatLng();
+      const newCoords = {
+        lat: Number(pos.lat.toFixed(6)),
+        lng: Number(pos.lng.toFixed(6))
+      };
+      onPinLocationRef.current?.(newCoords);
+    });
+
+    marker.bindPopup(`
+      <div style="min-width: 210px; padding: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="font-weight: 700; color: #0F172A; font-size: 13px; display: flex; align-items: center; gap: 4px;">
+            <span>📍</span> Pinned Incident Location
+          </div>
+          <span style="font-size: 10px; color: #4338CA; background: #EEF2FF; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #C7D2FE;">Draggable</span>
+        </div>
+        <div style="font-family: monospace; font-size: 12px; color: #334155; margin-top: 6px; background: #F8FAFC; padding: 5px 8px; border-radius: 4px; border: 1px solid #E2E8F0; display: flex; justify-content: space-between;">
+          <span>Lat: <strong>${pinnedLocation.lat.toFixed(6)}</strong></span>
+          <span>Lng: <strong>${pinnedLocation.lng.toFixed(6)}</strong></span>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <button id="btn-log-incident-pin" style="flex: 1; background: #4338CA; color: white; border: none; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            🚨 Log Incident Here
+          </button>
+          <button id="btn-clear-pin" title="Remove pin" style="background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; border-radius: 4px; padding: 6px 8px; font-size: 12px; cursor: pointer;">
+            ✕
+          </button>
+        </div>
+      </div>
+    `, { autoClose: false, closeOnClick: false });
+
+    marker.addTo(map);
+    layersRef.current.pin = marker;
+  }, [pinnedLocation]);
+
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
+      {/* Top right floating toolbar */}
+      <div className="absolute top-4 right-4 z-[400] flex items-center gap-2">
+        {pinnedLocation && (
+          <div className="h-8 px-2.5 rounded-[6px] border border-[#C7D2FE] bg-[#EEF2FF] text-[#4338CA] text-[12px] font-medium shadow-sm flex items-center gap-2 animate-fadeIn">
+            <span className="flex items-center gap-1 font-mono text-[11px]">
+              📍 {pinnedLocation.lat.toFixed(4)}, {pinnedLocation.lng.toFixed(4)}
+            </span>
+            <button
+              type="button"
+              onClick={() => onLogIncidentAtPin?.(pinnedLocation)}
+              className="px-2 py-0.5 rounded-[4px] bg-[#4338CA] text-white hover:bg-[#3730A3] text-[11px] font-medium transition shadow-xs"
+            >
+              Log Incident
+            </button>
+            <button
+              type="button"
+              onClick={() => onPinLocation?.(null)}
+              title="Remove pin"
+              className="text-[#64748B] hover:text-[#DC2626] font-bold text-[12px] px-1 transition"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {onOpenWindy && (
+          <button
+            type="button"
+            onClick={onOpenWindy}
+            title="Open live Windy weather radar and overlays"
+            className="h-8 px-3 rounded-[6px] border border-[#E2E8F0] bg-white text-[#475569] hover:text-[#4338CA] hover:border-[#C7D2FE] text-[12px] font-medium shadow-sm flex items-center gap-1.5 transition"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Windy Overlay</span>
+          </button>
+        )}
+
+      </div>
+
+      {/* Floating map legend: green/amber/red & Pin guide */}
+      <div className="absolute bottom-4 left-4 z-[400] bg-white border border-[#E2E8F0] rounded-[6px] px-3 py-2 text-[12px] shadow-sm flex items-center gap-4">
+        <span className="font-medium text-[#0F172A]">Risk:</span>
+        <span className="flex items-center gap-1.5 text-[#16A34A]"><span className="w-2 h-2 rounded-full bg-[#16A34A]" /> L1–L2 Nominal</span>
+        <span className="flex items-center gap-1.5 text-[#D97706]"><span className="w-2 h-2 rounded-full bg-[#D97706]" /> L3 Watch</span>
+        <span className="flex items-center gap-1.5 text-[#DC2626]"><span className="w-2 h-2 rounded-full bg-[#DC2626]" /> L4–L5 Critical</span>
+        <span className="text-[#CBD5E1]">|</span>
+        <span className="text-[#64748B] flex items-center gap-1">
+          <span>📍</span> Click map to drop incident pin
+        </span>
+      </div>
     </div>
   );
 }
