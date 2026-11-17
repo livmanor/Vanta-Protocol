@@ -6,7 +6,6 @@ import {
 import Landing from './components/Landing';
 import Map from './components/Map';
 import AgentPanel from './components/AgentPanel';
-import SourceStatusBar from './components/SourceStatusBar';
 import OperationsCalendar from './components/OperationsCalendar';
 import RiskZonePanel from './components/RiskZonePanel';
 import EvacuationPanel from './components/EvacuationPanel';
@@ -16,7 +15,7 @@ import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
 import { useLanguage } from './i18n.jsx';
 import {
-  fetchSources, fetchRiskZones, fetchUnits, registerUnit,
+  fetchRiskZones, fetchUnits, registerUnit,
   fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
@@ -30,7 +29,6 @@ const NAV = [
 
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
-  const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
   const [riskZonesError, setRiskZonesError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
@@ -49,7 +47,6 @@ export default function App() {
   const [activeRoute, setActiveRoute] = useState(null);
   const [routeNotice, setRouteNotice] = useState(null);
 
-  const [loadingSources, setLoadingSources] = useState(false);
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [loadingRoute, setLoadingRoute] = useState(false);
 
@@ -75,20 +72,8 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadSources = useCallback(async () => {
-    setLoadingSources(true);
-    try {
-      setSources(await fetchSources());
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingSources(false);
-    }
-  }, []);
-
   const loadData = useCallback(async () => {
     setLoadingRisk(true);
-    loadSources();
     try {
       const [rZones, weather, aStatus, uList, incList, triage, roads] = await Promise.all([
         fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
@@ -124,7 +109,7 @@ export default function App() {
     } finally {
       setLoadingRisk(false);
     }
-  }, [loadSources]);
+  }, []);
 
   const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage, inputs = {}) => {
     setLoadingAgent(agentId);
@@ -296,8 +281,6 @@ export default function App() {
           </div>
         </div>
       </header>
-      <SourceStatusBar sources={sources} onRefresh={loadSources} loading={loadingSources} />
-
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Nav Rail: Collapses to icon rail below 1024px */}
@@ -343,9 +326,6 @@ export default function App() {
             )}
           </div>
 
-          <div className="px-3 text-[12px] text-[#64748B] hidden lg:block">
-            <span>Control ID #HYD-2026</span>
-          </div>
         </nav>
 
         {/* Main Content Area */}
@@ -641,11 +621,6 @@ export default function App() {
                   operationsPlan={operationsPlan}
                 />
 
-                {/* Clean Footer note */}
-                <div className="pt-8 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-4 text-[12px] text-[#64748B]">
-                  <span>Vanta Protocol · CipherCop 2026 · Hyderabad Police AI Control Room</span>
-                  <span>Powered by Groq Qwen & Google Gemini 2.5 · Officer verification required prior to dispatch.</span>
-                </div>
               </div>
             </div>
           )}

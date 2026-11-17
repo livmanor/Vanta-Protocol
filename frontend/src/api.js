@@ -1,11 +1,5 @@
 const API_BASE = '/api';
 
-export async function fetchSources() {
-  const res = await fetch(`${API_BASE}/sources`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch source health`);
-  return res.json();
-}
-
 export async function fetchRiskZones() {
   const res = await fetch(`${API_BASE}/risk-zones`);
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute risk zones`);
