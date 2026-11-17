@@ -123,6 +123,8 @@ export default function Map({
           rainfall_48h_mm: cell.rain_48h,
           mean_elevation_m: cell.elevation_m,
           why_this: cell.why_this,
+          heat_temperature_max_c: cell.heat_temperature_max_c,
+          heat_apparent_max_c: cell.heat_apparent_max_c,
         },
       }));
       group.addLayer(rectangle);

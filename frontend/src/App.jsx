@@ -17,7 +17,7 @@ import BlockedRoadModal from './components/BlockedRoadModal';
 import { useLanguage } from './i18n.jsx';
 import {
   fetchSources, fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit,
-  fetchIncidents, reportIncident, fetchPrepositionSuggestions,
+  fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
   refreshOperationsPlan
@@ -42,6 +42,7 @@ export default function App() {
   const [loadingAgent, setLoadingAgent] = useState(null);
   const [units, setUnits] = useState([]);
   const [incidents, setIncidents] = useState([]);
+  const [triageById, setTriageById] = useState({});
   const [blockedRoads, setBlockedRoads] = useState([]);
   const [prepositionSuggestions, setPrepositionSuggestions] = useState([]);
   const [operationsPlan, setOperationsPlan] = useState(null);
@@ -91,13 +92,14 @@ export default function App() {
     setLoadingRisk(true);
     loadSources();
     try {
-      const [rZones, grid, weather, aStatus, uList, incList, roads] = await Promise.all([
+      const [rZones, grid, weather, aStatus, uList, incList, triage, roads] = await Promise.all([
         fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
         fetchRiskGrid().catch(e => { console.error(e); return { error: e.message }; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
         fetchIncidents().catch(e => { console.error(e); return []; }),
+        fetchIncidentTriage().catch(e => { console.error(e); return { items: [] }; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; })
       ]);
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
@@ -118,6 +120,8 @@ export default function App() {
       setAgentStatus(aStatus);
       setUnits(uList);
       setIncidents(incList);
+      const triageItems = Array.isArray(triage?.items) ? triage.items : [];
+      setTriageById(Object.fromEntries(triageItems.map(item => [item.incident_id, item])));
       setBlockedRoads(roads);
 
       if (uList && uList.length > 0) {
@@ -490,6 +494,7 @@ export default function App() {
                     <PrepositionPanel
                       suggestions={prepositionSuggestions}
                       onApprove={handleApprovePreposition}
+                      onRegisterUnit={() => setIsUnitModalOpen(true)}
                     />
                   </div>
                 )}
@@ -510,21 +515,27 @@ export default function App() {
                     </div>
 
                     {incidents.length === 0 ? (
-                      <div className="py-6 text-center text-[12px] text-[#64748B]">
-                        No active incidents recorded.
+                      <div className="py-6 text-center text-[12px] text-[#64748B] flex flex-col items-center gap-3">
+                        <p>No incidents reported</p>
+                        <button type="button" onClick={() => setIsIncidentModalOpen(true)} className="vp-btn vp-btn-primary">Log an incident</button>
                       </div>
                     ) : (
                       <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
-                        {incidents.map((inc) => (
+                        {[...incidents].sort((a, b) => (triageById[a.id]?.rank ?? 9999) - (triageById[b.id]?.rank ?? 9999)).map((inc) => (
                           <div key={inc.id} className="py-2.5 flex flex-col gap-1">
                             <div className="flex items-center justify-between">
                               <span className="text-[12px] font-medium text-[#0F172A] uppercase">
-                                {inc.type} · Urgency {inc.urgency}
+                                {triageById[inc.id] ? `Rank ${triageById[inc.id].rank} · ` : ''}{inc.type} · Urgency {inc.urgency}
                               </span>
                               <span className="vp-mono text-[12px] text-[#64748B]">
                                 {new Date(inc.timestamp).toLocaleTimeString()}
                               </span>
                             </div>
+                            {triageById[inc.id] && (
+                              <p className="text-[12px] leading-relaxed text-[#475569]">
+                                {triageById[inc.id].why_this}
+                              </p>
+                            )}
                             <div className="text-[14px] text-[#334155]">{inc.message}</div>
                             <div className="text-[12px] flex items-center justify-between text-[#64748B]">
                               <span>{t('people')}: <strong className="text-[#0F172A] font-medium">{inc.people}</strong></span>
@@ -549,8 +560,9 @@ export default function App() {
                     </div>
 
                     {units.length === 0 ? (
-                      <div className="py-4 text-center text-[12px] text-[#64748B]">
-                        No field units registered.
+                      <div className="py-4 text-center text-[12px] text-[#64748B] flex flex-col items-center gap-3">
+                        <p>Register a unit to get pre-positioning recommendations.</p>
+                        <button type="button" onClick={() => setIsUnitModalOpen(true)} className="vp-btn vp-btn-primary">Register a unit</button>
                       </div>
                     ) : (
                       <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">

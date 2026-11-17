@@ -126,7 +126,7 @@ async def _elevations_for(cells: List[Dict[str, Any]]) -> Dict[str, Optional[flo
 def _weather_cache_key(cells: List[Dict[str, Any]]) -> str:
     identity = [(cell["id"], cell["lat"], cell["lon"]) for cell in cells]
     digest = hashlib.md5(json.dumps(identity).encode()).hexdigest()[:12]
-    return f"grid_weather_v1_{digest}"
+    return f"grid_weather_v2_{digest}"
 
 
 def _readings_from_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -138,7 +138,13 @@ def _readings_from_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         status = "partial"
     else:
         status = "live"
-    return {"forecast_24h": forecast, "rain_48h": rain_48h, "status": status}
+    return {
+        "forecast_24h": forecast,
+        "rain_48h": rain_48h,
+        "status": status,
+        "temperature_max_c": today_daily_value(payload, "temperature_2m_max"),
+        "apparent_temperature_max_c": today_daily_value(payload, "apparent_temperature_max"),
+    }
 
 
 async def _fetch_weather(cells: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
@@ -157,7 +163,7 @@ async def _fetch_weather(cells: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any
                 "latitude": ",".join(f"{cell['lat']:.5f}" for cell in batch),
                 "longitude": ",".join(f"{cell['lon']:.5f}" for cell in batch),
                 "hourly": "precipitation",
-                "daily": "precipitation_sum",
+                "daily": "precipitation_sum,temperature_2m_max,apparent_temperature_max",
                 "past_days": 2,
                 "forecast_days": 1,
                 "timezone": "Asia/Kolkata",
@@ -170,13 +176,13 @@ async def _fetch_weather(cells: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any
                 logger.warning("Open-Meteo grid batch failed: %s", exc)
                 failed = True
                 for cell in batch:
-                    readings[cell["id"]] = {"forecast_24h": None, "rain_48h": None, "status": "failed"}
+                    readings[cell["id"]] = {"forecast_24h": None, "rain_48h": None, "status": "failed", "temperature_max_c": None, "apparent_temperature_max_c": None}
                 continue
             rows = payload if isinstance(payload, list) else [payload]
             if len(rows) != len(batch) or any(isinstance(row, dict) and row.get("error") for row in rows):
                 failed = True
                 for cell in batch:
-                    readings[cell["id"]] = {"forecast_24h": None, "rain_48h": None, "status": "failed"}
+                    readings[cell["id"]] = {"forecast_24h": None, "rain_48h": None, "status": "failed", "temperature_max_c": None, "apparent_temperature_max_c": None}
                 continue
             for cell, row in zip(batch, rows):
                 readings[cell["id"]] = _readings_from_payload(row if isinstance(row, dict) else {})
@@ -223,7 +229,10 @@ async def compute_risk_grid() -> RiskGridResponse:
         scored: List[RiskGridCell] = []
         for cell in cells:
             elevation = elevations.get(cell["id"])
-            reading = readings.get(cell["id"]) or {"forecast_24h": None, "rain_48h": None, "status": "failed"}
+            reading = readings.get(cell["id"]) or {
+                "forecast_24h": None, "rain_48h": None, "status": "failed",
+                "temperature_max_c": None, "apparent_temperature_max_c": None,
+            }
             low_lying = median is not None and isinstance(elevation, (int, float)) and elevation < median
             level, score, explanation = score_observations(
                 rainfall_24h=reading["forecast_24h"],
@@ -235,6 +244,8 @@ async def compute_risk_grid() -> RiskGridResponse:
                 rainfall_48h=reading["rain_48h"],
                 weather_status=reading["status"],
                 low_lying=low_lying,
+                temperature_max_c=reading.get("temperature_max_c"),
+                apparent_temperature_max_c=reading.get("apparent_temperature_max_c"),
             )
             status = reading["status"]
             if status == "live" and elevation is None:
@@ -250,6 +261,8 @@ async def compute_risk_grid() -> RiskGridResponse:
                 score=score,
                 rain_48h=reading["rain_48h"],
                 forecast_24h=reading["forecast_24h"],
+                heat_temperature_max_c=reading.get("temperature_max_c"),
+                heat_apparent_max_c=reading.get("apparent_temperature_max_c"),
                 elevation_m=elevation if isinstance(elevation, (int, float)) else None,
                 low_lying=low_lying,
                 emerging=emerging,
@@ -286,6 +299,8 @@ async def emerging_hotspot_zones(limit: int = EMERGING_LIMIT) -> Tuple[List[Risk
             mean_elevation_m=cell.elevation_m,
             historical_flood_prone=False,
             why_this=cell.why_this,
+            heat_temperature_max_c=cell.heat_temperature_max_c,
+            heat_apparent_max_c=cell.heat_apparent_max_c,
         )
         zones.append(RiskZone(
             id=cell.id,

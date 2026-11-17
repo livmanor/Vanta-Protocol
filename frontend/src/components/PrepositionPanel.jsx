@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Check, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
 
-export default function PrepositionPanel({ suggestions, onApprove, loading }) {
+export default function PrepositionPanel({ suggestions, onApprove, onRegisterUnit, loading }) {
   const { language } = useLanguage();
   const words = {
     en: ['Patrol & rescue preparation', 'AI recommendations', 'Matches nearby available units to priority risk zones.', 'Officer approval required before dispatch.', 'Reason:', 'Approve dispatch', 'Authorizing dispatch…', 'No pending recommendations', 'Register field units to assess against active zones.'],
@@ -66,8 +66,11 @@ export default function PrepositionPanel({ suggestions, onApprove, loading }) {
           ))}
         </div>
       ) : (
-        <div className="py-6 text-center text-[12px] text-[#64748B]">
-          {words[7]} · {words[8]}
+        <div className="py-6 text-center text-[12px] text-[#64748B] flex flex-col items-center gap-3">
+          <p>Register a unit to get pre-positioning recommendations.</p>
+          {onRegisterUnit && (
+            <button type="button" onClick={onRegisterUnit} className="vp-btn vp-btn-primary">Register a unit</button>
+          )}
         </div>
       )}
     </div>

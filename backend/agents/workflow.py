@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import math
 import uuid
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
@@ -23,6 +22,8 @@ from backend.data_sources.elevation import get_real_elevations
 from backend.data_sources.geocoding import resolve_location
 from backend.data_sources.osm import get_real_shelters_and_stations
 from backend.services.risk_engine import REAL_ZONES_METADATA
+from backend.services.zone_match import zone_for_point as _zone_for_point
+from backend.services.triage import rank_incidents
 from backend.db import DB_PATH
 import aiosqlite
 from backend.agents.schemas import OperationsCalendar
@@ -46,7 +47,11 @@ def _zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, An
             "wind_max_kmh": explanation.wind_max_kmh,
             "river_discharge_m3s": explanation.river_discharge_m3s,
             "mean_elevation_m": explanation.mean_elevation_m,
+            "heat_temperature_max_c": explanation.heat_temperature_max_c,
+            "heat_apparent_max_c": explanation.heat_apparent_max_c,
+            "heat_note": explanation.heat_note,
         } if explanation else None,
+        "heat_screening_note": "Heat is a separate Open-Meteo screening heuristic and is not part of the flood level. A missing temperature stays null.",
         "risk_model_note": "Location observations are supplied without a calculated score. A mapped major waterlogging hotspot, when present, indicates historical vulnerability rather than current flooding.",
         "source_status": source_status,
     }
@@ -66,7 +71,11 @@ def _predict_zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict
             "river_discharge_m3s": explanation.river_discharge_m3s,
             "elevation_m": explanation.mean_elevation_m,
             "historically_mapped_waterlogging_hotspot": explanation.historical_flood_prone,
+            "heat_temperature_max_c": explanation.heat_temperature_max_c,
+            "heat_apparent_max_c": explanation.heat_apparent_max_c,
+            "heat_note": explanation.heat_note,
         } if explanation else None,
+        "heat_screening_note": "Heat is a separate Open-Meteo screening heuristic and is not part of the flood level. A missing temperature stays null.",
         "source_status": source_status,
         "risk_score_note": "No precomputed weighted risk score is supplied to the Predict LLM. Assess observations qualitatively and mark insufficient_data when needed.",
     }
@@ -109,43 +118,6 @@ def _source_status_from_zones(zones: List[RiskZone]) -> Dict[str, Dict[str, Any]
             },
         }
     return result
-
-
-def _point_in_ring(lng: float, lat: float, ring: List[List[float]]) -> bool:
-    inside = False
-    previous = ring[-1] if ring else None
-    for current in ring:
-        if previous:
-            x1, y1 = previous[0], previous[1]
-            x2, y2 = current[0], current[1]
-            if (y1 > lat) != (y2 > lat) and lng < (x2 - x1) * (lat - y1) / ((y2 - y1) or 1e-12) + x1:
-                inside = not inside
-        previous = current
-    return inside
-
-
-def _zone_for_point(lng: float, lat: float, zones: List[RiskZone]) -> str:
-    # Point risk locations are fixed HTP waterlogging hotspots, not polygons.
-    # Attribute an incident only when it is within 500 m of a mapped hotspot.
-    for zone in zones:
-        geometry = zone.polygon or {}
-        if geometry.get("type") == "Point":
-            point_lng, point_lat = geometry.get("coordinates", [None, None])
-            if point_lng is not None and point_lat is not None:
-                lat_delta = math.radians(lat - point_lat)
-                lng_delta = math.radians(lng - point_lng)
-                a = math.sin(lat_delta / 2) ** 2 + math.cos(math.radians(point_lat)) * math.cos(math.radians(lat)) * math.sin(lng_delta / 2) ** 2
-                distance_m = 6_371_000 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-                if distance_m <= 500:
-                    return zone.id
-            continue
-        polygons = geometry.get("coordinates", [])
-        if geometry.get("type") == "Polygon":
-            polygons = [polygons]
-        for polygon in polygons:
-            if polygon and _point_in_ring(lng, lat, polygon[0]) and not any(_point_in_ring(lng, lat, hole) for hole in polygon[1:]):
-                return zone.id
-    return "unmapped"
 
 
 async def _collect_recent_rain_impacts(
@@ -518,7 +490,7 @@ class RespondAgent:
         output = await generate_structured(
             system_instruction=(
                 "You are Vanta's Respond agent. Your separate goal is to help the control-room officer assess current active incidents and coordinate a safe, timely response. "
-                "Use only supplied active incident summaries, logged road-closure reports, current risk and aggregate unit availability. Road closures have no resolution status, so always recommend verifying whether a recorded closure remains active. Prioritize reported life-safety needs and areas with supporting evidence. "
+                "Use only supplied active incident summaries, the triage rank when present, logged road-closure reports, current risk and aggregate unit availability. Treat the triage score as a model output, not a confirmed fact. Road closures have no resolution status, so always recommend verifying whether a recorded closure remains active. Prioritize reported life-safety needs and areas with supporting evidence. "
                 "Do not invent incident details, traffic state, routes, facilities, unit capabilities, or instructions from authorities. Do not assign units, send messages, or dispatch. "
                 "Use the officer's incident or scenario as an operational focus, while treating it as an unverified report unless confirmed in the supplied records. "
                 "Draft concise public-safety SMS messages in English, Hindi and Telugu. Each should include the supplied area, hazard, action and helpline placeholder, remain under 160 characters where possible, and never claim an alert is official. Keep translations natural and equivalent. "
@@ -760,6 +732,23 @@ async def _collect_respond_context(zones: List[RiskZone], source_status: Dict[st
     for zone in zones:
         item = by_zone.get(zone.id, {"active_incidents": 0, "incident_types": {}, "urgency_counts": {}, "people_reported": 0, "blocked_road_reports": 0, "latest_blocked_road_report_at": None})
         area_activity.append({"zone_id": zone.id, "zone_name": zone.name, "risk_level": zone.risk_level, **item})
+    ranked = rank_incidents(active_incidents, zones, datetime.now(timezone.utc))
+    by_id = {incident.id: incident for incident in active_incidents}
+    triage_summary = []
+    for item in ranked:
+        incident = by_id[item.incident_id]
+        triage_summary.append({
+            "rank": item.rank,
+            "incident_id": item.incident_id,
+            "score": item.score,
+            "type": incident.type,
+            "urgency": incident.urgency,
+            "people": incident.people,
+            "vulnerable": incident.vulnerable,
+            "status": incident.status,
+            "zone_id": item.zone_id,
+            "why_this": item.why_this,
+        })
     return {
         "current_zone_risks_and_source_freshness": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
         "active_incident_and_logged_road_closure_counts_by_zone": area_activity,
@@ -767,6 +756,8 @@ async def _collect_respond_context(zones: List[RiskZone], source_status: Dict[st
             kind: {status: sum(1 for unit in units if unit.kind == kind and unit.status == status) for status in ("available", "assigned")}
             for kind in ("patrol", "rescue_boat", "ambulance")
         },
+        "triage_ranked_summary": triage_summary,
+        "triage_note": "The triage rank is a model output, not a confirmed fact. It orders active incidents and does not assign units or dispatch. No incident message or exact location is included.",
         "incident_input_note": "Incident totals include records in new or assigned status. Only aggregated type, urgency and people counts are sent; no incident message, exact location, unit or officer identifier is sent.",
         "traffic_input_note": "Road closure counts come from officer-entered blocked road records, which have no resolved/active status. Verify each closure before treating it as current. There is no live traffic feed; no records does not establish that roads are clear.",
     }

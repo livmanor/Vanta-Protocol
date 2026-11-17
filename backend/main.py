@@ -24,10 +24,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Enable CORS for local Vite dev server
+# Local Vite origins by default. Override CORS_ORIGINS in .env for a deployed UI.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

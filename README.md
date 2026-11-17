@@ -26,11 +26,12 @@ Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar*
 | 2 | **River Discharge & Flooding** | **Open-Meteo GloFAS Flood API** | `https://flood-api.open-meteo.com/v1/flood` | Fetches real-time river discharge ($\text{m}^3/\text{s}$) to detect basin overflow hazards. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
 | 3 | **Terrain Elevation** | **Open-Elevation (SRTM)** | `https://api.open-elevation.com/api/v1/lookup` | Provides terrain context. Hyderabad hotspot scoring does not use a coastal absolute-elevation cutoff; the city grid may compare cells against the city median elevation. | [`backend/data_sources/elevation.py`](backend/data_sources/elevation.py) |
 | 4 | **Shelters & Police Stations** | **OpenStreetMap Overpass API** | `https://overpass-api.de/api/interpreter` | Queries verified civic shelters, community halls, hospitals, and police stations. | [`backend/data_sources/osm.py`](backend/data_sources/osm.py) |
-| 5 | **Evacuation Routing & ETAs** | **OSRM (Open Source Routing Machine)** | `https://router.project-osrm.org/route/v1/driving` | Computes road-network evacuation corridors and turn-by-turn GeoJSON geometries to safe shelters. | [`backend/services/routing.py`](backend/services/routing.py) |
+| 5 | **Evacuation Routing & ETAs** | **OSRM (Open Source Routing Machine)** | `https://router.project-osrm.org/route/v1/driving` | Requests alternative driving corridors and keeps the fastest one that stays more than `BLOCKED_ROAD_BUFFER_M` (default 30 m) from an officer-reported closure. A corridor that still crosses a closure is returned with a warning. Closures have no resolved status. | [`backend/services/routing.py`](backend/services/routing.py) |
 | 6 | **Official Bulletins & Warnings** | **IMD (India Meteorological Department)** | `https://mausam.imd.gov.in` | Checks the public IMD feed and reports its availability in source status. IMD alerts are not currently inputs to the risk score or agent reports. | [`backend/data_sources/imd.py`](backend/data_sources/imd.py) |
 | 7 | **Map Display** | **OpenStreetMap Carto Tiles** | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Basemap tiles. | [`frontend/src/components/Map.jsx`](frontend/src/components/Map.jsx) |
 | 8 | **City grid** | **Open-Meteo**, batched | `GET /api/risk-grid` | 120 GHMC cells. `forecast_24h` is the evidence for the evacuation window. A failed cell stays null. | [`backend/services/grid.py`](backend/services/grid.py) |
-| 9 | **Operations calendar** | Derived from the live risk grid | `POST /api/operations-calendar/refresh` | Under 25 mm: no evacuation window. At 25 mm or level 3: a 4-hour window. At 64.5 mm or level 4: a longer window. Officer approval required. | [`backend/services/operations_plan.py`](backend/services/operations_plan.py) |
+| 9 | **Operations calendar** | Derived from the live risk grid | `POST /api/operations-calendar/refresh` | Under 25 mm: no evacuation window. At 25 mm or level 3: a 4-hour window. At 64.5 mm or level 4: a longer window. Officer approval required. A corridor warning is copied into the event details. | [`backend/services/operations_plan.py`](backend/services/operations_plan.py) |
+| 9b | **Incident triage** | Derived from logged incidents and live zone risk | `GET /api/incidents/triage` | Ranks active incidents from type, urgency, people, vulnerability, report age and zone risk. Model output only. It does not assign a unit. | [`backend/services/triage.py`](backend/services/triage.py) |
 | 10 | **Predict** | **Groq** | Officer-consented chat completion | Interprets the history question and writes the qualitative forecast. The question and summarized observations are sent only after consent. | [`backend/agents/groq.py`](backend/agents/groq.py) |
 | 11 | **Prepare and Respond** | **Google Gemini** | `gemini-3.8-flash` by default | Readiness actions and the SOS draft. `gemini-2.5-flash` is deprecated for new use and reroutes on 2026-12-01. | [`backend/agents/gemini.py`](backend/agents/gemini.py) |
 | 12 | **Contacts and SOS** | **Twilio or MSG91** | Officer-approved `POST /api/sos/send` | Phone numbers are stored in SQLite for the officer's contact book and send record. They are not written to application logs. `SMS_TEST_MODE` defaults to on, so no SMS leaves the server until an officer turns it off and confirms a send. | [`backend/services/sms.py`](backend/services/sms.py) |
@@ -60,7 +61,7 @@ Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar*
 - **Hotspot Weather Conditions**: Selecting a mapped hotspot shows Open-Meteo weather and forecast at that point; the panel includes feed status and update time. `GET /api/weather` exposes these readings per monitored location.
 
 ### 2. Prepare Milestone
-- **Evacuation Corridors**: Automatically identifies the closest verified emergency shelter and routes civilian evacuation corridors via OSRM, accounting for active road blocks.
+- **Evacuation Corridors**: Identifies the nearest verified emergency shelter and asks OSRM for alternatives. The fastest corridor that stays clear of officer-reported closures is shown. If every alternative and the next two shelters still cross a closure, the shortest corridor is shown with an explicit warning. Closures have no resolved status, so the officer confirms they are still active.
 - **Patrol & Rescue Pre-Positioning**: Matches available field units (`rescue_boat`, `patrol`, `ambulance`) to high-risk zones based on asset suitability and proximity, calculating distance and response ETAs.
 - **Officer Approval Workflow**: Pre-positioning recommendations remain in a pending state until authorized by the watch officer; approved dispatches are logged to an audit trail.
 - **Road Diversions**: Officers can register road blocks or severe waterlogging zones to visually plan diversions.
@@ -139,10 +140,53 @@ npm run dev
 
 On Linux or macOS the same frontend command is `cd frontend && npm run dev`.
 
+## Hazard coverage
+
+Flood screening uses Open-Meteo rainfall and wind, GloFAS river discharge, elevation context, and the published Hyderabad Traffic Police waterlogging list. Heat screening uses the same Open-Meteo forecast's daily maximum and feels-like maximum. It is shown separately and does not change the flood level. The plain threshold is 40 C, the IMD heatwave criterion for plains, used here as a screening heuristic. A missing temperature stays blank.
+
+Earthquake and landslide handling are not included. No ground-truth feed for those hazards is connected.
+
+## Trigger-frequency check
+
+`python scripts/backtest_thresholds.py` writes `docs/backtest_report.md` from the Open-Meteo archive for the six hotspots. The file counts how often the 25 mm and 64.5 mm rules would have opened a window. It is not an accuracy score, and those counts are not copied into this README. The script is not an input to the live risk level.
+
+## Going live with SMS
+
+`SMS_TEST_MODE` defaults to true. In that mode the Respond banner says TEST MODE and a confirmed send is stored as queued. No provider is called.
+
+To send for real, set `SMS_TEST_MODE=false` and restart the backend. The banner then says LIVE MODE.
+
+Twilio:
+
+```
+SMS_PROVIDER=twilio
+SMS_SENDER=+1XXXXXXXXXX
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+SMS_DLT_TEMPLATE_ID=
+SMS_STATUS_CALLBACK_URL=https://<public-host>/api/sos/status
+```
+
+India delivery needs a DLT-registered template. Put its id in `SMS_DLT_TEMPLATE_ID`. Twilio then sends that content template instead of a free-form body. Delivery updates arrive at `POST /api/sos/status`. The handler checks the Twilio signature against `SMS_STATUS_CALLBACK_URL` and maps the provider status onto the send log (Queued, Sent, Delivered, or Failed).
+
+MSG91:
+
+```
+SMS_PROVIDER=msg91
+SMS_SENDER=<approved-sender-id>
+MSG91_AUTH_KEY=
+MSG91_TEMPLATE_ID=
+SMS_DLT_TEMPLATE_ID=
+```
+
+MSG91 also requires an approved DLT flow template. The status callback above is the Twilio webhook. MSG91 delivery updates are not given a separate callback in this build.
+
+Phone numbers stay in the SQLite contact book and the send log. They are not written to application logs. Rotate any key that was shared, pasted into a chat, or placed in a zip.
+
 ## Roadmap
 
-These are not connected. They are not inputs to the risk score or the evacuation window.
+These are not inputs to the live risk score.
 
 - Windy API for an independent wind and precipitation cross-check.
-- IMD cyclone bulletins as a structured alert, beyond the current public-feed availability check.
-- A backtest of the 25 mm and 64.5 mm window rules against past Hyderabad rainfall and logged incidents.
+- Official warning colors stay out of the risk score. The three configured IMD URLs return HTTP 404, and the district-warning API requires a key. No IMD key and no NDMA SACHET feed will be added until a public feed returns a structured Hyderabad or Telangana warning. The source bar still shows whether the current IMD check is reachable.
+- Earthquake and landslide coverage. No ground-truth feed is connected.

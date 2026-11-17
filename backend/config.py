@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     OPEN_ELEVATION_URL: str = "https://api.open-elevation.com/api/v1/lookup"
     OVERPASS_API_URL: str = "https://overpass-api.de/api/interpreter"
     OSRM_ROUTE_URL: str = "https://router.project-osrm.org/route/v1/driving"
+    # A route this close to an officer-reported closure is treated as crossing it.
+    BLOCKED_ROAD_BUFFER_M: float = 30
+    # IMD heatwave screen for plains. Used only as a separate heat heuristic.
+    HEAT_PLAIN_THRESHOLD_C: float = 40
+    HEAT_SEVERE_APPARENT_THRESHOLD_C: float = 45
 
     WEATHER_CACHE_TTL: int = 900
     FLOOD_CACHE_TTL: int = 1800
@@ -41,6 +46,7 @@ class Settings(BaseSettings):
     MSG91_AUTH_KEY: Optional[SecretStr] = None
     MSG91_TEMPLATE_ID: str = ""
 
+    CORS_ORIGINS: str = "http://127.0.0.1:5173,http://localhost:5173"
     PORT: int = 8000
     HOST: str = "0.0.0.0"
     DATABASE_PATH: str = "vanta.db"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, X, MapPin, Navigation } from 'lucide-react';
+import { Shield, X, MapPin, Navigation, Upload } from 'lucide-react';
 
 export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
   const [unitId, setUnitId] = useState('');
@@ -10,6 +10,7 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
   const [capacity, setCapacity] = useState(4);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [importNote, setImportNote] = useState('');
 
   if (!isOpen) return null;
 
@@ -31,6 +32,45 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
       },
       { timeout: 8000 }
     );
+  };
+
+  const uploadCsv = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImportNote('');
+    try {
+      const text = await file.text();
+      const [header, ...lines] = text.trim().split(/\r?\n/);
+      const columns = header.split(',').map((value) => value.trim().toLowerCase());
+      const idx = (key) => columns.indexOf(key);
+      if (['kind', 'station', 'lat', 'lng'].some((key) => idx(key) < 0)) {
+        throw new Error('CSV headers must include kind, station, lat, lng. Optional columns: id, capacity.');
+      }
+      const kinds = new Set(['patrol', 'rescue_boat', 'ambulance']);
+      let created = 0;
+      for (const line of lines.filter(Boolean)) {
+        const values = line.split(',').map((value) => value.trim());
+        const unitKind = values[idx('kind')];
+        if (!kinds.has(unitKind)) throw new Error(`Unknown unit kind "${unitKind}". Use patrol, rescue_boat, or ambulance.`);
+        const latitude = Number(values[idx('lat')]);
+        const longitude = Number(values[idx('lng')]);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw new Error('Each row needs a numeric lat and lng from the real roster.');
+        await onRegister({
+          id: idx('id') >= 0 ? values[idx('id')] || undefined : undefined,
+          kind: unitKind,
+          station: values[idx('station')],
+          lat: latitude,
+          lng: longitude,
+          capacity: idx('capacity') >= 0 ? parseInt(values[idx('capacity')], 10) || 1 : 1,
+        });
+        created += 1;
+      }
+      setImportNote(`${created} unit(s) imported from the officer roster.`);
+      onClose();
+    } catch (err) {
+      setImportNote(err.message);
+    }
+    event.target.value = '';
   };
 
   const handleSubmit = async (e) => {
@@ -70,6 +110,13 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="vp-btn vp-btn-secondary cursor-pointer self-start">
+            <Upload className="w-4 h-4" strokeWidth={1.5} />
+            Import units from CSV
+            <input type="file" accept=".csv,text/csv" onChange={uploadCsv} className="hidden" />
+          </label>
+          <p className="text-[12px] text-[#64748B]">Headers: kind, station, lat, lng. Optional: id, capacity. The file must be the officer's real roster. Nothing is loaded until you choose a file.</p>
+          {importNote && <p className="text-[12px] text-[#475569]">{importNote}</p>}
           <div className="flex flex-col gap-1">
             <label className="text-[12px] font-medium text-[#475569]">Unit Identifier</label>
             <input

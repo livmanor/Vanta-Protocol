@@ -127,6 +127,12 @@ export async function fetchIncidents() {
   return res.json();
 }
 
+export async function fetchIncidentTriage() {
+  const res = await fetch(`${API_BASE}/incidents/triage`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to rank incidents`);
+  return res.json();
+}
+
 export async function reportIncident(incidentData) {
   const res = await fetch(`${API_BASE}/incidents`, {
     method: 'POST',

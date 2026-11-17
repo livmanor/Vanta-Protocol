@@ -42,6 +42,13 @@ export default function EvacuationPanel({ route, onClose, onClearRoute }) {
         </div>
       </div>
 
+      {(route.blocked_road_conflicts || []).length > 0 && (
+        <div className="rounded-[6px] border border-[#F59E0B] bg-[#FFFBEB] px-3 py-2 text-[12px] leading-relaxed text-[#92400E]">
+          WARNING: this route crosses {route.blocked_road_conflicts.join(', ')}; verify on the ground.
+          Officer-entered blocks have no resolved status, so confirm they are still active.
+        </div>
+      )}
+
       <p className="text-[12px] text-[#475569] leading-relaxed">
         {route.why_this}
       </p>
