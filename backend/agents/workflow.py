@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from backend.agents.gemini import generate_structured, AgentProviderError
+from backend.agents.gemini import generate_structured, model_used, AgentProviderError
 from backend.agents.groq import generate_structured as generate_groq_structured
 from backend.agents.schemas import HistoryQueryIntent, PredictAgentOutput, PrepareAgentOutput, RespondAgentOutput
 from backend.config import settings
@@ -729,7 +729,7 @@ async def run_prepare_agent(language: str = "en", officer_query: str | None = No
             )
         await db.commit()
     return {
-        "status": "complete", "agent": "prepare", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
+        "status": "complete", "agent": "prepare", "provider": "Google Gemini", "model": model_used(),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "risk_zone_count": len(zones), "available_unit_count": sum(1 for unit in units if unit.status == "available"),
         "analysis_areas": [{"zone_id": zone.id, "zone_name": zone.name} for zone in zones],
@@ -809,7 +809,7 @@ async def run_respond_agent(language: str = "en", officer_query: str | None = No
     operational_context["sms_recipient_counts"] = await _contact_counts()
     response = await RespondAgent().run(zones, operational_context, language, officer_query)
     return {
-        "status": "complete", "agent": "respond", "provider": "Google Gemini", "model": settings.GEMINI_MODEL,
+        "status": "complete", "agent": "respond", "provider": "Google Gemini", "model": model_used(),
         "generated_at": datetime.now(timezone.utc).isoformat(), "risk_zone_count": len(zones),
         "analysis_areas": [{"zone_id": zone.id, "zone_name": zone.name} for zone in zones],
         "respond": response.model_dump(mode="json"), "operational_context": operational_context,
@@ -868,7 +868,7 @@ async def run_predict_prepare_workflow(language: str = "en") -> Dict[str, Any]:
     return {
         "status": "complete",
         "provider": f"{predict_provider} + Google Gemini",
-        "model": {"predict": predict_provider, "prepare": settings.GEMINI_MODEL},
+        "model": {"predict": predict_provider, "prepare": model_used()},
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "risk_zone_count": len(predict_zones),
         "available_unit_count": sum(1 for unit in units if unit.status == "available"),

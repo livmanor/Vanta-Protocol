@@ -30,8 +30,9 @@ class Settings(BaseSettings):
     OSM_CACHE_TTL: int = 3600
 
     GEMINI_API_KEY: Optional[SecretStr] = None
-    # Current Flash id. gemini-2.5-flash is limited to existing users and reroutes on 2026-12-01.
-    GEMINI_MODEL: str = "gemini-3.8-flash"
+    # gemini-3.8-flash is listed but was returning HTTP 503 high demand on 2026-11-17.
+    # gemini-2.5-flash still answers. It reroutes on 2026-12-01.
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     GROQ_API_KEY: Optional[SecretStr] = None
     GROQ_MODEL: str = "openai/gpt-oss-20b"
 
