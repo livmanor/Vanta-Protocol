@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
@@ -5,6 +6,10 @@ from pydantic import BaseModel
 from typing import List, Literal
 from backend.models import Incident, IncidentCreate
 from backend.db import fetch_incidents, insert_incident, update_incident_status
+from backend.services.risk_engine import compute_real_risk_zones
+from backend.services.triage import TriageResponse, rank_incidents
+
+logger = logging.getLogger("incidents")
 
 router = APIRouter(prefix="/api", tags=["Incidents Intake"])
 
@@ -15,6 +20,18 @@ class IncidentStatusUpdate(BaseModel):
 async def list_incidents():
     """Returns all real incidents logged in the system. Starts at 0."""
     return await fetch_incidents()
+
+@router.get("/incidents/triage", response_model=TriageResponse)
+async def incident_triage():
+    """Rank active incidents. The score is a model output and does not dispatch a unit."""
+    incidents = await fetch_incidents()
+    try:
+        zones = await compute_real_risk_zones()
+    except Exception as exc:
+        logger.warning("Triage could not read live risk zones: %s", exc)
+        zones = []
+    now = datetime.now(timezone.utc)
+    return TriageResponse(generated_at=now.isoformat(), items=rank_incidents(incidents, zones, now))
 
 @router.post("/incidents", response_model=Incident)
 async def report_incident(req: IncidentCreate):

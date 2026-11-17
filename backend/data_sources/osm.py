@@ -101,7 +101,7 @@ out center tags 25;
     else:
         # All mirrors failed — return honest error state
         # (Do NOT fabricate facilities: agent_rules.md §1.3)
-        logger.error("All Overpass mirrors failed — routing will use known civic shelter list")
+        logger.error("All Overpass mirrors failed. No shelter list will be invented.")
         if cached:
             data, fetched_at, _ = cached
             return {

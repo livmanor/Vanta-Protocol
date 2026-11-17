@@ -94,7 +94,7 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
     """Fetches real-time rainfall, precipitation probability, and wind speed from Open-Meteo.
     Respects rate limits via TTL caching and returns metadata including source status.
     """
-    cache_key = f"open_meteo_weather_ist48h_{lat:.3f}_{lng:.3f}"
+    cache_key = f"open_meteo_weather_ist48h_heat_{lat:.3f}_{lng:.3f}"
     cached = global_cache.get(cache_key)
     if cached and not cached[2] and _weather_payload_status(cached[0]) == "live":
         data, fetched_at, is_stale = cached
@@ -117,7 +117,7 @@ async def get_real_weather_forecast(lat: float, lng: float) -> Dict[str, Any]:
             "wind_direction_10m", "wind_gusts_10m",
         ]),
         "hourly": "precipitation",
-        "daily": "precipitation_sum,precipitation_probability_max,wind_speed_10m_max,weather_code,temperature_2m_max,temperature_2m_min,wind_gusts_10m_max",
+        "daily": "precipitation_sum,precipitation_probability_max,wind_speed_10m_max,weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,wind_gusts_10m_max",
         "forecast_days": 3,
         "past_days": 2,
         "timezone": "Asia/Kolkata"

@@ -56,8 +56,12 @@ export default function RespondSmsPanel({ draft, testMode = true, model, sender 
     setSending(true); try { const retried = await sendSos(failed, log.message, log.id); setResult(retried); setLogs(items => [retried, ...items.filter(item => item.id !== retried.id)]); } catch (err) { setError(err.message); } finally { setSending(false); }
   };
   return <section className="flex flex-col gap-5 border-t border-[#E2E8F0] pt-5">
+    <p className={`rounded-[6px] px-3 py-2 text-[13px] font-semibold ${testMode ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#FEE2E2] text-[#991B1B]'}`}>
+      {testMode
+        ? 'TEST MODE. No SMS leaves this server. A confirmed send is only recorded as queued.'
+        : 'LIVE MODE. A confirmed send is delivered through the configured SMS provider.'}
+    </p>
     <p className="text-[12px] font-medium text-[#B45309]">Drafted by AI, requires officer approval. No message is sent until you confirm.</p>
-    {testMode && <p className="text-[12px] text-[#4338CA]">Test mode: no SMS actually sent. Requests are recorded as queued for demonstration.</p>}
     <h4 className="font-semibold text-[#0F172A]">SOS message preview</h4>
     <div className="flex gap-2">{[['en','English'],['hi','हिन्दी'],['te','తెలుగు']].map(([id,label]) => <button key={id} onClick={() => setLanguage(id)} className={`vp-btn ${language === id ? 'vp-btn-primary' : 'vp-btn-secondary'}`}>{label}</button>)}</div>
     <p className="whitespace-pre-wrap border-y border-[#E2E8F0] py-3 text-[14px] text-[#0F172A]">{message || 'No SMS draft was returned. Retry Respond to generate one.'}</p>
@@ -71,7 +75,8 @@ export default function RespondSmsPanel({ draft, testMode = true, model, sender 
     </div>
     <div className="max-h-48 overflow-auto divide-y divide-[#E2E8F0] border-y border-[#E2E8F0]">
       {loading ? <p className="py-3 text-[12px] text-[#64748B]">Loading registered contacts…</p> : eligible.map(contact => <label key={contact.id} className="flex items-center gap-3 py-2 text-[12px] text-[#334155]"><input type="checkbox" checked={selected.includes(contact.id)} onChange={() => toggle(contact.id)}/><span className="flex-1">{contact.name} · {contact.area} · {contact.group}</span><span className="font-mono">{contact.phone}</span></label>)}
-      {!loading && !eligible.length && <p className="py-3 text-[12px] text-[#64748B]">No registered contacts match this group and area.</p>}
+      {!loading && !contacts.length && <p className="py-3 text-[12px] text-[#64748B]">Register a contact before an SOS can be sent. Use the form below, or import a roster CSV with the headers name, phone, area, group.</p>}
+      {!loading && contacts.length > 0 && !eligible.length && <p className="py-3 text-[12px] text-[#64748B]">No registered contacts match this group and area.</p>}
     </div>
     <form onSubmit={addContact} className="grid gap-2 border-b border-[#E2E8F0] pb-4 md:grid-cols-5">
       <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Contact name" className="vp-input"/>
