@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from backend.agents.gemini import AgentConfigurationError, AgentProviderError
 from backend.agents.groq import is_configured as is_groq_configured
 from backend.agents.workflow import interpret_officer_history_query, list_rain_history_events, run_predict_agent
-from backend.services.risk_engine import REAL_ZONES_METADATA
+from backend.data_sources.htp_waterlogging import ensure_catalog, get_hotspot_catalog
 
 router = APIRouter(prefix="/api/agents/predict", tags=["Predict history"])
 
@@ -57,7 +57,8 @@ async def search_predict_history(search: HistorySearch):
         raise HTTPException(status_code=422, detail="History search must use completed dates.")
     if (today - start).days > 1825:
         raise HTTPException(status_code=422, detail="History search is limited to the past five years.")
-    valid_zone_ids = {zone["id"] for zone in REAL_ZONES_METADATA}
+    catalog = await ensure_catalog()
+    valid_zone_ids = {zone["id"] for zone in catalog}
     if intent.zone_id and intent.zone_id not in valid_zone_ids:
         raise HTTPException(status_code=422, detail="Groq selected a location outside the mapped hotspot list. Refine the location and try again.")
 
@@ -75,7 +76,7 @@ async def search_predict_history(search: HistorySearch):
         **result,
         "query": search.query,
         "resolved_window": {"start": start.isoformat(), "end": end.isoformat()},
-        "resolved_area": next((zone["name"] for zone in REAL_ZONES_METADATA if zone["id"] == intent.zone_id), "All mapped Hyderabad hotspots"),
+        "resolved_area": next((zone["name"] for zone in catalog if zone["id"] == intent.zone_id), "All HTP GHMC waterlogging points"),
         "resolved_zone_id": intent.zone_id,
         "resolved_hazard": intent.hazard,
         "interpreted_request": intent.interpreted_request,
@@ -104,8 +105,9 @@ async def run_predict_for_selected_history(selection: PredictHistoryRun):
         raise HTTPException(status_code=422, detail="Choose an event from the available five-year history.")
     if (selection.event_end - selection.event_start).days > 90:
         raise HTTPException(status_code=422, detail="A selected rainfall event window cannot exceed 90 days.")
-    if selection.zone_id and selection.zone_id not in {zone["id"] for zone in REAL_ZONES_METADATA}:
-        raise HTTPException(status_code=422, detail="Choose one of the mapped Hyderabad hotspots.")
+    catalog = await ensure_catalog()
+    if selection.zone_id and selection.zone_id not in {zone["id"] for zone in catalog}:
+        raise HTTPException(status_code=422, detail="Choose one of the mapped HTP GHMC waterlogging points.")
 
     try:
         return await run_predict_agent(

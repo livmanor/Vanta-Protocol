@@ -16,7 +16,8 @@ from backend.config import settings
 from backend.data_sources.open_meteo import sum_hourly_precipitation_last_48h, today_daily_value
 from backend.db import fetch_grid_elevations, fetch_incidents, save_grid_elevations
 from backend.models import RiskExplanation, RiskGridCell, RiskGridResponse, RiskZone
-from backend.services.risk_engine import REAL_ZONES_METADATA, score_observations
+from backend.data_sources.htp_waterlogging import get_hotspot_catalog
+from backend.services.risk_engine import score_observations
 
 logger = logging.getLogger("vanta.grid")
 
@@ -271,7 +272,7 @@ async def compute_risk_grid() -> RiskGridResponse:
             ))
         return RiskGridResponse(
             cell_count=len(scored),
-            hotspot_count=len(REAL_ZONES_METADATA),
+            hotspot_count=len(get_hotspot_catalog()),
             emerging_count=sum(1 for cell in scored if cell.emerging),
             spacing_km=spacing_km(),
             lat_step=lat_step,

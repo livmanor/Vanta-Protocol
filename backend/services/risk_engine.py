@@ -1,31 +1,20 @@
 import asyncio
-import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 from backend.config import settings
 from backend.models import RiskZone, RiskExplanation
 from backend.data_sources.open_meteo import get_real_weather_forecast, get_real_river_discharge, sum_hourly_precipitation_last_48h, today_daily_value
 from backend.data_sources.elevation import get_real_elevations
+from backend.data_sources.htp_waterlogging import ensure_catalog, get_hotspot_catalog
+
 
 def load_hotspot_catalog() -> List[Dict[str, Any]]:
-    """Published HTP points. The file is a static reference list, not a live flood report."""
-    path = Path(__file__).resolve().parents[2] / "data" / "hyderabad_hotspots.json"
-    catalog = json.loads(path.read_text(encoding="utf-8"))
-    zones = []
-    for item in catalog["hotspots"]:
-        lat, lon = item["centroid"]
-        zones.append({
-            **item,
-            "centroid": (lat, lon),
-            "list_label": catalog["label"],
-            "list_as_of": catalog["as_of"],
-            "list_source": catalog["source"],
-        })
-    return zones
+    """Live HTP GHMC-zone points (or static fallback if the feed has not loaded)."""
+    return get_hotspot_catalog()
 
 
-REAL_ZONES_METADATA = load_hotspot_catalog()
+# Deprecated alias: always read through get_hotspot_catalog() so polls refresh agents.
+REAL_ZONES_METADATA = []
 
 
 def score_observations(
@@ -41,6 +30,7 @@ def score_observations(
     low_lying: bool = False,
     temperature_max_c: Optional[float] = None,
     apparent_temperature_max_c: Optional[float] = None,
+    htp_severity: Optional[str] = None,
 ) -> tuple[Optional[int], Optional[float], RiskExplanation]:
     """Calculates risk level 1-5 with transparent explainability.
     
@@ -126,7 +116,8 @@ def score_observations(
     elif elevation_m is not None:
         reasons.append(f"Terrain elevation context: {elevation_m:.1f} m; not used as an absolute flood threshold")
     if historical_flood:
-        reasons.append("Hyderabad Traffic Police major waterlogging hotspot (2025 list)")
+        sev = (htp_severity or "major").lower()
+        reasons.append(f"Hyderabad Traffic Police {sev} waterlogging point (live HTP list)")
 
     why_this = " | ".join(reasons) if reasons else "No elevated screening threshold crossed by the available weather and operational inputs."
     why_this = f"{why_this} {heat_note}"
@@ -182,8 +173,9 @@ def calculate_zone_risk(
     low_lying: bool = False,
     temperature_max_c: Optional[float] = None,
     apparent_temperature_max_c: Optional[float] = None,
+    htp_severity: Optional[str] = None,
 ) -> tuple[Optional[int], RiskExplanation]:
-    """Level and explanation for the six named hotspots. Grid scoring uses score_observations."""
+    """Level and explanation for HTP-named hotspots. Grid scoring uses score_observations."""
     level, _score, explanation = score_observations(
         rainfall_24h=rainfall_24h,
         precip_prob_max=precip_prob_max,
@@ -197,17 +189,17 @@ def calculate_zone_risk(
         low_lying=low_lying,
         temperature_max_c=temperature_max_c,
         apparent_temperature_max_c=apparent_temperature_max_c,
+        htp_severity=htp_severity,
     )
     return level, explanation
 
 async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZone]:
-    """Collect live zone observations, optionally applying the shared map score rules.
-
-    All per-zone HTTP calls are issued in parallel (asyncio.gather) to cut wall-clock
-    time from ~20-35 s (sequential) down to ~3-6 s (parallel).
-    """
+    """Collect live zone observations for the current HTP GHMC-zone catalog."""
+    catalog = await ensure_catalog()
     now_iso = datetime.now(timezone.utc).isoformat()
-    coords = [zone["centroid"] for zone in REAL_ZONES_METADATA]
+    if not catalog:
+        return []
+    coords = [zone["centroid"] for zone in catalog]
 
     # Fire all network calls at once — elevation (1 batch), weather × N, flood × N
     elevation_res, *zone_results = await asyncio.gather(
@@ -225,7 +217,7 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
     elevations = elevation_res.get("data") or []
     risk_zones: List[RiskZone] = []
 
-    for i, zone_meta in enumerate(REAL_ZONES_METADATA):
+    for i, zone_meta in enumerate(catalog):
         c_lat, c_lng = zone_meta["centroid"]
         weather_res, flood_res = zone_results[i]
 
@@ -243,10 +235,13 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
         river_daily = flood_data.get("daily", {}).get("river_discharge", [None])
         river_discharge = river_daily[0] if river_daily and river_daily[0] is not None else None
 
-        # Elevation
         elev_m = None
         if i < len(elevations) and elevations[i]:
             elev_m = elevations[i].get("elevation")
+
+        severity = (zone_meta.get("htp_severity") or zone_meta.get("source_severity") or "major").lower()
+        zone_label = zone_meta.get("htp_zone") or "GHMC"
+        area_label = zone_meta.get("htp_area") or ""
 
         if include_rule_score:
             risk_level, explanation = calculate_zone_risk(
@@ -261,6 +256,13 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                 weather_last_updated=weather_res.get("last_updated"),
                 temperature_max_c=temperature_max,
                 apparent_temperature_max_c=apparent_max,
+                htp_severity=severity,
+            )
+            explanation.why_this = (
+                f"HTP {zone_label}"
+                + (f" / {area_label}" if area_label else "")
+                + f" · {severity} severity. "
+                + explanation.why_this
             )
         else:
             risk_level = None
@@ -275,7 +277,11 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                 river_discharge_m3s=river_discharge,
                 mean_elevation_m=elev_m,
                 historical_flood_prone=zone_meta["historical_flood_prone"],
-                why_this="Raw live observations only; no weighted map score calculated for Predict. " + heat_note,
+                why_this=(
+                    f"Raw live observations only; no weighted map score calculated for Predict. "
+                    f"HTP {zone_label} · {severity} severity. "
+                    + heat_note
+                ),
                 heat_temperature_max_c=temperature_max,
                 heat_apparent_max_c=apparent_max,
                 heat_note=heat_note,
@@ -285,15 +291,18 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
         if elev_m is not None:
             sources.append("Open-Elevation API")
         if zone_meta["historical_flood_prone"]:
-            sources.append("Hyderabad Traffic Police waterlogging points (as of 2025-08-06)")
+            as_of = zone_meta.get("list_as_of") or "live"
+            sources.append(f"Hyderabad Traffic Police waterlogging points ({as_of})")
+
+        display_name = f"{zone_meta['name']} · {severity.title()} · {zone_label}"
 
         risk_zones.append(
             RiskZone(
                 id=zone_meta["id"],
-                name=zone_meta["name"],
+                name=display_name,
                 risk_level=risk_level,
                 polygon={"type": "Point", "coordinates": [c_lng, c_lat]},
-                population=None,  # Rule 4: population may be null when no real source is available. Do not guess it.
+                population=None,
                 derived_from=sources,
                 computed_at=now_iso,
                 explanation=explanation

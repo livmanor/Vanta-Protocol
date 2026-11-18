@@ -6,6 +6,7 @@ from backend.auth.middleware import SessionAuthMiddleware
 from backend.auth.sessions import ensure_bootstrap_officer
 from backend.config import settings
 from backend.data_sources.cap_alerts import start_cap_poller, stop_cap_poller
+from backend.data_sources.htp_waterlogging import start_htp_poller, stop_htp_poller
 from backend.db import init_db
 from backend.routers import risk, routes, units, incidents, sources, weather, agents, predict_history, operations, auth, alerts
 
@@ -18,9 +19,11 @@ async def lifespan(app: FastAPI):
     await init_db()
     await ensure_bootstrap_officer()
     start_cap_poller()
+    start_htp_poller()
     logger.info("Database initialized successfully.")
     yield
     stop_cap_poller()
+    stop_htp_poller()
     logger.info("Shutting down Vanta Protocol backend.")
 
 app = FastAPI(

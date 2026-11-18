@@ -2,7 +2,7 @@
 
 Real-time disaster-response planning tool for police control rooms, built for the **CipherCop 2026 AI Disaster Response track**.
 
-This is the watch officer's decision loop, not a weather map. Live rain on six published Hyderabad Traffic Police hotspots and a 120-cell GHMC grid decides whether an evacuation window opens. A verified OpenStreetMap shelter and an OSRM corridor are attached only when one exists. The officer approves the calendar entry and any SMS. Nothing is dispatched automatically.
+This is the watch officer's decision loop, not a weather map. Live rain on Hyderabad Traffic Police waterlogging points across **GHMC divisions** (Khairatabad, Golconda, Charminar, and others — Major/Minor severity from the live HTP page) and a 120-cell GHMC grid decides whether an evacuation window opens. A verified OpenStreetMap shelter and an OSRM corridor are attached only when one exists. The officer approves the calendar entry and any SMS. Nothing is dispatched automatically.
 
 ---
 
@@ -43,6 +43,7 @@ Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar*
 | 4 | **Shelters & Police Stations** | **OpenStreetMap Overpass API** | `https://overpass-api.de/api/interpreter` | Queries verified civic shelters, community halls, hospitals, and police stations. | [`backend/data_sources/osm.py`](backend/data_sources/osm.py) |
 | 5 | **Evacuation Routing & ETAs** | **OSRM (Open Source Routing Machine)** | `https://router.project-osrm.org/route/v1/driving` | Requests alternative driving corridors and keeps the fastest one that stays more than `BLOCKED_ROAD_BUFFER_M` (default 30 m) from an officer-reported closure. A corridor that still crosses a closure is returned with a warning. Closures have no resolved status. | [`backend/services/routing.py`](backend/services/routing.py) |
 | 6 | **Official CAP alerts** | **NDMA SACHET + IMD CAP RSS** | `https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml` and `https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml` | Polls CAP 1.2 XML, matches Greater Hyderabad by LGD district code (`507,700,518,691`), and can raise the operations calendar band as a floor (orange→watch, red→heavy). Colour is derived from CAP severity when the message has no colour parameter. District-level only; text-only areas are shown as unverified and do not raise the floor. Does not change the flood risk score. | [`backend/data_sources/cap_alerts.py`](backend/data_sources/cap_alerts.py) |
+| 6b | **HTP waterlogging points** | **Hyderabad Traffic Police HTML list** | `https://echallan.tspolice.gov.in/htp/water_logging.html` | Polls the published Major/Minor waterlogging table for **all GHMC divisions** by default (`HTP_ZONE_FILTER=all`; e.g. Khairatabad, Golconda). Each point keeps zone + severity for the agents. Refreshes on `HTP_POLL_SECONDS`. Not a live flooded-now feed. | [`backend/data_sources/htp_waterlogging.py`](backend/data_sources/htp_waterlogging.py) |
 | 7 | **Map Display** | **OpenStreetMap Carto Tiles** | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Basemap tiles. | [`frontend/src/components/Map.jsx`](frontend/src/components/Map.jsx) |
 | 8 | **City grid** | **Open-Meteo**, batched | `GET /api/risk-grid` | 120 GHMC cells. `forecast_24h` is the evidence for the evacuation window. A failed cell stays null. | [`backend/services/grid.py`](backend/services/grid.py) |
 | 9 | **Operations calendar** | Derived from the live risk grid | `POST /api/operations-calendar/refresh` | Under 25 mm: no evacuation window. At 25 mm or level 3: a 4-hour window. At 64.5 mm or level 4: a longer window. Officer approval required. A corridor warning is copied into the event details. | [`backend/services/operations_plan.py`](backend/services/operations_plan.py) |
@@ -71,7 +72,7 @@ Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar*
 - `GET /api/agents/status` reports each provider's configuration and agent goals. `POST /api/agents/run/predict`, `/prepare` or `/respond` runs only the selected agent. The legacy `POST /api/agents/run` combined endpoint requires both provider keys and both consents. Without a provider key, the UI reports setup is required.
 
 ### 1. Predict Milestone
-- **Hyderabad Waterlogging Hotspot Risk**: Derives screening risk levels ($1\text{ to }5$) at six geocoded major waterlogging points from the [Hyderabad Traffic Police list](https://echallan.tspolice.gov.in/htp/water_logging.html) (dated 2025-08-06). These are point locations, not ward boundaries, and indicate historical vulnerability rather than current flooding. The current pilot covers only these six published points.
+- **Hyderabad Waterlogging Hotspot Risk**: Derives screening risk levels ($1\text{ to }5$) at geocoded points from the live [Hyderabad Traffic Police waterlogging list](https://echallan.tspolice.gov.in/htp/water_logging.html), **GHMC zone-wise** (`HTP_ZONE_FILTER=all` by default). Each point keeps division (Khairatabad, Golconda, …) and Major/Minor severity. The catalog refreshes on a poller so agents see page updates; points without coordinates are skipped. These are vulnerability points, not a live flood report.
 - **Explainable Model Output**: Every hotspot displays a transparent "Why this?" breakdown of available weather, discharge, elevation and published vulnerability inputs.
 - **Hotspot Weather Conditions**: Selecting a mapped hotspot shows Open-Meteo weather and forecast at that point; the panel includes feed status and update time. `GET /api/weather` exposes these readings per monitored location.
 
@@ -87,7 +88,7 @@ Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar*
 
 ```
 Vanta Protocol/
-├── data/hyderabad_hotspots.json   # Static HTP reference list, dated 2025-08-06
+├── data/hyderabad_hotspots.json   # Static HTP fallback seed if the live page is unreachable
 ├── tests/                         # Pytest. HTTP is mocked only here
 ├── backend/
 │   ├── main.py

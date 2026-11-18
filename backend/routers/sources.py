@@ -9,6 +9,7 @@ from backend.config import settings
 from backend.cache import global_cache
 from backend.data_sources.osm import OVERPASS_MIRRORS, OVERPASS_HEADERS
 from backend.data_sources.cap_alerts import source_status_payload
+from backend.data_sources.htp_waterlogging import source_status_payload as htp_status_payload
 
 router = APIRouter(prefix="/api", tags=["Source Health & Freshness"])
 
@@ -92,6 +93,23 @@ async def _cap_status() -> DataSourceStatus:
     )
 
 
+async def _htp_status() -> DataSourceStatus:
+    payload = htp_status_payload()
+    if payload.get("error_message") and payload.get("status") != "live":
+        detail = payload["error_message"]
+    elif payload.get("using_fallback"):
+        detail = "Using static fallback seed; live HTP page not loaded."
+    else:
+        detail = f"{payload.get('point_count', 0)} points · filter {payload.get('zone_filter')}"
+    return DataSourceStatus(
+        name=payload["name"],
+        endpoint=payload["endpoint"],
+        status=payload["status"],
+        last_updated=payload.get("last_updated"),
+        error_message=detail,
+    )
+
+
 async def _collect_source_statuses() -> List[DataSourceStatus]:
     """Probe independent feeds together. A cached weather or elevation call is not probed again."""
     cached_weather = global_cache.get(
@@ -128,7 +146,7 @@ async def _collect_source_statuses() -> List[DataSourceStatus]:
     )
     results = await asyncio.gather(
         weather_status(), flood_status(), elevation_status(), _osm_status(),
-        _probe("OSRM Routing Engine", osrm_probe_url, timeout=8.0), _cap_status(),
+        _probe("OSRM Routing Engine", osrm_probe_url, timeout=8.0), _cap_status(), _htp_status(),
         return_exceptions=True,
     )
     statuses: List[DataSourceStatus] = []

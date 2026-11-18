@@ -75,6 +75,15 @@ class Settings(BaseSettings):
     CAP_FLOOR_ORANGE: str = "watch"
     CAP_FLOOR_RED: str = "heavy"
 
+    # Hyderabad Traffic Police live waterlogging list (HTML table).
+    HTP_WATERLOGGING_URL: str = "https://echallan.tspolice.gov.in/htp/water_logging.html"
+    # GHMC division filter on the HTP table. "all" = every geocoded city point (Khairatabad, Golconda, …).
+    # Comma-separated names also work, e.g. Khairatabad,Golconda,Charminar.
+    HTP_ZONE_FILTER: str = "all"
+    HTP_POLL_SECONDS: int = 900
+    HTP_HTTP_TIMEOUT_SECONDS: float = 15.0
+    HTP_MAX_BODY_BYTES: int = 2_000_000
+
     class Config:
         env_file = ".env"
         extra = "ignore"

@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from backend.data_sources.open_meteo import get_real_weather_forecast, sum_hourly_precipitation_last_48h, today_daily_value
 from backend.models import WeatherCurrent, WeatherDaily, ZoneWeather
-from backend.services.risk_engine import REAL_ZONES_METADATA
+from backend.data_sources.htp_waterlogging import ensure_catalog
 
 router = APIRouter(prefix="/api", tags=["Weather"])
 
@@ -74,7 +74,7 @@ def _today_weather(data: Dict[str, Any]) -> Optional[WeatherDaily]:
 async def get_zone_weather():
     """Returns current and today's real Open-Meteo weather for monitored zone centroids."""
     results = []
-    for zone in REAL_ZONES_METADATA:
+    for zone in await ensure_catalog():
         lat, lng = zone["centroid"]
         response = await get_real_weather_forecast(lat, lng)
         data = response.get("data") or {}

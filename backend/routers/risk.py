@@ -8,7 +8,7 @@ router = APIRouter(prefix="/api", tags=["Risk Analysis"])
 
 @router.get("/risk-zones", response_model=List[RiskZone])
 async def get_risk_zones():
-    """The six named Hyderabad Traffic Police hotspots. cell_type is hotspot."""
+    """HTP GHMC waterlogging points by division (live page, Major/Minor tagged). cell_type is hotspot."""
     try:
         zones = await compute_real_risk_zones()
         return zones
