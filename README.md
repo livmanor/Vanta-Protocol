@@ -6,6 +6,21 @@ This is the watch officer's decision loop, not a weather map. Live rain on six p
 
 ---
 
+## Officer authentication
+
+Control-room access uses **local officer accounts** stored in SQLite. Passwords are bcrypt-hashed. Sessions are opaque tokens (httpOnly cookie and optional `Authorization: Bearer`). There is no Auth0 or Google login in this build.
+
+1. Set in `.env`:
+   - `AUTH_REQUIRED=true`
+   - `BOOTSTRAP_OFFICER_USERNAME=...`
+   - `BOOTSTRAP_OFFICER_PASSWORD=...` (change immediately; never commit)
+   - optional `BOOTSTRAP_OFFICER_DISPLAY_NAME=Watch Officer`
+2. Restart the backend. The bootstrap username is created once if it does not already exist.
+3. Open the landing page, sign in, then enter the control room.
+4. `/api/health` and `POST /api/sos/status` stay public. Every other `/api` route requires a session when `AUTH_REQUIRED=true`.
+
+`AUTH_REQUIRED` defaults to false so local tests keep working without an account. Production should turn it on.
+
 ## Prime Directive & Real Data Policy
 
 In strict accordance with [`agent_rules.md`](./agent_rules.md):

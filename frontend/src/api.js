@@ -1,33 +1,98 @@
 const API_BASE = '/api';
+const TOKEN_KEY = 'vanta_session_token';
+
+export function getStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setStoredToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+async function apiFetch(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  const token = getStoredToken();
+  if (token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (options.body && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
+  return res;
+}
+
+export async function fetchAuthConfig() {
+  const res = await apiFetch('/auth/config');
+  if (!res.ok) throw new Error('Could not load auth config');
+  return res.json();
+}
+
+export async function loginOfficer(username, password) {
+  const res = await apiFetch('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Sign-in failed');
+  if (payload.token) setStoredToken(payload.token);
+  return payload;
+}
+
+export async function logoutOfficer() {
+  const res = await apiFetch('/auth/logout', { method: 'POST' });
+  setStoredToken('');
+  if (!res.ok) throw new Error('Sign-out failed');
+  return res.json().catch(() => ({ status: 'ok' }));
+}
+
+export async function fetchCurrentOfficer() {
+  const res = await apiFetch('/auth/me');
+  if (res.status === 401) return null;
+  if (!res.ok) throw new Error('Could not load the signed-in officer');
+  return res.json();
+}
 
 export async function fetchRiskZones() {
-  const res = await fetch(`${API_BASE}/risk-zones`);
+  const res = await apiFetch('/risk-zones');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute risk zones`);
   return res.json();
 }
 
 export async function fetchZoneWeather() {
-  const res = await fetch(`${API_BASE}/weather`);
+  const res = await apiFetch('/weather');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch Open-Meteo weather`);
   return res.json();
 }
 
 export async function fetchAgentStatus() {
-  const res = await fetch(`${API_BASE}/agents/status`);
+  const res = await apiFetch('/agents/status');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch agent status`);
   return res.json();
 }
 
 export async function fetchPredictHistoryEvents(days = 90) {
-  const res = await fetch(`${API_BASE}/agents/predict/events?days=${days}`);
+  const res = await apiFetch(`/agents/predict/events?days=${days}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch historical rain events`);
   return res.json();
 }
 
 export async function searchPredictHistory(query) {
-  const res = await fetch(`${API_BASE}/agents/predict/search`, {
+  const res = await apiFetch('/agents/predict/search', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query })
   });
   const payload = await res.json().catch(() => ({}));
@@ -36,40 +101,43 @@ export async function searchPredictHistory(query) {
 }
 
 export async function fetchContacts() {
-  const res = await fetch(`${API_BASE}/contacts`);
+  const res = await apiFetch('/contacts');
   if (!res.ok) throw new Error('Could not load contacts');
   return res.json();
 }
 
 export async function createContact(contact) {
-  const res = await fetch(`${API_BASE}/contacts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(contact) });
+  const res = await apiFetch('/contacts', { method: 'POST', body: JSON.stringify(contact) });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || 'Could not register contact');
   return payload;
 }
 
 export async function importContacts(contacts) {
-  const res = await fetch(`${API_BASE}/contacts/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contacts }) });
+  const res = await apiFetch('/contacts/import', { method: 'POST', body: JSON.stringify({ contacts }) });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || 'Could not import contacts');
   return payload;
 }
 
 export async function decideCalendarEvent(eventId, decision) {
-  const res = await fetch(`${API_BASE}/operations-calendar/${encodeURIComponent(eventId)}?decision=${decision}`, { method: 'PATCH' });
+  const res = await apiFetch(`/operations-calendar/${encodeURIComponent(eventId)}?decision=${decision}`, { method: 'PATCH' });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || 'Could not update calendar decision');
   return payload;
 }
 
 export async function fetchSosLogs() {
-  const res = await fetch(`${API_BASE}/sos/logs`);
+  const res = await apiFetch('/sos/logs');
   if (!res.ok) throw new Error('Could not load SOS logs');
   return res.json();
 }
 
 export async function sendSos(contactIds, message, retryLogId = null) {
-  const res = await fetch(`${API_BASE}/sos/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact_ids: contactIds, message, officer_approved: true, retry_log_id: retryLogId }) });
+  const res = await apiFetch('/sos/send', {
+    method: 'POST',
+    body: JSON.stringify({ contact_ids: contactIds, message, officer_approved: true, retry_log_id: retryLogId })
+  });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || 'SOS send failed');
   return payload;
@@ -78,14 +146,13 @@ export async function sendSos(contactIds, message, retryLogId = null) {
 export async function runAgent(agentId, confirmGoogleProcessing, language = 'en', inputs = {}) {
   const hasHistoryDates = Boolean(inputs.event_start && inputs.event_end);
   const endpoint = agentId === 'predict' && hasHistoryDates
-    ? `${API_BASE}/agents/predict/run`
-    : `${API_BASE}/agents/run/${agentId}`;
+    ? '/agents/predict/run'
+    : `/agents/run/${agentId}`;
   const approval = agentId === 'predict'
     ? { confirm_groq_processing: confirmGoogleProcessing }
     : { confirm_google_processing: confirmGoogleProcessing };
-  const res = await fetch(endpoint, {
+  const res = await apiFetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...approval, language, ...inputs })
   });
   const payload = await res.json().catch(() => ({}));
@@ -94,15 +161,14 @@ export async function runAgent(agentId, confirmGoogleProcessing, language = 'en'
 }
 
 export async function fetchUnits() {
-  const res = await fetch(`${API_BASE}/units`);
+  const res = await apiFetch('/units');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch units`);
   return res.json();
 }
 
 export async function registerUnit(unitData) {
-  const res = await fetch(`${API_BASE}/units`, {
+  const res = await apiFetch('/units', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(unitData)
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to register unit`);
@@ -110,21 +176,20 @@ export async function registerUnit(unitData) {
 }
 
 export async function fetchIncidents() {
-  const res = await fetch(`${API_BASE}/incidents`);
+  const res = await apiFetch('/incidents');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch incidents`);
   return res.json();
 }
 
 export async function fetchIncidentTriage() {
-  const res = await fetch(`${API_BASE}/incidents/triage`);
+  const res = await apiFetch('/incidents/triage');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to rank incidents`);
   return res.json();
 }
 
 export async function reportIncident(incidentData) {
-  const res = await fetch(`${API_BASE}/incidents`, {
+  const res = await apiFetch('/incidents', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(incidentData)
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to log incident`);
@@ -132,15 +197,14 @@ export async function reportIncident(incidentData) {
 }
 
 export async function fetchPrepositionSuggestions() {
-  const res = await fetch(`${API_BASE}/prepositioning-suggestions`);
+  const res = await apiFetch('/prepositioning-suggestions');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch prepositioning suggestions`);
   return res.json();
 }
 
 export async function approvePrepositioning(suggestionId, unitId, targetZoneName) {
-  const res = await fetch(`${API_BASE}/prepositioning/approve`, {
+  const res = await apiFetch('/prepositioning/approve', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       suggestion_id: suggestionId,
       unit_id: unitId,
@@ -152,9 +216,8 @@ export async function approvePrepositioning(suggestionId, unitId, targetZoneName
 }
 
 export async function generateEvacuationRoute(zoneId, zoneName, lat, lng) {
-  const res = await fetch(`${API_BASE}/evacuation-route`, {
+  const res = await apiFetch('/evacuation-route', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       zone_id: zoneId,
       zone_name: zoneName,
@@ -171,7 +234,7 @@ export async function generateEvacuationRoute(zoneId, zoneName, lat, lng) {
 }
 
 export async function refreshOperationsPlan() {
-  const res = await fetch(`${API_BASE}/operations-calendar/refresh`, { method: 'POST' });
+  const res = await apiFetch('/operations-calendar/refresh', { method: 'POST' });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail = payload.detail;
@@ -181,18 +244,16 @@ export async function refreshOperationsPlan() {
 }
 
 export async function fetchBlockedRoads() {
-  const res = await fetch(`${API_BASE}/blocked-roads`);
+  const res = await apiFetch('/blocked-roads');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch blocked roads`);
   return res.json();
 }
 
 export async function reportBlockedRoad(roadData) {
-  const res = await fetch(`${API_BASE}/blocked-roads`, {
+  const res = await apiFetch('/blocked-roads', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(roadData)
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to report road diversion`);
   return res.json();
 }
-

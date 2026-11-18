@@ -2,9 +2,11 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from backend.auth.middleware import SessionAuthMiddleware
+from backend.auth.sessions import ensure_bootstrap_officer
 from backend.config import settings
 from backend.db import init_db
-from backend.routers import risk, routes, units, incidents, sources, weather, agents, predict_history, operations
+from backend.routers import risk, routes, units, incidents, sources, weather, agents, predict_history, operations, auth
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("vanta")
@@ -13,6 +15,7 @@ logger = logging.getLogger("vanta")
 async def lifespan(app: FastAPI):
     logger.info("Initializing Vanta Protocol database...")
     await init_db()
+    await ensure_bootstrap_officer()
     logger.info("Database initialized successfully.")
     yield
     logger.info("Shutting down Vanta Protocol backend.")
@@ -32,8 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Auth runs after CORS so preflight still succeeds.
+app.add_middleware(SessionAuthMiddleware)
 
 # Register routes
+app.include_router(auth.router)
 app.include_router(risk.router)
 app.include_router(routes.router)
 app.include_router(units.router)

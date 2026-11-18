@@ -9,4 +9,5 @@ google-genai>=1.30.0,<2.0
 twilio>=9.0.0,<10.0
 python-multipart>=0.0.9
 pytest>=8.3.0
+bcrypt>=4.2.0
 
