@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cap:alert xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2">
+  <cap:identifier>IN-TEST-HYD-ORANGE-CANCEL</cap:identifier>
+  <cap:sender>Telangana-SDMA</cap:sender>
+  <cap:sent>2026-11-18T13:00:00+05:30</cap:sent>
+  <cap:status>Actual</cap:status>
+  <cap:msgType>Cancel</cap:msgType>
+  <cap:scope>Public</cap:scope>
+  <cap:references>Telangana-SDMA,IN-TEST-HYD-ORANGE-2,2026-11-18T12:00:00+05:30</cap:references>
+  <cap:info>
+    <cap:language>en-IN</cap:language>
+    <cap:category>Met</cap:category>
+    <cap:event>Heavy Rain</cap:event>
+    <cap:urgency>Past</cap:urgency>
+    <cap:severity>Minor</cap:severity>
+    <cap:certainty>Observed</cap:certainty>
+    <cap:effective>2026-11-18T13:00:00+05:30</cap:effective>
+    <cap:expires>2099-12-31T23:59:00+05:30</cap:expires>
+    <cap:headline>Cancel heavy rain warning for Hyderabad district.</cap:headline>
+    <cap:area>
+      <cap:areaDesc>Hyderabad district of Telangana</cap:areaDesc>
+      <cap:geocode>
+        <cap:valueName>LGD District Code</cap:valueName>
+        <cap:value>507</cap:value>
+      </cap:geocode>
+    </cap:area>
+  </cap:info>
+</cap:alert>

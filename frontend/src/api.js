@@ -35,6 +35,18 @@ async function apiFetch(path, options = {}) {
   return res;
 }
 
+export async function fetchDataSources() {
+  const res = await apiFetch('/sources');
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch source status`);
+  return res.json();
+}
+
+export async function fetchCapAlerts(refresh = false) {
+  const res = await apiFetch(`/alerts${refresh ? '?refresh=true' : ''}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch CAP alerts`);
+  return res.json();
+}
+
 export async function fetchAuthConfig() {
   const res = await apiFetch('/auth/config');
   if (!res.ok) throw new Error('Could not load auth config');

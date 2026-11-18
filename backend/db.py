@@ -87,7 +87,9 @@ async def init_db():
             fetched_at TEXT
         )""")
         from backend.auth.sessions import ensure_auth_tables
+        from backend.data_sources.cap_alerts import ensure_cap_table
         await ensure_auth_tables(db)
+        await ensure_cap_table(db)
         await db.commit()
 
 # --- Incidents CRUD ---

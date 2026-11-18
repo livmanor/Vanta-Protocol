@@ -8,7 +8,7 @@ from backend.models import DataSourceStatus
 from backend.config import settings
 from backend.cache import global_cache
 from backend.data_sources.osm import OVERPASS_MIRRORS, OVERPASS_HEADERS
-from backend.data_sources.imd import get_real_imd_alerts
+from backend.data_sources.cap_alerts import source_status_payload
 
 router = APIRouter(prefix="/api", tags=["Source Health & Freshness"])
 
@@ -81,14 +81,14 @@ async def _osm_status() -> DataSourceStatus:
     return osm_status
 
 
-async def _imd_status() -> DataSourceStatus:
-    imd_result = await get_real_imd_alerts(settings.CITY_NAME)
+async def _cap_status() -> DataSourceStatus:
+    payload = source_status_payload()
     return DataSourceStatus(
-        name="IMD Public Weather Bulletin",
-        endpoint="https://mausam.imd.gov.in",
-        status=imd_result["status"],
-        last_updated=imd_result.get("last_updated"),
-        error_message=imd_result.get("error"),
+        name=payload["name"],
+        endpoint=payload["endpoint"],
+        status=payload["status"],
+        last_updated=payload.get("last_updated"),
+        error_message=payload.get("error_message"),
     )
 
 
@@ -128,7 +128,7 @@ async def _collect_source_statuses() -> List[DataSourceStatus]:
     )
     results = await asyncio.gather(
         weather_status(), flood_status(), elevation_status(), _osm_status(),
-        _probe("OSRM Routing Engine", osrm_probe_url, timeout=8.0), _imd_status(),
+        _probe("OSRM Routing Engine", osrm_probe_url, timeout=8.0), _cap_status(),
         return_exceptions=True,
     )
     statuses: List[DataSourceStatus] = []
@@ -141,7 +141,7 @@ async def _collect_source_statuses() -> List[DataSourceStatus]:
 @router.get("/sources", response_model=List[DataSourceStatus])
 async def get_data_sources_status():
     """Returns the operational status of every external data source.
-    A fresh snapshot is reused for two minutes so the control-room refresh is not blocked on Overpass and IMD.
+    A fresh snapshot is reused for two minutes so the control-room refresh is not blocked on Overpass and CAP.
     """
     cached = global_cache.get("source_status_snapshot_v1")
     if cached and not cached[2]:

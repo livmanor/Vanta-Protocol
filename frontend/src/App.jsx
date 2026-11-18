@@ -14,13 +14,15 @@ import PrepositionPanel from './components/PrepositionPanel';
 import UnitRegisterModal from './components/UnitRegisterModal';
 import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
+import SourceStatusBar from './components/SourceStatusBar';
+import AlertsBanner from './components/AlertsBanner';
 import { useLanguage } from './i18n.jsx';
 import {
   fetchRiskZones, fetchUnits, registerUnit,
   fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
-  refreshOperationsPlan, logoutOfficer
+  refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts
 } from './api';
 
 const NAV = [
@@ -44,6 +46,9 @@ export default function App() {
   const [blockedRoads, setBlockedRoads] = useState([]);
   const [prepositionSuggestions, setPrepositionSuggestions] = useState([]);
   const [operationsPlan, setOperationsPlan] = useState(null);
+  const [dataSources, setDataSources] = useState([]);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+  const [capAlerts, setCapAlerts] = useState(null);
 
   const [selectedZone, setSelectedZone] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
@@ -110,10 +115,28 @@ export default function App() {
         setPrepositionSuggestions([]);
       }
       refreshOperationsPlan().then(setOperationsPlan).catch(err => console.error(err));
+      fetchDataSources().then(setDataSources).catch(err => console.error(err));
+      fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
     } finally {
       setLoadingRisk(false);
     }
   }, []);
+
+  const handleRefreshSources = async () => {
+    setSourcesLoading(true);
+    try {
+      const [sources, alerts] = await Promise.all([
+        fetchDataSources(),
+        fetchCapAlerts(true).catch(() => fetchCapAlerts()),
+      ]);
+      setDataSources(sources);
+      setCapAlerts(alerts);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
 
   const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage, inputs = {}) => {
     setLoadingAgent(agentId);
@@ -314,6 +337,8 @@ export default function App() {
           </div>
         </div>
       </header>
+      <SourceStatusBar sources={dataSources} onRefresh={handleRefreshSources} loading={sourcesLoading} />
+      <AlertsBanner alertsPayload={capAlerts} onOpenRadar={() => setView('windy')} />
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Nav Rail: Collapses to icon rail below 1024px */}

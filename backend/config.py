@@ -60,6 +60,21 @@ class Settings(BaseSettings):
     SESSION_TTL_HOURS: int = 12
     AUTH_COOKIE_SECURE: bool = False
 
+    # CAP 1.2 alerts (NDMA SACHET primary; IMD CAP RSS also polled when non-empty).
+    CAP_RSS_URLS: str = (
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml,"
+        "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml"
+    )
+    CAP_ALLOWED_HOSTS: str = "sachet.ndma.gov.in,cap-sources.s3.amazonaws.com"
+    CAP_POLL_SECONDS: int = 300
+    CAP_HTTP_TIMEOUT_SECONDS: float = 5.0
+    CAP_MAX_BODY_BYTES: int = 1048576
+    CAP_MAX_ITEMS_PER_POLL: int = 40
+    # LGD district codes for Greater Hyderabad / GHMC–ORR overlap.
+    CAP_HYD_DISTRICT_CODES: str = "507,700,518,691"
+    CAP_FLOOR_ORANGE: str = "watch"
+    CAP_FLOOR_RED: str = "heavy"
+
     class Config:
         env_file = ".env"
         extra = "ignore"
