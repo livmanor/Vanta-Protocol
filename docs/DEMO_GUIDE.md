@@ -3,7 +3,7 @@
 Use the running control room. Every incident, unit, contact, and road block in this demo is entered by the officer during the demo. The repository does not contain a sample roster or sample incidents.
 
 1. Start the backend from the project root with `.\venv\Scripts\python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000`, then start the frontend with `npm run dev` inside `frontend`. Open `http://127.0.0.1:5173`.
-2. Enter the control room. The source bar shows which feeds are live. A failed feed stays failed.
+2. Enter the control room. The source bar shows which feeds are live, including **IMD / NDMA CAP alerts**. A failed or stale CAP feed must never be read as “no alerts”. The alerts banner states active matched alerts, verified none-active, stale, failed, or unverified text-only messages. Open radar switches to the Windy tab only; Windy stays visual.
 3. On the tactical map, leave the city grid on risk colors. Open **Forecast rainfall (mm)** only to show the 25 mm and 64.5 mm lines the calendar uses, then return to risk colors.
 4. Open **Prepare**. On a dry day the calendar says no evacuation window is open. That is the decision.
 5. Open **Incidents**. The empty state says no incidents are reported. Choose **Log an incident**, allow the browser location, and submit a real report from the device.

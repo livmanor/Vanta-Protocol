@@ -61,9 +61,11 @@ export default function OperationsCalendar({ calendar, model }) {
     {Object.entries(groups).map(([day, items]) => <div key={day} className="grid grid-cols-[120px_minmax(0,1fr)] gap-4 border-t border-[#E2E8F0] py-3">
       <h5 className="text-[12px] font-medium text-[#475569]">{day}</h5>
       <div className="flex flex-col divide-y divide-[#E2E8F0]">
-        {items.sort((a,b) => new Date(a.start)-new Date(b.start)).map(event => <button key={event.id} onClick={() => setActive(event)} className={`my-1 border-l-2 px-3 py-2 text-left ${tint[event.category] || tint.advisory}`}>
+        {items.sort((a,b) => new Date(a.start)-new Date(b.start)).map(event => <button key={event.id} onClick={() => setActive(event)} className={`my-1 border-l-2 px-3 py-2 text-left ${event.status === 'needs_review' ? 'bg-amber-50 border-amber-400 text-amber-950' : (tint[event.category] || tint.advisory)}`}>
           <span className="text-[12px] font-semibold">{new Date(event.start).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}–{new Date(event.end).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} · {event.title}</span>
           <span className="ml-2 text-[11px] opacity-80">{event.category} · {event.status}</span>
+          {event.alert_badge && <span className="ml-2 rounded-[4px] bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">IMD alert</span>}
+          {event.status === 'needs_review' && <span className="ml-2 rounded-[4px] bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Needs review</span>}
         </button>)}
       </div>
     </div>)}
@@ -71,8 +73,8 @@ export default function OperationsCalendar({ calendar, model }) {
     <div className="text-[11px] text-[#64748B]">Model: {model || 'Not available'} · Only approved events are exported.</div>
     {active && <div className="fixed inset-0 z-[1500] flex justify-end bg-slate-900/20" onClick={() => setActive(null)}><aside className="h-full w-full max-w-md overflow-y-auto bg-white p-6 shadow-xl" onClick={event => event.stopPropagation()}>
       <div className="flex justify-between"><h4 className="text-[16px] font-semibold">{active.title}</h4><button onClick={() => setActive(null)} aria-label="Close"><X className="h-4 w-4"/></button></div>
-      <dl className="mt-5 flex flex-col gap-3 text-[13px]"><dt className="text-[#64748B]">Time window</dt><dd>{new Date(active.start).toLocaleString()} – {new Date(active.end).toLocaleString()}</dd><dt className="text-[#64748B]">Location</dt><dd>{notAvailable(active.location)}</dd><dt className="text-[#64748B]">Category / status</dt><dd>{active.category} · {active.status}</dd><dt className="text-[#64748B]">Details</dt><dd className="whitespace-pre-wrap">{notAvailable(active.details)}</dd><dt className="text-[#64748B]">Assigned unit</dt><dd>{notAvailable(active.assigned_unit)}</dd></dl>
-      {active.status === 'planned' && <div className="mt-6 flex gap-2"><button onClick={() => decide(active, 'approved')} className="vp-btn vp-btn-primary"><Check className="h-4 w-4"/>Approve</button><button onClick={() => decide(active, 'rejected')} className="vp-btn vp-btn-secondary"><X className="h-4 w-4"/>Reject</button></div>}
+      <dl className="mt-5 flex flex-col gap-3 text-[13px]"><dt className="text-[#64748B]">Time window</dt><dd>{new Date(active.start).toLocaleString()} – {new Date(active.end).toLocaleString()}</dd><dt className="text-[#64748B]">Location</dt><dd>{notAvailable(active.location)}</dd><dt className="text-[#64748B]">Category / status</dt><dd>{active.category} · {active.status}{active.alert_badge ? ` · ${active.alert_badge}` : ''}</dd><dt className="text-[#64748B]">Details</dt><dd className="whitespace-pre-wrap">{notAvailable(active.details)}</dd>{active.review_reason && <><dt className="text-[#64748B]">Review reason</dt><dd className="whitespace-pre-wrap">{active.review_reason}</dd></>}{active.superseded_draft && <><dt className="text-[#64748B]">New draft</dt><dd className="whitespace-pre-wrap">{active.superseded_draft.details || active.superseded_draft.title}</dd></>}<dt className="text-[#64748B]">Assigned unit</dt><dd>{notAvailable(active.assigned_unit)}</dd></dl>
+      {(active.status === 'planned' || active.status === 'needs_review') && <div className="mt-6 flex gap-2"><button onClick={() => decide(active, 'approved')} className="vp-btn vp-btn-primary"><Check className="h-4 w-4"/>Approve</button><button onClick={() => decide(active, 'rejected')} className="vp-btn vp-btn-secondary"><X className="h-4 w-4"/>Reject</button></div>}
     </aside></div>}
   </section>;
 }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cap:alert xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2">
+  <cap:identifier>IN-TEST-HYD-ORANGE-1</cap:identifier>
+  <cap:sender>Telangana-SDMA</cap:sender>
+  <cap:sent>2026-11-18T10:00:00+05:30</cap:sent>
+  <cap:status>Actual</cap:status>
+  <cap:msgType>Alert</cap:msgType>
+  <cap:scope>Public</cap:scope>
+  <cap:info>
+    <cap:language>en-IN</cap:language>
+    <cap:category>Met</cap:category>
+    <cap:event>Heavy Rain</cap:event>
+    <cap:urgency>Expected</cap:urgency>
+    <cap:severity>Severe</cap:severity>
+    <cap:certainty>Likely</cap:certainty>
+    <cap:effective>2026-11-18T10:00:00+05:30</cap:effective>
+    <cap:onset>2026-11-18T10:00:00+05:30</cap:onset>
+    <cap:expires>2099-12-31T23:59:00+05:30</cap:expires>
+    <cap:headline>Heavy rain warning for Hyderabad district.</cap:headline>
+    <cap:description>Trimmed fixture derived from live SACHET CAP structure.</cap:description>
+    <cap:instruction>Follow SDMA guidelines.</cap:instruction>
+    <cap:area>
+      <cap:areaDesc>Hyderabad district of Telangana</cap:areaDesc>
+      <cap:geocode>
+        <cap:valueName>LGD District Code</cap:valueName>
+        <cap:value>507</cap:value>
+      </cap:geocode>
+    </cap:area>
+  </cap:info>
+</cap:alert>
