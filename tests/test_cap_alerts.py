@@ -140,6 +140,8 @@ def test_status_mapping_and_none_active(cap_db, monkeypatch):
     live = asyncio.run(cap.list_active_alerts())
     assert live["source"]["status"] == "live"
     assert live["none_active"] is True
+    assert "recent" in live
+    assert isinstance(live["recent"], list)
 
     cap._state.update(items_failed=2)
     partial = cap.source_status_payload()

@@ -514,10 +514,11 @@ def _row_to_alert(row: aiosqlite.Row) -> dict[str, Any]:
     }
 
 
-async def list_active_alerts() -> dict[str, Any]:
+async def list_active_alerts(recent_limit: int = 20) -> dict[str, Any]:
     source = source_status_payload()
     matched: list[dict[str, Any]] = []
     unmatched: list[dict[str, Any]] = []
+    recent: list[dict[str, Any]] = []
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         await ensure_cap_table(db)
@@ -529,6 +530,15 @@ async def list_active_alerts() -> dict[str, Any]:
             """
         ) as cur:
             rows = await cur.fetchall()
+        async with db.execute(
+            """
+            SELECT * FROM cap_alerts
+            ORDER BY fetched_at DESC, sent DESC
+            LIMIT ?
+            """,
+            (max(1, min(int(recent_limit), 50)),),
+        ) as cur:
+            recent_rows = await cur.fetchall()
     now = _now_utc()
     for row in rows:
         expires = _parse_dt(row["expires"])
@@ -539,6 +549,12 @@ async def list_active_alerts() -> dict[str, Any]:
             matched.append(item)
         elif item["match"] == "unmatched_text_only":
             unmatched.append(item)
+    for row in recent_rows:
+        item = _row_to_alert(row)
+        expires = _parse_dt(row["expires"])
+        item["expired"] = bool(expires is not None and expires <= now)
+        item["active"] = bool(row["active"]) and not item["expired"] and not row["superseded_by"]
+        recent.append(item)
     # none_active only when the feed was read successfully and nothing matches.
     # Failed or stale must never render as "no alerts".
     if source["status"] in ("live", "partial"):
@@ -548,6 +564,7 @@ async def list_active_alerts() -> dict[str, Any]:
     return {
         "alerts": matched,
         "unmatched": unmatched,
+        "recent": recent,
         "alerts_found": len(matched),
         "none_active": none_active,
         "source": source,
@@ -555,6 +572,7 @@ async def list_active_alerts() -> dict[str, Any]:
         "counts": {
             "matched": len(matched),
             "unmatched_text_only": len(unmatched),
+            "recent": len(recent),
             "items_seen": source.get("items_seen") or 0,
             "items_parsed": source.get("items_parsed") or 0,
             "items_failed": source.get("items_failed") or 0,

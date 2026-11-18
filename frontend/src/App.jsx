@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Activity, Bot, CheckCircle2, ChevronDown, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
-  ShieldAlert, Siren, Wind
+  ShieldAlert, Siren, Wind, Radio
 } from 'lucide-react';
 import Landing from './components/Landing';
 import Map from './components/Map';
@@ -16,6 +16,7 @@ import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
 import SourceStatusBar from './components/SourceStatusBar';
 import AlertsBanner from './components/AlertsBanner';
+import CapFeedPage from './components/CapFeedPage';
 import { useLanguage } from './i18n.jsx';
 import {
   fetchRiskZones, fetchUnits, registerUnit,
@@ -29,6 +30,7 @@ const NAV = [
   { id: 'agents', label: 'AI Agents', Icon: Bot },
   { id: 'map', label: 'Tactical Map', Icon: MapIcon },
   { id: 'windy', label: 'Windy Radar', Icon: Wind },
+  { id: 'cap', label: 'CAP Feed', Icon: Radio },
 ];
 
 export default function App() {
@@ -138,6 +140,23 @@ export default function App() {
     }
   };
 
+  const handleRefreshCapFeed = async () => {
+    setSourcesLoading(true);
+    try {
+      const alerts = await fetchCapAlerts(true);
+      setCapAlerts(alerts);
+    } catch (err) {
+      console.error(err);
+      try {
+        setCapAlerts(await fetchCapAlerts());
+      } catch (inner) {
+        console.error(inner);
+      }
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
   const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage, inputs = {}) => {
     setLoadingAgent(agentId);
     setAgentErrors(previous => ({ ...previous, [agentId]: '' }));
@@ -155,10 +174,11 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!entered) return undefined;
     loadData();
     const interval = setInterval(loadData, 45000);
     return () => clearInterval(interval);
-  }, [loadData]);
+  }, [entered, loadData]);
 
   const handleRegisterUnit = async (unitData) => {
     await registerUnit(unitData);
@@ -338,7 +358,20 @@ export default function App() {
         </div>
       </header>
       <SourceStatusBar sources={dataSources} onRefresh={handleRefreshSources} loading={sourcesLoading} />
-      <AlertsBanner alertsPayload={capAlerts} onOpenRadar={() => setView('windy')} />
+      <button
+        type="button"
+        onClick={() => setView('cap')}
+        className="flex w-full items-center justify-between gap-3 border-b border-[#E2E8F0] bg-white px-4 py-2 text-left hover:bg-[#F8FAFC]"
+      >
+        <span className="flex min-w-0 items-center gap-2 text-[12px] text-[#334155]">
+          <Radio className="h-3.5 w-3.5 shrink-0 text-[#4338CA]" strokeWidth={1.6} />
+          <b className="shrink-0 text-[#0F172A]">CAP Feed</b>
+          <span className="truncate">
+            {capAlerts ? `${(capAlerts.alerts || []).filter(alert => !alert.expired).length} verified active · ${(capAlerts.unmatched || []).length} unverified · ${(capAlerts.source?.status || 'unknown').toUpperCase()}` : 'Loading alert status…'}
+          </span>
+        </span>
+        <span className="shrink-0 text-[12px] font-medium text-[#4338CA]">Open feed →</span>
+      </button>
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Nav Rail: Collapses to icon rail below 1024px */}
@@ -702,6 +735,15 @@ export default function App() {
             <div className="absolute inset-0 z-[450] flex flex-col bg-[#F8FAFC]">
               <WindyOverlay />
             </div>
+          )}
+
+          {view === 'cap' && (
+            <CapFeedPage
+              alertsPayload={capAlerts}
+              onRefresh={handleRefreshCapFeed}
+              loading={sourcesLoading}
+              onOpenRadar={() => setView('windy')}
+            />
           )}
         </main>
       </div>
