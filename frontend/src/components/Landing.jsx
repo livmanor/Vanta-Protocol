@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CloudRain, Compass, Siren, ArrowRight, ShieldCheck, Database } from 'lucide-react';
 import { useLanguage } from '../i18n.jsx';
 import { fetchAuthConfig, fetchCurrentOfficer, loginOfficer } from '../api';
+import Radar from './Radar.jsx';
 
 export default function Landing({ onEnter, onAuthenticated }) {
   const { language, setLanguage, t } = useLanguage();
@@ -58,8 +59,26 @@ export default function Landing({ onEnter, onAuthenticated }) {
   };
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-[#F8FAFC] text-[#0F172A]">
-      <header className="flex items-center justify-between px-8 h-[56px] border-b border-[#E2E8F0] bg-white shrink-0 z-10">
+    <div className="relative isolate min-h-screen w-full overflow-hidden flex flex-col bg-[#F8FAFC] text-[#0F172A]">
+      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+        <Radar
+          className="opacity-40"
+          color="#4338CA"
+          lightMode
+          backgroundColor="transparent"
+          scale={0.82}
+          ringCount={6}
+          spokeCount={8}
+          targets={4}
+          clutter={0.18}
+          brightness={0.65}
+          glow={0.65}
+          gridOpacity={0.8}
+          grain={0.012}
+          mouseInteraction={false}
+        />
+      </div>
+      <header className="relative z-10 flex items-center justify-between px-4 sm:px-8 h-[56px] border-b border-[#E2E8F0]/80 bg-white/85 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-[6px] bg-[#4338CA] flex items-center justify-center text-white">
             <Siren className="w-4 h-4 text-white" strokeWidth={1.5} />
@@ -92,7 +111,7 @@ export default function Landing({ onEnter, onAuthenticated }) {
         </div>
       </header>
 
-      <main className="relative flex-1 overflow-y-auto flex items-center justify-center px-8 z-10 pb-8">
+      <main className="relative z-10 flex-1 overflow-y-auto flex items-center justify-center px-4 sm:px-8 pb-8">
         <div className="w-full max-w-[1200px] py-12 flex flex-col items-center text-center">
           <h1 className="text-[40px] font-semibold text-[#0F172A] tracking-tight leading-[1.2] max-w-3xl">
             {t('landingTitle')}
