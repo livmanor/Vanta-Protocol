@@ -18,7 +18,6 @@ const riskColor = (level) => {
 
 export default function Map({
   riskZones,
-  riskGrid,
   selectedZone,
   onSelectZone,
   activeRoute,
@@ -33,7 +32,6 @@ export default function Map({
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const [showGrid, setShowGrid] = useState(true);
   const onSelectRef = useRef(onSelectZone);
   onSelectRef.current = onSelectZone;
   const onPinLocationRef = useRef(onPinLocation);
@@ -76,7 +74,7 @@ export default function Map({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Comprehensive search combining directory, live riskZones, grid cells, coordinates, and Nominatim
+  // Search the local location directory and live hotspots before using Nominatim.
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q) {
@@ -151,33 +149,10 @@ export default function Map({
       });
     }
 
-    // 3. Local search from riskGrid cells
-    const cellMatches = [];
-    if (riskGrid?.cells && Array.isArray(riskGrid.cells)) {
-      riskGrid.cells.forEach(cell => {
-        if (cell.name && cell.name.toLowerCase().includes(q.toLowerCase())) {
-          cellMatches.push({
-            id: `cell-${cell.id}`,
-            name: cell.name,
-            subText: `City Grid Sector · Risk Level ${cell.risk_level ?? 'N/A'}`,
-            lat: cell.lat,
-            lng: cell.lon,
-            category: 'Sector',
-            type: 'sector'
-          });
-        }
-      });
-    }
-
     // Combine all instant local matches
     const initialList = [...zoneMatches];
     catalogMatches.forEach(cm => {
       if (!initialList.some(item => Math.abs(item.lat - cm.lat) < 0.003 && Math.abs(item.lng - cm.lng) < 0.003)) {
-        initialList.push(cm);
-      }
-    });
-    cellMatches.forEach(cm => {
-      if (!initialList.some(item => item.name === cm.name)) {
         initialList.push(cm);
       }
     });
@@ -267,11 +242,11 @@ export default function Map({
       }
     }, 300);
 
-  return () => {
-    clearTimeout(timer);
-    controller.abort();
-  };
-}, [searchQuery, riskZones, riskGrid]);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery, riskZones, riskGrid]);
 
 const handleSelectLocation = (loc) => {
   setIsSearchOpen(false);
@@ -426,7 +401,6 @@ const handleSelectLocation = (loc) => {
   };
 
   const layersRef = useRef({
-    grid: null,
     zones: null,
     route: null,
     shelter: null,
@@ -572,10 +546,10 @@ useEffect(() => {
   if (layersRef.current.zones) layersRef.current.zones.bringToFront();
 }, [riskGrid, showGrid]);
 
-// Update Risk Zones GeoJSON Layer
-useEffect(() => {
-  const map = mapInstanceRef.current;
-  if (!map) return;
+  // Update Risk Zones GeoJSON Layer
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
 
   if (layersRef.current.zones) {
     map.removeLayer(layersRef.current.zones);

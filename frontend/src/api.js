@@ -257,7 +257,6 @@ export async function reportBlockedRoad(roadData) {
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to report road diversion`);
   return res.json();
 }
-
 export async function snapPointToRoad(lat, lng) {
   try {
     const res = await apiFetch('/snap-to-road', {
