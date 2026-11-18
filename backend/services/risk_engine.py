@@ -194,46 +194,53 @@ def calculate_zone_risk(
     return level, explanation
 
 async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZone]:
-    """Collect live zone observations for the current HTP GHMC-zone catalog."""
+    """Collect live zone observations for the current HTP GHMC-zone catalog.
+
+    Weather/flood are sampled once at the city focus centroid and applied to every
+    HTP point. Per-point Open-Meteo for 60+ locations hit 429s and timed out the
+    UI at "0 hotspots monitored". HTP points remain the vulnerability locations.
+    """
     catalog = await ensure_catalog()
     now_iso = datetime.now(timezone.utc).isoformat()
     if not catalog:
         return []
     coords = [zone["centroid"] for zone in catalog]
+    sample_lat = float(settings.DEFAULT_LAT)
+    sample_lng = float(settings.DEFAULT_LNG)
 
-    # Fire all network calls at once — elevation (1 batch), weather × N, flood × N
-    elevation_res, *zone_results = await asyncio.gather(
+    elevation_res, weather_res, flood_res = await asyncio.gather(
         get_real_elevations(coords),
-        *[
-            asyncio.gather(
-                get_real_weather_forecast(lat, lng),
-                get_real_river_discharge(lat, lng),
-            )
-            for lat, lng in coords
-        ],
-        return_exceptions=False,
+        get_real_weather_forecast(sample_lat, sample_lng),
+        get_real_river_discharge(sample_lat, sample_lng),
+        return_exceptions=True,
     )
 
+    if isinstance(elevation_res, Exception):
+        elevation_res = {"data": [], "status": "failed", "error": type(elevation_res).__name__}
+    if isinstance(weather_res, Exception):
+        weather_res = {"data": {}, "status": "failed", "last_updated": None, "error": type(weather_res).__name__}
+    if isinstance(flood_res, Exception):
+        flood_res = {"data": {}, "status": "failed", "last_updated": None, "error": type(flood_res).__name__}
+
     elevations = elevation_res.get("data") or []
+    weather_data = weather_res.get("data") or {}
+    rainfall_24h = today_daily_value(weather_data, "precipitation_sum")
+    rainfall_48h = sum_hourly_precipitation_last_48h(weather_data)
+    precip_prob_max = today_daily_value(weather_data, "precipitation_probability_max")
+    wind_max = today_daily_value(weather_data, "wind_speed_10m_max")
+    temperature_max = today_daily_value(weather_data, "temperature_2m_max")
+    apparent_max = today_daily_value(weather_data, "apparent_temperature_max")
+    flood_data = flood_res.get("data") or {}
+    river_daily = flood_data.get("daily", {}).get("river_discharge", [None])
+    river_discharge = river_daily[0] if river_daily and river_daily[0] is not None else None
+    weather_sample_note = (
+        f"Open-Meteo rain/flood sampled at city focus {sample_lat:.3f},{sample_lng:.3f} "
+        "and applied across HTP GHMC points to avoid provider rate limits."
+    )
     risk_zones: List[RiskZone] = []
 
     for i, zone_meta in enumerate(catalog):
         c_lat, c_lng = zone_meta["centroid"]
-        weather_res, flood_res = zone_results[i]
-
-        weather_data = weather_res.get("data") or {}
-        rainfall_24h = today_daily_value(weather_data, "precipitation_sum")
-        rainfall_48h = sum_hourly_precipitation_last_48h(weather_data)
-
-        precip_prob_max = today_daily_value(weather_data, "precipitation_probability_max")
-
-        wind_max = today_daily_value(weather_data, "wind_speed_10m_max")
-        temperature_max = today_daily_value(weather_data, "temperature_2m_max")
-        apparent_max = today_daily_value(weather_data, "apparent_temperature_max")
-
-        flood_data = flood_res.get("data") or {}
-        river_daily = flood_data.get("daily", {}).get("river_discharge", [None])
-        river_discharge = river_daily[0] if river_daily and river_daily[0] is not None else None
 
         elev_m = None
         if i < len(elevations) and elevations[i]:
@@ -263,6 +270,8 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                 + (f" / {area_label}" if area_label else "")
                 + f" · {severity} severity. "
                 + explanation.why_this
+                + " "
+                + weather_sample_note
             )
         else:
             risk_level = None
@@ -281,6 +290,8 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                     f"Raw live observations only; no weighted map score calculated for Predict. "
                     f"HTP {zone_label} · {severity} severity. "
                     + heat_note
+                    + " "
+                    + weather_sample_note
                 ),
                 heat_temperature_max_c=temperature_max,
                 heat_apparent_max_c=apparent_max,

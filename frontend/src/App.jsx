@@ -87,8 +87,22 @@ export default function App() {
   const loadData = useCallback(async () => {
     setLoadingRisk(true);
     try {
+      const loadZones = async () => {
+        try {
+          return await fetchRiskZones();
+        } catch (firstError) {
+          // First paint often races login/session; one retry avoids a permanent "0 hotspots" state.
+          await new Promise(resolve => setTimeout(resolve, 800));
+          try {
+            return await fetchRiskZones();
+          } catch (secondError) {
+            console.error(firstError, secondError);
+            return { error: secondError.message || firstError.message };
+          }
+        }
+      };
       const [rZones, weather, aStatus, uList, incList, triage, roads, rGrid] = await Promise.all([
-        fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
+        loadZones(),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
@@ -101,7 +115,7 @@ export default function App() {
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
       if (normalizedZones) {
         setRiskZones(normalizedZones);
-        setRiskZonesError('');
+        setRiskZonesError(normalizedZones.length === 0 ? 'HTP catalog returned no geocoded points.' : '');
       } else {
         setRiskZonesError(rZones?.error || 'Unexpected response from the risk-zones API.');
       }

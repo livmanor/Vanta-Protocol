@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     HTP_POLL_SECONDS: int = 900
     HTP_HTTP_TIMEOUT_SECONDS: float = 15.0
     HTP_MAX_BODY_BYTES: int = 2_000_000
+    # Parallel Open-Meteo calls per risk-zones refresh (HTP catalog can be 60+ points).
+    HTP_WEATHER_CONCURRENCY: int = 8
 
     class Config:
         env_file = ".env"
