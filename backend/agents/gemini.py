@@ -61,12 +61,12 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
                         config=types.GenerateContentConfig(
                             system_instruction=system_instruction,
                             temperature=0.2,
-                            max_output_tokens=4096,
+                            max_output_tokens=8192,
                             response_mime_type="application/json",
                             response_json_schema=schema.model_json_schema(),
                         ),
                     ),
-                    timeout=30,
+                    timeout=45,
                 )
 
             if not response.text:
@@ -75,9 +75,20 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
             try:
                 parsed = schema.model_validate_json(response.text)
             except Exception as parse_exc:
-                raise AgentProviderError(
+                logger.warning(
+                    "Gemini schema validation failed on %s: %s; body_prefix=%s",
+                    model,
+                    type(parse_exc).__name__,
+                    (response.text or "")[:400],
+                )
+                last_exc = AgentProviderError(
                     "Gemini returned data that did not match the agent response format."
-                ) from parse_exc
+                )
+                failures.append(f"{model} invalid JSON schema")
+                if index < len(models) - 1:
+                    logger.info("Trying Gemini fallback %s after schema mismatch.", models[index + 1])
+                    continue
+                raise last_exc from parse_exc
             global _model_used
             _model_used = model
             if model != settings.GEMINI_MODEL:
@@ -90,6 +101,7 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
         except AgentConfigurationError:
             raise
         except AgentProviderError:
+            # Already handled empty/schema above when a fallback remains; re-raise terminal ones.
             raise
         except asyncio.TimeoutError as exc:
             last_exc = exc
