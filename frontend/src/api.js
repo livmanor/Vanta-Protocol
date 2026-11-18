@@ -84,6 +84,12 @@ export async function fetchRiskZones() {
   return res.json();
 }
 
+export async function fetchRiskGrid() {
+  const res = await apiFetch('/risk-grid');
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute the city risk grid`);
+  return res.json();
+}
+
 export async function fetchZoneWeather() {
   const res = await apiFetch('/weather');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch Open-Meteo weather`);
@@ -268,4 +274,88 @@ export async function reportBlockedRoad(roadData) {
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to report road diversion`);
   return res.json();
+}
+
+export async function snapPointToRoad(lat, lng) {
+  try {
+    const res = await apiFetch('/snap-to-road', {
+      method: 'POST',
+      body: JSON.stringify({ lat, lng }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('Backend snap-to-road call failed, attempting direct OSRM fallback:', err);
+  }
+
+  // Client-side fallback directly to public OSRM nearest service
+  try {
+    const url = `https://router.project-osrm.org/nearest/v1/driving/${lng},${lat}?number=1`;
+    const resp = await fetch(url);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.waypoints && data.waypoints.length > 0) {
+        const wp = data.waypoints[0];
+        return {
+          snapped: true,
+          original_lat: lat,
+          original_lng: lng,
+          lat: wp.location[1],
+          lng: wp.location[0],
+          distance_m: Math.round(wp.distance * 10) / 10,
+          road_name: wp.name || '',
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Direct OSRM snap failed:', err);
+  }
+
+  return {
+    snapped: false,
+    original_lat: lat,
+    original_lng: lng,
+    lat,
+    lng,
+    distance_m: 0,
+    road_name: '',
+  };
+}
+
+export async function fetchPatrolRoute(waypoints) {
+  if (!waypoints || waypoints.length < 2) return null;
+  try {
+    const res = await apiFetch('/patrol-route', {
+      method: 'POST',
+      body: JSON.stringify({ waypoints }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('Backend patrol-route call failed, attempting direct OSRM fallback:', err);
+  }
+
+  // Client-side fallback to OSRM route
+  try {
+    const coordsStr = waypoints.map(wp => `${wp.lng},${wp.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`;
+    const resp = await fetch(url);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.routes && data.routes.length > 0) {
+        const r = data.routes[0];
+        return {
+          distance_meters: Math.round(r.distance * 10) / 10,
+          duration_seconds: Math.round(r.duration * 10) / 10,
+          geometry: r.geometry,
+          waypoints: data.waypoints,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Direct OSRM route failed:', err);
+  }
+  return null;
 }

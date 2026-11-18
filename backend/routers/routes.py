@@ -50,3 +50,47 @@ async def create_blocked_road(req: BlockedRoadCreate):
     await insert_blocked_road(record)
     return record
 
+
+class SnapRequest(BaseModel):
+    lat: float
+    lng: float
+
+
+class SnapResponse(BaseModel):
+    snapped: bool
+    original_lat: float
+    original_lng: float
+    lat: float
+    lng: float
+    distance_m: float
+    road_name: str
+
+
+class WaypointItem(BaseModel):
+    lat: float
+    lng: float
+    name: Optional[str] = None
+
+
+class PatrolRouteRequest(BaseModel):
+    waypoints: List[WaypointItem]
+
+
+@router.post("/snap-to-road", response_model=SnapResponse)
+async def snap_point_to_road(req: SnapRequest):
+    """Snap any clicked or input coordinate to the nearest drivable road via OSRM."""
+    from backend.services.routing import snap_to_nearest_road
+    return await snap_to_nearest_road(req.lat, req.lng)
+
+
+@router.post("/patrol-route")
+async def get_patrol_route(req: PatrolRouteRequest):
+    """Compute driving route connecting multiple patrol points."""
+    from backend.services.routing import compute_patrol_route
+    pts = [{"lat": wp.lat, "lng": wp.lng} for wp in req.waypoints]
+    result = await compute_patrol_route(pts)
+    if not result:
+        raise HTTPException(status_code=400, detail="Could not compute patrol route across given waypoints")
+    return result
+
+

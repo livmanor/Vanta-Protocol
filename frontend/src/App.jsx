@@ -19,7 +19,7 @@ import AlertsBanner from './components/AlertsBanner';
 import CapFeedPage from './components/CapFeedPage';
 import { useLanguage } from './i18n.jsx';
 import {
-  fetchRiskZones, fetchUnits, registerUnit,
+  fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit,
   fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
@@ -36,6 +36,7 @@ const NAV = [
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [riskZones, setRiskZones] = useState([]);
+  const [riskGrid, setRiskGrid] = useState(null);
   const [riskZonesError, setRiskZonesError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
@@ -86,15 +87,17 @@ export default function App() {
   const loadData = useCallback(async () => {
     setLoadingRisk(true);
     try {
-      const [rZones, weather, aStatus, uList, incList, triage, roads] = await Promise.all([
+      const [rZones, weather, aStatus, uList, incList, triage, roads, rGrid] = await Promise.all([
         fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
         fetchIncidents().catch(e => { console.error(e); return []; }),
         fetchIncidentTriage().catch(e => { console.error(e); return { items: [] }; }),
-        fetchBlockedRoads().catch(e => { console.error(e); return []; })
+        fetchBlockedRoads().catch(e => { console.error(e); return []; }),
+        fetchRiskGrid().catch(e => { console.error(e); return null; })
       ]);
+      setRiskGrid(rGrid);
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
       if (normalizedZones) {
         setRiskZones(normalizedZones);
@@ -432,6 +435,7 @@ export default function App() {
             <div className="flex-1 h-full relative">
               <Map
                 riskZones={riskZones}
+                riskGrid={riskGrid}
                 selectedZone={selectedZone}
                 onSelectZone={(zone) => { setSelectedZone(zone); setView('map'); setActiveTab('zones'); }}
                 activeRoute={activeRoute}
