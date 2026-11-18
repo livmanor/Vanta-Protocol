@@ -292,3 +292,70 @@ async def find_evacuation_route(
         conflicts,
         now_iso,
     )
+
+
+async def snap_to_nearest_road(lat: float, lng: float) -> Dict[str, Any]:
+    """Snap a coordinate (lat, lng) to the nearest drivable road using OSRM nearest service.
+    If the point is off-road, moves it to the nearest valid road geometry.
+    """
+    nearest_base = settings.OSRM_ROUTE_URL.replace("/route/v1/driving", "/nearest/v1/driving")
+    url = f"{nearest_base}/{lng},{lat}?number=1"
+    try:
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                waypoints = data.get("waypoints") or []
+                if waypoints and len(waypoints) > 0:
+                    wp = waypoints[0]
+                    loc = wp.get("location") or [lng, lat]
+                    dist_m = float(wp.get("distance", 0.0))
+                    road_name = wp.get("name") or ""
+                    return {
+                        "snapped": True,
+                        "original_lat": lat,
+                        "original_lng": lng,
+                        "lat": loc[1],
+                        "lng": loc[0],
+                        "distance_m": round(dist_m, 1),
+                        "road_name": road_name,
+                    }
+    except Exception as exc:
+        logger.warning("OSRM nearest road snapping error: %s", exc)
+
+    return {
+        "snapped": False,
+        "original_lat": lat,
+        "original_lng": lng,
+        "lat": lat,
+        "lng": lng,
+        "distance_m": 0.0,
+        "road_name": "",
+    }
+
+
+async def compute_patrol_route(waypoints: List[Dict[str, float]]) -> Optional[Dict[str, Any]]:
+    """Compute driving route connecting multiple patrol waypoints via OSRM."""
+    if len(waypoints) < 2:
+        return None
+
+    coords_str = ";".join(f"{wp['lng']},{wp['lat']}" for wp in waypoints)
+    url = f"{settings.OSRM_ROUTE_URL}/{coords_str}?overview=full&geometries=geojson"
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                routes = data.get("routes") or []
+                if routes:
+                    r = routes[0]
+                    return {
+                        "distance_meters": round(float(r.get("distance", 0)), 1),
+                        "duration_seconds": round(float(r.get("duration", 0)), 1),
+                        "geometry": r.get("geometry"),
+                        "waypoints": data.get("waypoints", []),
+                    }
+    except Exception as exc:
+        logger.warning("OSRM patrol route computation failed: %s", exc)
+    return None
+
