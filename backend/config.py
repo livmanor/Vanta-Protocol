@@ -52,9 +52,23 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     DATABASE_PATH: str = "vanta.db"
 
+    # Local officer login. Passwords are bcrypt-hashed in SQLite; never logged.
+    AUTH_REQUIRED: bool = False
+    BOOTSTRAP_OFFICER_USERNAME: str = ""
+    BOOTSTRAP_OFFICER_PASSWORD: Optional[SecretStr] = None
+    BOOTSTRAP_OFFICER_DISPLAY_NAME: str = "Watch Officer"
+    SESSION_TTL_HOURS: int = 12
+    AUTH_COOKIE_SECURE: bool = False
+
     class Config:
         env_file = ".env"
         extra = "ignore"
 
 settings = Settings()
+
+# pydantic may leave an unset optional SecretStr as None
+if settings.BOOTSTRAP_OFFICER_PASSWORD is None:
+    from pydantic import SecretStr as _SecretStr
+
+    settings.BOOTSTRAP_OFFICER_PASSWORD = _SecretStr("")
 

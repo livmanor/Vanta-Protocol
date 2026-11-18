@@ -20,7 +20,7 @@ import {
   fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
-  refreshOperationsPlan
+  refreshOperationsPlan, logoutOfficer
 } from './api';
 
 const NAV = [
@@ -60,6 +60,7 @@ export default function App() {
 
   const [view, setView] = useState('agents'); // 'map' | 'agents'
   const [entered, setEntered] = useState(false);
+  const [officer, setOfficer] = useState(null);
   const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
 
   const newMenuRef = useRef(null);
@@ -189,7 +190,24 @@ export default function App() {
   const pendingApprovals = prepositionSuggestions.length;
   const aiEngineOnline = Boolean(agentStatus?.configured || agentStatus?.groq_configured);
 
-  if (!entered) return <Landing onEnter={() => setEntered(true)} />;
+  const handleLogout = async () => {
+    try {
+      await logoutOfficer();
+    } catch (err) {
+      console.error(err);
+    }
+    setOfficer(null);
+    setEntered(false);
+  };
+
+  if (!entered) {
+    return (
+      <Landing
+        onEnter={() => setEntered(true)}
+        onAuthenticated={setOfficer}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F8FAFC] text-[#0F172A]">
@@ -210,6 +228,17 @@ export default function App() {
 
         {/* Right side controls */}
         <div className="flex items-center gap-4">
+          {officer && (
+            <div className="hidden sm:flex items-center gap-2 text-[13px] text-[#475569]">
+              <span className="font-medium text-[#0F172A]">{officer.display_name || officer.username}</span>
+              <button
+                onClick={handleLogout}
+                className="h-[32px] px-2.5 rounded-[6px] border border-[#E2E8F0] text-[12px] hover:bg-[#F8FAFC]"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
           {/* Language Switch: Segmented control 14px */}
           <div
             className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]"
