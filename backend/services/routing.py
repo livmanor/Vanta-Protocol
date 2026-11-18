@@ -358,3 +358,4 @@ async def compute_patrol_route(waypoints: List[Dict[str, float]]) -> Optional[Di
     except Exception as exc:
         logger.warning("OSRM patrol route computation failed: %s", exc)
     return None
+
