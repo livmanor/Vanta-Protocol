@@ -7,7 +7,6 @@ import Landing from './components/Landing';
 import Map from './components/Map';
 import AgentPanel from './components/AgentPanel';
 import WindyOverlay from './components/WindyOverlay';
-import SourceStatusBar from './components/SourceStatusBar';
 import OperationsCalendar from './components/OperationsCalendar';
 import RiskZonePanel from './components/RiskZonePanel';
 import EvacuationPanel from './components/EvacuationPanel';
@@ -17,11 +16,11 @@ import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
 import { useLanguage } from './i18n.jsx';
 import {
-  fetchSources, fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit,
-  fetchIncidents, reportIncident, fetchPrepositionSuggestions,
+  fetchRiskZones, fetchUnits, registerUnit,
+  fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
-  refreshOperationsPlan
+  refreshOperationsPlan, logoutOfficer
 } from './api';
 
 const NAV = [
@@ -32,11 +31,8 @@ const NAV = [
 
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
-  const [sources, setSources] = useState([]);
   const [riskZones, setRiskZones] = useState([]);
   const [riskZonesError, setRiskZonesError] = useState('');
-  const [riskGrid, setRiskGrid] = useState(null);
-  const [riskGridError, setRiskGridError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
   const [agentResults, setAgentResults] = useState({});
@@ -44,15 +40,16 @@ export default function App() {
   const [loadingAgent, setLoadingAgent] = useState(null);
   const [units, setUnits] = useState([]);
   const [incidents, setIncidents] = useState([]);
+  const [triageById, setTriageById] = useState({});
   const [blockedRoads, setBlockedRoads] = useState([]);
   const [prepositionSuggestions, setPrepositionSuggestions] = useState([]);
   const [operationsPlan, setOperationsPlan] = useState(null);
 
   const [selectedZone, setSelectedZone] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
+  const [routeNotice, setRouteNotice] = useState(null);
   const [pinnedLocation, setPinnedLocation] = useState(null);
 
-  const [loadingSources, setLoadingSources] = useState(false);
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [loadingRoute, setLoadingRoute] = useState(false);
 
@@ -63,6 +60,7 @@ export default function App() {
 
   const [view, setView] = useState('agents'); // 'map' | 'agents'
   const [entered, setEntered] = useState(false);
+  const [officer, setOfficer] = useState(null);
   const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
 
   const newMenuRef = useRef(null);
@@ -78,28 +76,16 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadSources = useCallback(async () => {
-    setLoadingSources(true);
-    try {
-      setSources(await fetchSources());
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingSources(false);
-    }
-  }, []);
-
   const loadData = useCallback(async () => {
     setLoadingRisk(true);
-    loadSources();
     try {
-      const [rZones, grid, weather, aStatus, uList, incList, roads] = await Promise.all([
+      const [rZones, weather, aStatus, uList, incList, triage, roads] = await Promise.all([
         fetchRiskZones().catch(e => { console.error(e); return { error: e.message }; }),
-        fetchRiskGrid().catch(e => { console.error(e); return { error: e.message }; }),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
         fetchUnits().catch(e => { console.error(e); return []; }),
         fetchIncidents().catch(e => { console.error(e); return []; }),
+        fetchIncidentTriage().catch(e => { console.error(e); return { items: [] }; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; })
       ]);
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
@@ -109,17 +95,12 @@ export default function App() {
       } else {
         setRiskZonesError(rZones?.error || 'Unexpected response from the risk-zones API.');
       }
-      if (grid && Array.isArray(grid.cells)) {
-        setRiskGrid(grid);
-        setRiskGridError('');
-      } else {
-        setRiskGrid(null);
-        setRiskGridError(grid?.error || 'City grid unavailable');
-      }
       setZoneWeather(weather);
       setAgentStatus(aStatus);
       setUnits(uList);
       setIncidents(incList);
+      const triageItems = Array.isArray(triage?.items) ? triage.items : [];
+      setTriageById(Object.fromEntries(triageItems.map(item => [item.incident_id, item])));
       setBlockedRoads(roads);
 
       if (uList && uList.length > 0) {
@@ -132,7 +113,7 @@ export default function App() {
     } finally {
       setLoadingRisk(false);
     }
-  }, [loadSources]);
+  }, []);
 
   const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage, inputs = {}) => {
     setLoadingAgent(agentId);
@@ -182,15 +163,17 @@ export default function App() {
     const lat = zone?.lat ?? coordinates?.[1];
     const lng = zone?.lng ?? zone?.lon ?? coordinates?.[0];
     if (!zone?.id || lat == null || lng == null) {
-      alert('This location has no coordinates, so a route cannot be calculated.');
+      setRouteNotice('This location has no coordinates, so a route cannot be calculated.');
       return;
     }
     setLoadingRoute(true);
+    setRouteNotice(null);
     try {
       const res = await generateEvacuationRoute(zone.id, zone.name || zone.id, lat, lng);
       setActiveRoute(res);
     } catch (err) {
-      alert(`Routing failed: ${err.message}`);
+      setActiveRoute(null);
+      setRouteNotice(err.message);
     } finally {
       setLoadingRoute(false);
     }
@@ -207,7 +190,24 @@ export default function App() {
   const pendingApprovals = prepositionSuggestions.length;
   const aiEngineOnline = Boolean(agentStatus?.configured || agentStatus?.groq_configured);
 
-  if (!entered) return <Landing onEnter={() => setEntered(true)} />;
+  const handleLogout = async () => {
+    try {
+      await logoutOfficer();
+    } catch (err) {
+      console.error(err);
+    }
+    setOfficer(null);
+    setEntered(false);
+  };
+
+  if (!entered) {
+    return (
+      <Landing
+        onEnter={() => setEntered(true)}
+        onAuthenticated={setOfficer}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F8FAFC] text-[#0F172A]">
@@ -221,17 +221,24 @@ export default function App() {
             </div>
             <div>
               <div className="font-semibold text-[14px] text-[#0F172A] leading-tight">Vanta Protocol</div>
-              <div className="vp-mono text-[12px] text-[#475569] leading-tight whitespace-nowrap">
-                {riskGrid
-                  ? `${riskGrid.cell_count} cells · ${riskGrid.hotspot_count} hotspots · ${riskGrid.emerging_count} emerging`
-                  : riskGridError || t('area')}
-              </div>
+              <div className="vp-mono text-[12px] text-[#475569] leading-tight whitespace-nowrap">{t('area')}</div>
             </div>
           </div>
         </div>
 
         {/* Right side controls */}
         <div className="flex items-center gap-4">
+          {officer && (
+            <div className="hidden sm:flex items-center gap-2 text-[13px] text-[#475569]">
+              <span className="font-medium text-[#0F172A]">{officer.display_name || officer.username}</span>
+              <button
+                onClick={handleLogout}
+                className="h-[32px] px-2.5 rounded-[6px] border border-[#E2E8F0] text-[12px] hover:bg-[#F8FAFC]"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
           {/* Language Switch: Segmented control 14px */}
           <div
             className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]"
@@ -307,8 +314,6 @@ export default function App() {
           </div>
         </div>
       </header>
-      <SourceStatusBar sources={sources} onRefresh={loadSources} loading={loadingSources} />
-
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Nav Rail: Collapses to icon rail below 1024px */}
@@ -354,9 +359,6 @@ export default function App() {
             )}
           </div>
 
-          <div className="px-3 text-[12px] text-[#64748B] hidden lg:block">
-            <span>Control ID #HYD-2026</span>
-          </div>
         </nav>
 
         {/* Main Content Area */}
@@ -372,7 +374,6 @@ export default function App() {
             <div className="flex-1 h-full relative">
               <Map
                 riskZones={riskZones}
-                riskGrid={riskGrid}
                 selectedZone={selectedZone}
                 onSelectZone={(zone) => { setSelectedZone(zone); setView('map'); setActiveTab('zones'); }}
                 activeRoute={activeRoute}
@@ -389,6 +390,13 @@ export default function App() {
                 }}
               />
 
+              {routeNotice && (
+                <div className="absolute bottom-6 left-6 z-[500] w-80 bg-white border border-[#E2E8F0] rounded-[8px] shadow-sm p-3">
+                  <div className="text-[12px] font-semibold text-[#0F172A]">Route</div>
+                  <p className="mt-1 text-[12px] leading-5 text-[#475569]">{routeNotice}</p>
+                  <button type="button" onClick={() => setRouteNotice(null)} className="mt-2 text-[12px] font-medium text-[#4338CA]">Dismiss</button>
+                </div>
+              )}
               {activeRoute && (
                 <div className="absolute bottom-6 left-6 z-[500] w-80">
                   <EvacuationPanel
@@ -492,6 +500,7 @@ export default function App() {
                     <PrepositionPanel
                       suggestions={prepositionSuggestions}
                       onApprove={handleApprovePreposition}
+                      onRegisterUnit={() => setIsUnitModalOpen(true)}
                     />
                   </div>
                 )}
@@ -512,21 +521,27 @@ export default function App() {
                     </div>
 
                     {incidents.length === 0 ? (
-                      <div className="py-6 text-center text-[12px] text-[#64748B]">
-                        No active incidents recorded.
+                      <div className="py-6 text-center text-[12px] text-[#64748B] flex flex-col items-center gap-3">
+                        <p>No incidents reported</p>
+                        <button type="button" onClick={() => setIsIncidentModalOpen(true)} className="vp-btn vp-btn-primary">Log an incident</button>
                       </div>
                     ) : (
                       <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
-                        {incidents.map((inc) => (
+                        {[...incidents].sort((a, b) => (triageById[a.id]?.rank ?? 9999) - (triageById[b.id]?.rank ?? 9999)).map((inc) => (
                           <div key={inc.id} className="py-2.5 flex flex-col gap-1">
                             <div className="flex items-center justify-between">
                               <span className="text-[12px] font-medium text-[#0F172A] uppercase">
-                                {inc.type} · Urgency {inc.urgency}
+                                {triageById[inc.id] ? `Rank ${triageById[inc.id].rank} · ` : ''}{inc.type} · Urgency {inc.urgency}
                               </span>
                               <span className="vp-mono text-[12px] text-[#64748B]">
                                 {new Date(inc.timestamp).toLocaleTimeString()}
                               </span>
                             </div>
+                            {triageById[inc.id] && (
+                              <p className="text-[12px] leading-relaxed text-[#475569]">
+                                {triageById[inc.id].why_this}
+                              </p>
+                            )}
                             <div className="text-[14px] text-[#334155]">{inc.message}</div>
                             <div className="text-[12px] flex items-center justify-between text-[#64748B]">
                               <span>{t('people')}: <strong className="text-[#0F172A] font-medium">{inc.people}</strong></span>
@@ -551,8 +566,9 @@ export default function App() {
                     </div>
 
                     {units.length === 0 ? (
-                      <div className="py-4 text-center text-[12px] text-[#64748B]">
-                        No field units registered.
+                      <div className="py-4 text-center text-[12px] text-[#64748B] flex flex-col items-center gap-3">
+                        <p>Register a unit to get pre-positioning recommendations.</p>
+                        <button type="button" onClick={() => setIsUnitModalOpen(true)} className="vp-btn vp-btn-primary">Register a unit</button>
                       </div>
                     ) : (
                       <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
@@ -652,11 +668,6 @@ export default function App() {
                   operationsPlan={operationsPlan}
                 />
 
-                {/* Clean Footer note */}
-                <div className="pt-8 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-4 text-[12px] text-[#64748B]">
-                  <span>Vanta Protocol · CipherCop 2026 · Hyderabad Police AI Control Room</span>
-                  <span>Powered by Groq Qwen & Google Gemini 2.5 · Officer verification required prior to dispatch.</span>
-                </div>
               </div>
             </div>
           )}

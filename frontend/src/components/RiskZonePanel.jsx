@@ -131,6 +131,17 @@ export default function RiskZonePanel({ zone, weather, onClose, onGenerateRoute,
           </span>
         </div>
         <div className="min-h-[40px] flex items-center justify-between text-[14px]">
+          <span className="text-[#64748B]">Heat maximum</span>
+          <span className="font-medium text-[#0F172A] vp-mono">{show(exp.heat_temperature_max_c, ' C')}</span>
+        </div>
+        <div className="min-h-[40px] flex items-center justify-between text-[14px]">
+          <span className="text-[#64748B]">Feels-like maximum</span>
+          <span className="font-medium text-[#0F172A] vp-mono">{show(exp.heat_apparent_max_c, ' C')}</span>
+        </div>
+        <p className="py-2 text-[12px] leading-relaxed text-[#475569]">
+          {exp.heat_note || 'Heat screening unavailable.'}
+        </p>
+        <div className="min-h-[40px] flex items-center justify-between text-[14px]">
           <span className="text-[#64748B]">{words[13]}</span>
           <span className="font-medium text-[#0F172A]">
             {exp.historical_flood_prone ? 'HTP Hotspot' : 'None'}

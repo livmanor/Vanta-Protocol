@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     OPEN_ELEVATION_URL: str = "https://api.open-elevation.com/api/v1/lookup"
     OVERPASS_API_URL: str = "https://overpass-api.de/api/interpreter"
     OSRM_ROUTE_URL: str = "https://router.project-osrm.org/route/v1/driving"
+    # A route this close to an officer-reported closure is treated as crossing it.
+    BLOCKED_ROAD_BUFFER_M: float = 30
+    # IMD heatwave screen for plains. Used only as a separate heat heuristic.
+    HEAT_PLAIN_THRESHOLD_C: float = 40
+    HEAT_SEVERE_APPARENT_THRESHOLD_C: float = 45
 
     WEATHER_CACHE_TTL: int = 900
     FLOOD_CACHE_TTL: int = 1800
@@ -25,7 +30,9 @@ class Settings(BaseSettings):
     OSM_CACHE_TTL: int = 3600
 
     GEMINI_API_KEY: Optional[SecretStr] = None
-    GEMINI_MODEL: str = "gemini-3.8-flash"
+    # gemini-3.8-flash is listed but was returning HTTP 503 high demand on 2026-11-17.
+    # gemini-2.5-flash still answers. It reroutes on 2026-12-01.
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     GROQ_API_KEY: Optional[SecretStr] = None
     GROQ_MODEL: str = "openai/gpt-oss-20b"
 
@@ -40,13 +47,28 @@ class Settings(BaseSettings):
     MSG91_AUTH_KEY: Optional[SecretStr] = None
     MSG91_TEMPLATE_ID: str = ""
 
+    CORS_ORIGINS: str = "http://127.0.0.1:5173,http://localhost:5173"
     PORT: int = 8000
     HOST: str = "0.0.0.0"
     DATABASE_PATH: str = "vanta.db"
+
+    # Local officer login. Passwords are bcrypt-hashed in SQLite; never logged.
+    AUTH_REQUIRED: bool = False
+    BOOTSTRAP_OFFICER_USERNAME: str = ""
+    BOOTSTRAP_OFFICER_PASSWORD: Optional[SecretStr] = None
+    BOOTSTRAP_OFFICER_DISPLAY_NAME: str = "Watch Officer"
+    SESSION_TTL_HOURS: int = 12
+    AUTH_COOKIE_SECURE: bool = False
 
     class Config:
         env_file = ".env"
         extra = "ignore"
 
 settings = Settings()
+
+# pydantic may leave an unset optional SecretStr as None
+if settings.BOOTSTRAP_OFFICER_PASSWORD is None:
+    from pydantic import SecretStr as _SecretStr
+
+    settings.BOOTSTRAP_OFFICER_PASSWORD = _SecretStr("")
 

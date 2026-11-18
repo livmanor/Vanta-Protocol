@@ -69,6 +69,10 @@ class RiskExplanation(BaseModel):
     mean_elevation_m: Optional[float] = None
     historical_flood_prone: bool = False
     why_this: str
+    # Heat is a separate screening hazard. Null means the forecast did not return the value.
+    heat_temperature_max_c: Optional[float] = None
+    heat_apparent_max_c: Optional[float] = None
+    heat_note: Optional[str] = None
 
 class RiskZone(BaseModel):
     id: str
@@ -92,6 +96,8 @@ class RiskGridCell(BaseModel):
     score: Optional[float] = None
     rain_48h: Optional[float] = None
     forecast_24h: Optional[float] = None
+    heat_temperature_max_c: Optional[float] = None
+    heat_apparent_max_c: Optional[float] = None
     elevation_m: Optional[float] = None
     low_lying: bool = False
     emerging: bool = False
@@ -126,6 +132,8 @@ class EvacuationRoute(BaseModel):
     geometry: Dict[str, Any]  # GeoJSON LineString from OSRM
     why_this: str
     computed_at: str
+    # Empty when the chosen corridor stays clear of officer-reported closures.
+    blocked_road_conflicts: List[str] = Field(default_factory=list)
 
 class PrepositionSuggestion(BaseModel):
     id: str

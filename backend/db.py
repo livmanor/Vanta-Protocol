@@ -86,6 +86,8 @@ async def init_db():
             elevation_m REAL,
             fetched_at TEXT
         )""")
+        from backend.auth.sessions import ensure_auth_tables
+        await ensure_auth_tables(db)
         await db.commit()
 
 # --- Incidents CRUD ---
