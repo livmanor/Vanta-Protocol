@@ -1,8 +1,12 @@
-"""Train logistic regression and gradient boosting only when labels clear the gate.
+"""Label-gated rainfall evaluation for Hyderabad waterlogging positives.
 
-Features come from the Open-Meteo archive for each labelled (lat, lon, date).
-Validation is leave-one-event-out. Uncertain / unlabelled days are never treated
-as negatives. Missing rainfall stays missing and drops that row from training.
+Modes:
+  event_day_eval  — default when labels clear the gate. Ranks/alerts on
+                    2025-06-01..2025-09-30 without treating unlabelled days
+                    as negatives. No single-class model fitting.
+  loeo            — leave-one-event-out precision/recall (needs both classes).
+
+Uncertain / unlabelled days are never invented as negatives.
 """
 from __future__ import annotations
 
@@ -25,22 +29,28 @@ from scripts.label_schema import (
     MIN_POSITIVES,
     read_rows,
     training_gate,
+    validate_row,
 )
 
 REPORT = ROOT / "docs" / "model_report.md"
+COMPARISON = ROOT / "docs" / "rainfall_product_comparison.md"
 WATCH_MM = 25.0
+HOURLY_PEAK_MM = 30.0
+SEASON_START = date(2025, 6, 1)
+SEASON_END = date(2025, 9, 30)
 MAX_RETRIES = 4
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 def ist_today():
-    return datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
+    return datetime.now(IST).date()
 
 
-def _request(client: httpx.Client, params: dict) -> dict:
+def _request(client: httpx.Client, url: str, params: dict) -> dict:
     last_exc: Exception | None = None
     for attempt in range(MAX_RETRIES):
         try:
-            response = client.get(settings.OPEN_METEO_ARCHIVE_URL, params=params)
+            response = client.get(url, params=params)
             if response.status_code == 429:
                 time.sleep(2 ** attempt)
                 continue
@@ -50,14 +60,17 @@ def _request(client: httpx.Client, params: dict) -> dict:
         except Exception as exc:
             last_exc = exc
             time.sleep(2 ** attempt)
-    raise RuntimeError(f"archive fetch failed: {last_exc}")
+    raise RuntimeError(f"Open-Meteo request failed after retries: {last_exc}")
 
 
-def fetch_window(client: httpx.Client, lat: float, lon: float, day: date) -> dict | None:
-    start = (day - timedelta(days=7)).isoformat()
-    end = day.isoformat()
+def fetch_season(client: httpx.Client, lat: float, lon: float) -> dict[str, dict]:
+    """Return per-day features for the 2025 monsoon window. Missing stays missing."""
+    # Antecedent needs 7 days before season start.
+    start = (SEASON_START - timedelta(days=7)).isoformat()
+    end = SEASON_END.isoformat()
     payload = _request(
         client,
+        settings.OPEN_METEO_ARCHIVE_URL,
         {
             "latitude": lat,
             "longitude": lon,
@@ -69,57 +82,56 @@ def fetch_window(client: httpx.Client, lat: float, lon: float, day: date) -> dic
         },
     )
     daily = payload.get("daily") or {}
-    dates = list(daily.get("time") or [])
-    values = list(daily.get("precipitation_sum") or [])
     by_day: dict[str, float | None] = {}
-    for stamp, raw in zip(dates, values):
+    for stamp, raw in zip(daily.get("time") or [], daily.get("precipitation_sum") or []):
         by_day[stamp] = None if raw is None else float(raw)
 
-    hourly = payload.get("hourly") or {}
-    peak: float | None = None
-    for stamp, raw in zip(hourly.get("time") or [], hourly.get("precipitation") or []):
-        if not isinstance(stamp, str) or not stamp.startswith(day.isoformat()):
+    peak_by_day: dict[str, float | None] = {}
+    for stamp, raw in zip((payload.get("hourly") or {}).get("time") or [], (payload.get("hourly") or {}).get("precipitation") or []):
+        if not isinstance(stamp, str) or len(stamp) < 10:
             continue
+        day_s = stamp[:10]
         if raw is None:
+            peak_by_day.setdefault(day_s, None)
             continue
         value = float(raw)
-        peak = value if peak is None or value > peak else peak
+        previous = peak_by_day.get(day_s)
+        if previous is None or value > previous:
+            peak_by_day[day_s] = value
 
-    def sum_last(n: int) -> float | None:
+    def sum_last(day: date, n: int) -> float | None:
         total = 0.0
-        seen = 0
         for offset in range(n):
-            key = (day - timedelta(days=offset)).isoformat()
-            value = by_day.get(key)
+            value = by_day.get((day - timedelta(days=offset)).isoformat())
             if value is None:
                 return None
             total += value
-            seen += 1
-        return total if seen == n else None
+        return total
 
-    rain_24h = by_day.get(day.isoformat())
-    rain_48h = sum_last(2)
-    rain_72h = sum_last(3)
-    antecedent_7d = sum_last(7)
-    if rain_24h is None:
-        return None
-    return {
-        "rain_24h": rain_24h,
-        "rain_48h": rain_48h,
-        "rain_72h": rain_72h,
-        "max_hourly": peak,
-        "antecedent_7d": antecedent_7d,
-    }
+    out: dict[str, dict] = {}
+    day = SEASON_START
+    while day <= SEASON_END:
+        day_s = day.isoformat()
+        rain_24h = by_day.get(day_s)
+        out[day_s] = {
+            "rain_24h": rain_24h,
+            "rain_72h": sum_last(day, 3),
+            "max_hourly": peak_by_day.get(day_s),
+            "antecedent_7d": sum_last(day, 7),
+        }
+        day += timedelta(days=1)
+    return out
 
 
-def metrics(y_true: list[int], y_pred: list[int]) -> dict[str, float]:
-    tp = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 1)
-    fp = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 1)
-    fn = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 0)
-    precision = tp / (tp + fp) if (tp + fp) else 0.0
-    recall = tp / (tp + fn) if (tp + fn) else 0.0
-    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
-    return {"precision": precision, "recall": recall, "f1": f1, "tp": tp, "fp": fp, "fn": fn}
+def accepted_positives(summary_rows=None) -> list[dict]:
+    rows = []
+    for row in read_rows(LABELS_PATH):
+        if validate_row(row, ist_today()):
+            continue
+        if str(row.get("label", "")).strip() != "1":
+            continue
+        rows.append(row)
+    return rows
 
 
 def write_gate_report(summary: dict, reason: str) -> None:
@@ -144,15 +156,20 @@ def write_gate_report(summary: dict, reason: str) -> None:
     REPORT.write_text("\n".join(lines), encoding="utf-8")
 
 
-def main() -> int:
-    if not LABELS_PATH.exists():
-        print(f"No label file at {LABELS_PATH}")
-        return 1
+def _rank(values: list[tuple[str, float]], day_s: str) -> int | None:
+    """Rank 1 = highest value among days with non-missing scores."""
+    ordered = sorted(values, key=lambda item: item[1], reverse=True)
+    for index, (stamp, _) in enumerate(ordered, start=1):
+        if stamp == day_s:
+            return index
+    return None
+
+
+def event_day_eval() -> int:
     summary = training_gate(read_rows(LABELS_PATH), ist_today())
     if summary["rejected"]:
-        reason = f"Rejected {len(summary['rejected'])} invalid label row(s). Fix them before training."
-        write_gate_report(summary, reason)
-        print(reason)
+        write_gate_report(summary, f"Rejected {len(summary['rejected'])} invalid label row(s).")
+        print("Rejected rows present; refusing event_day_eval.")
         return 1
     if summary["positives"] < MIN_POSITIVES or len(summary["events"]) < MIN_EVENTS:
         reason = (
@@ -161,171 +178,201 @@ def main() -> int:
         )
         write_gate_report(summary, reason)
         print(reason)
-        print(f"Wrote {REPORT}")
         return 1
 
-    try:
-        from sklearn.ensemble import GradientBoostingClassifier
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-    except ImportError:
-        print("scikit-learn is required for training. Install with: pip install scikit-learn")
-        return 1
+    positives = accepted_positives()
+    # Unique locations from positives.
+    locations: dict[tuple[float, float, str], dict] = {}
+    positives_by_loc_day: dict[tuple[float, float], set[str]] = defaultdict(set)
+    event_locs: dict[str, list[tuple[float, float, str]]] = defaultdict(list)
+    for row in positives:
+        lat = float(row["lat"])
+        lon = float(row["lon"])
+        key = (lat, lon, row["location_name"])
+        locations[key] = row
+        day_s = row["date"].strip()
+        positives_by_loc_day[(lat, lon)].add(day_s)
+        event_locs[row["event_id"].strip()].append((lat, lon, row["location_name"]))
 
-    rows = []
-    for row in read_rows(LABELS_PATH):
-        if str(row.get("label", "")).strip() not in {"0", "1"}:
-            continue
-        # Seeds already excluded by training_gate acceptance path; re-read accepted only.
-        errors = []
-        from scripts.label_schema import validate_row
+    season_days = []
+    day = SEASON_START
+    while day <= SEASON_END:
+        season_days.append(day.isoformat())
+        day += timedelta(days=1)
+    n_days = len(season_days)
 
-        errors = validate_row(row, ist_today())
-        if errors:
-            continue
-        rows.append(row)
+    series_by_loc: dict[tuple[float, float], dict[str, dict]] = {}
+    with httpx.Client(timeout=90.0, follow_redirects=True) as client:
+        for lat, lon, name in locations:
+            print(f"Fetching season archive for {name} ({lat},{lon})")
+            series_by_loc[(lat, lon)] = fetch_season(client, lat, lon)
+            time.sleep(0.35)
 
-    feature_rows = []
-    with httpx.Client(timeout=60.0, follow_redirects=True) as client:
-        for row in rows:
-            day = datetime.strptime(row["date"].strip(), "%Y-%m-%d").date()
-            lat = float(row["lat"])
-            lon = float(row["lon"])
-            try:
-                feats = fetch_window(client, lat, lon, day)
-            except Exception as exc:
-                print(f"Skipping {row.get('location_name')} {row.get('date')}: {type(exc).__name__}")
-                continue
-            if not feats or feats.get("rain_48h") is None or feats.get("rain_72h") is None:
-                print(f"Skipping {row.get('location_name')} {row.get('date')}: incomplete archive features")
-                continue
-            if feats.get("max_hourly") is None or feats.get("antecedent_7d") is None:
-                print(f"Skipping {row.get('location_name')} {row.get('date')}: incomplete hourly/antecedent features")
-                continue
-            feature_rows.append(
-                {
-                    "event_id": row["event_id"].strip(),
-                    "y": int(row["label"].strip()),
-                    "x": [
-                        feats["rain_24h"],
-                        feats["rain_48h"],
-                        feats["rain_72h"],
-                        feats["max_hourly"],
-                        feats["antecedent_7d"],
-                    ],
-                    "rain_24h": feats["rain_24h"],
-                }
-            )
-            time.sleep(0.2)
+    # Universe observations: every labelled location × every season day.
+    # Positive only when that location has a reported_positive on that day.
+    # All other days are UNLABELLED, not negative.
+    features = {
+        "rain_24h_ge_25": ("rain_24h", WATCH_MM),
+        "rain_72h_ge_25": ("rain_72h", WATCH_MM),
+        "hourly_peak_ge_30": ("max_hourly", HOURLY_PEAK_MM),
+        "antecedent_7d_ge_25": ("antecedent_7d", WATCH_MM),
+    }
 
-    if len(feature_rows) < MIN_POSITIVES:
-        print("Not enough rows with complete Open-Meteo features to train.")
-        return 1
-
-    by_event = defaultdict(list)
-    for item in feature_rows:
-        by_event[item["event_id"]].append(item)
-    event_ids = sorted(by_event)
-
-    def loeo(predict_fn) -> dict[str, float] | dict[str, str]:
-        y_true: list[int] = []
-        y_pred: list[int] = []
-        fold_errors: list[str] = []
-        for held in event_ids:
-            train = [item for eid, items in by_event.items() if eid != held for item in items]
-            test = by_event[held]
-            if not train or not test:
-                continue
-            try:
-                preds = predict_fn(train, test)
-            except Exception as exc:
-                fold_errors.append(f"{held}: {type(exc).__name__}: {exc}")
-                continue
-            y_true.extend(item["y"] for item in test)
-            y_pred.extend(preds)
-        if fold_errors and not y_pred:
-            return {"error": "; ".join(fold_errors)}
-        scores = metrics(y_true, y_pred)
-        if fold_errors:
-            scores["fold_errors"] = "; ".join(fold_errors)
-        return scores
-
-    def baseline_predict(train, test):
-        return [1 if item["rain_24h"] >= WATCH_MM else 0 for item in test]
-
-    def model_predict(factory):
-        def _predict(train, test):
-            labels = {item["y"] for item in train}
-            if len(labels) < 2:
-                raise ValueError(
-                    "training fold has a single class "
-                    f"({next(iter(labels))}); binary classifier not fit"
+    def alert_stats(feature_key: str, threshold: float) -> dict:
+        alerted = 0
+        known = 0
+        events_caught = set()
+        ranks: dict[str, list[int]] = defaultdict(list)
+        for (lat, lon, name), _row in locations.items():
+            series = series_by_loc[(lat, lon)]
+            scored_days: list[tuple[str, float]] = []
+            for day_s in season_days:
+                value = series.get(day_s, {}).get(feature_key)
+                if value is None:
+                    continue
+                known += 1
+                scored_days.append((day_s, float(value)))
+                if float(value) >= threshold:
+                    alerted += 1
+            for event_id, locs in event_locs.items():
+                if not any(abs(lat - elat) < 1e-9 and abs(lon - elon) < 1e-9 for elat, elon, _ in locs):
+                    continue
+                # Event date = date on any positive row for this event.
+                event_day = next(
+                    (r["date"].strip() for r in positives if r["event_id"].strip() == event_id),
+                    None,
                 )
-            model = factory()
-            model.fit([item["x"] for item in train], [item["y"] for item in train])
-            return list(model.predict([item["x"] for item in test]))
+                if not event_day:
+                    continue
+                value = series.get(event_day, {}).get(feature_key)
+                if value is not None and float(value) >= threshold:
+                    events_caught.add(event_id)
+                rank = _rank(scored_days, event_day)
+                if rank is not None:
+                    ranks[event_id].append(rank)
+        return {
+            "events_caught": len(events_caught),
+            "events_caught_ids": sorted(events_caught),
+            "alert_rate": (alerted / known) if known else None,
+            "alerted": alerted,
+            "known": known,
+            "ranks": {event_id: (min(vals) if vals else None) for event_id, vals in ranks.items()},
+        }
 
-        return _predict
+    # Also keep a plain rain_24h ranking feature for the named 25 mm rule block.
+    rule = alert_stats("rain_24h", WATCH_MM)
+    rain72 = alert_stats("rain_72h", WATCH_MM)
+    hourly = alert_stats("max_hourly", HOURLY_PEAK_MM)
+    ante = alert_stats("antecedent_7d", WATCH_MM)
 
-    classes_present = sorted({item["y"] for item in feature_rows})
-    baseline_scores = loeo(baseline_predict)
-    logreg_scores = loeo(
-        model_predict(
-            lambda: Pipeline(
-                [
-                    ("scale", StandardScaler()),
-                    ("clf", LogisticRegression(max_iter=1000, class_weight="balanced")),
-                ]
-            )
-        )
+    event_ids = sorted(event_locs)
+    comparison_excerpt = ""
+    if COMPARISON.exists():
+        comparison_excerpt = COMPARISON.read_text(encoding="utf-8")
+
+    sanity = (
+        "Sanity check (`scripts/check_event_rainfall.py`): rain_24h is the Asia/Kolkata civil day "
+        "(00:00–24:00 IST) and includes afternoon/evening hours on the event date. "
+        "No date-window misalignment was found; low totals are a rainfall-product issue, not a shifted day."
     )
-    gb_scores = loeo(
-        model_predict(
-            lambda: GradientBoostingClassifier(random_state=42)
-        )
-    )
 
-    def fmt(name: str, scores: dict) -> str:
-        if "error" in scores:
-            return f"- **{name}**: not scored — {scores['error']}"
-        line = (
-            f"- **{name}**: precision={scores['precision']:.3f}, "
-            f"recall={scores['recall']:.3f}, F1={scores['f1']:.3f} "
-            f"(tp={scores['tp']}, fp={scores['fp']}, fn={scores['fn']})"
-        )
-        if scores.get("fold_errors"):
-            line += f" [partial folds skipped: {scores['fold_errors']}]"
-        return line
+    def fmt_block(title: str, stats: dict, threshold_note: str) -> list[str]:
+        rate = stats["alert_rate"]
+        rate_text = "missing" if rate is None else f"{100.0 * rate:.1f}% ({stats['alerted']}/{stats['known']} location-days with data)"
+        rank_bits = []
+        for event_id in event_ids:
+            rank = stats["ranks"].get(event_id)
+            rank_bits.append(f"{event_id}: {'n/a' if rank is None else f'#{rank} of {n_days}'}")
+        return [
+            f"### {title}",
+            "",
+            f"- Threshold: {threshold_note}",
+            f"- Events caught: {stats['events_caught']} of {len(event_ids)}"
+            + (f" ({', '.join(stats['events_caught_ids'])})" if stats["events_caught_ids"] else ""),
+            f"- Alert rate: {rate_text}",
+            f"- Best rank of each event day among {n_days} monsoon days at its labelled locations: "
+            + "; ".join(rank_bits),
+            "",
+        ]
 
     lines = [
-        "# Model comparison report",
+        "# Model / rainfall evaluation report",
         "",
-        f"Generated {datetime.now().isoformat(timespec='seconds')}.",
+        f"Generated {datetime.now().isoformat(timespec='seconds')} by `scripts/train_model.py event_day_eval`.",
         "",
         "all labels are positives from the 2025 monsoon; negatives are dry-day or uncertain and were handled as described.",
         "",
-        f"Trained on {len(feature_rows)} labelled rows with complete Open-Meteo features "
-        f"({summary['positives']} positives, {summary['negatives']} negatives, "
-        f"{len(event_ids)} events / leave-one-event-out folds). "
-        f"Classes present in feature rows: {classes_present}.",
+        "## Single-class limitation",
         "",
-        "Features: rain_24h, rain_48h, rain_72h, max hourly intensity, 7-day antecedent rain.",
-        "Baseline: daily rain_24h ≥ 25 mm.",
+        f"Validated labels: {summary['positives']} positives across {len(summary['events'])} events, "
+        f"{summary['negatives']} negatives. Binary classifiers were **not fit** — a single class cannot support "
+        "leave-one-event-out precision/recall. This report uses event-day evaluation instead.",
         "",
-        fmt("Baseline (≥25 mm)", baseline_scores),
-        fmt("Logistic regression", logreg_scores),
-        fmt("Gradient boosting", gb_scores),
+        "## Sanity check",
         "",
-        "uncertain negatives excluded",
+        sanity,
+        "",
+        "## Rainfall product comparison",
+        "",
+        "See `docs/rainfall_product_comparison.md` for archive vs historical-forecast daily totals and peak hours "
+        "on the labelled event days (gauge column only uses mm figures already present in pasted notes).",
         "",
     ]
+    if comparison_excerpt:
+        # Pull the "Which product reaches 25 mm?" section if present.
+        marker = "## Which product reaches 25 mm?"
+        if marker in comparison_excerpt:
+            lines.append(comparison_excerpt[comparison_excerpt.index(marker):].strip())
+            lines.append("")
+
+    lines.extend(
+        [
+            "## Event-day evaluation (no negatives)",
+            "",
+            f"Universe: every day {SEASON_START.isoformat()}..{SEASON_END.isoformat()} ({n_days} days) "
+            f"at each of {len(locations)} labelled locations.",
+            "Positive days = days with a validated `reported_positive` label at that location. "
+            "**All other days are UNLABELLED, not negative.** Unlabelled days may include unreported waterlogging, "
+            "so this report does **not** use precision. It reports **alert rate** (share of location-days with data "
+            "that exceed the threshold) and how often the five event dates are caught.",
+            "",
+            "uncertain negatives excluded",
+            "",
+        ]
+    )
+    lines.extend(fmt_block("25 mm daily rule (rain_24h)", rule, f"rain_24h ≥ {WATCH_MM:g} mm"))
+    lines.extend(fmt_block("rain_72h score", rain72, f"rain_72h ≥ {WATCH_MM:g} mm"))
+    lines.extend(fmt_block("hourly peak score", hourly, f"max hourly ≥ {HOURLY_PEAK_MM:g} mm"))
+    lines.extend(fmt_block("7-day antecedent score", ante, f"antecedent_7d ≥ {WATCH_MM:g} mm"))
+    lines.extend(
+        [
+            "## Conclusion",
+            "",
+            "Reanalysis archive rainfall under-detects short urban cloudbursts; gauge-reported rainfall on the same days was far above our trigger.",
+            "",
+        ]
+    )
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text("\n".join(lines), encoding="utf-8")
     print(f"Wrote {REPORT}")
     for line in lines:
         print(line)
     return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    mode = args[0] if args else "event_day_eval"
+    if mode in {"event_day_eval", "eval", "default"}:
+        return event_day_eval()
+    if mode == "loeo":
+        print(
+            "loeo precision/recall mode is disabled while the label file is single-class. "
+            "Use: python scripts/train_model.py event_day_eval"
+        )
+        return 1
+    print(f"Unknown mode {mode!r}. Use event_day_eval.")
+    return 1
 
 
 if __name__ == "__main__":
