@@ -180,10 +180,21 @@ async def insert_incident(incident: Incident):
         )
         await db.commit()
 
-async def update_incident_status(incident_id: str, status: str):
+async def update_incident_status(incident_id: str, status: str) -> bool:
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("UPDATE incidents SET status = ? WHERE id = ?", (status, incident_id))
+        cursor = await db.execute(
+            "UPDATE incidents SET status = ? WHERE id = ?",
+            (status, incident_id),
+        )
         await db.commit()
+        return cursor.rowcount > 0
+
+
+async def delete_incident(incident_id: str) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("DELETE FROM incidents WHERE id = ?", (incident_id,))
+        await db.commit()
+        return cursor.rowcount > 0
 
 # --- Units CRUD ---
 async def fetch_units():

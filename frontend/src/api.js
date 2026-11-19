@@ -233,6 +233,25 @@ export async function reportIncident(incidentData) {
   return res.json();
 }
 
+export async function updateIncidentStatus(incidentId, status) {
+  const res = await apiFetch(`/incidents/${encodeURIComponent(incidentId)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Failed to update incident status`);
+  return payload;
+}
+
+export async function deleteIncident(incidentId) {
+  const res = await apiFetch(`/incidents/${encodeURIComponent(incidentId)}`, {
+    method: 'DELETE',
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Failed to delete incident`);
+  return payload;
+}
+
 export async function fetchPrepositionSuggestions() {
   const res = await apiFetch('/prepositioning-suggestions');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch prepositioning suggestions`);
