@@ -18,7 +18,6 @@ const riskColor = (level) => {
 
 export default function Map({
   riskZones,
-  riskGrid,
   selectedZone,
   onSelectZone,
   activeRoute,
@@ -34,10 +33,12 @@ export default function Map({
   activeHazardFilters = {},
   selectedHazard = null,
   onSelectHazard = () => {},
+  citizenReports = [],
+  selectedCitizenReport = null,
+  onSelectCitizenReport = () => {},
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const [showGrid, setShowGrid] = useState(true);
   const onSelectRef = useRef(onSelectZone);
   onSelectRef.current = onSelectZone;
   const onPinLocationRef = useRef(onPinLocation);
@@ -80,7 +81,7 @@ export default function Map({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Comprehensive search combining directory, live riskZones, grid cells, coordinates, and Nominatim
+  // Comprehensive search combining directory, live riskZones, coordinates, and Nominatim
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q) {
@@ -155,33 +156,10 @@ export default function Map({
       });
     }
 
-    // 3. Local search from riskGrid cells
-    const cellMatches = [];
-    if (riskGrid?.cells && Array.isArray(riskGrid.cells)) {
-      riskGrid.cells.forEach(cell => {
-        if (cell.name && cell.name.toLowerCase().includes(q.toLowerCase())) {
-          cellMatches.push({
-            id: `cell-${cell.id}`,
-            name: cell.name,
-            subText: `City Grid Sector · Risk Level ${cell.risk_level ?? 'N/A'}`,
-            lat: cell.lat,
-            lng: cell.lon,
-            category: 'Sector',
-            type: 'sector'
-          });
-        }
-      });
-    }
-
     // Combine all instant local matches
     const initialList = [...zoneMatches];
     catalogMatches.forEach(cm => {
       if (!initialList.some(item => Math.abs(item.lat - cm.lat) < 0.003 && Math.abs(item.lng - cm.lng) < 0.003)) {
-        initialList.push(cm);
-      }
-    });
-    cellMatches.forEach(cm => {
-      if (!initialList.some(item => item.name === cm.name)) {
         initialList.push(cm);
       }
     });
@@ -275,7 +253,7 @@ export default function Map({
     clearTimeout(timer);
     controller.abort();
   };
-}, [searchQuery, riskZones, riskGrid]);
+}, [searchQuery, riskZones]);
 
 const handleSelectLocation = (loc) => {
   setIsSearchOpen(false);
@@ -430,7 +408,6 @@ const handleSelectLocation = (loc) => {
   };
 
   const layersRef = useRef({
-    grid: null,
     zones: null,
     route: null,
     shelter: null,
@@ -441,8 +418,12 @@ const handleSelectLocation = (loc) => {
     pin: null,
     patrolMarkers: null,
     patrolRoute: null,
-    patrolSnapLines: null
+    patrolSnapLines: null,
+    hazards: null,
+    citizenReports: null,
   });
+  const onSelectCitizenReportRef = useRef(onSelectCitizenReport);
+  onSelectCitizenReportRef.current = onSelectCitizenReport;
 
   // Initialize Map
   useEffect(() => {
@@ -518,63 +499,6 @@ const handleSelectLocation = (loc) => {
     mapInstanceRef.current = null;
   };
 }, []);
-
-useEffect(() => {
-  const map = mapInstanceRef.current;
-  if (!map) return;
-  if (layersRef.current.grid && map.hasLayer(layersRef.current.grid)) {
-    map.removeLayer(layersRef.current.grid);
-  }
-  layersRef.current.grid = null;
-  if (!showGrid || !riskGrid?.cells?.length) return;
-
-  const halfLat = riskGrid.lat_step / 2;
-  const halfLon = riskGrid.lon_step / 2;
-  const group = L.layerGroup();
-  riskGrid.cells.forEach((cell) => {
-    const color = riskColor(cell.risk_level);
-    const unavailable = cell.risk_level == null;
-    const rectangle = L.rectangle(
-      [[cell.lat - halfLat, cell.lon - halfLon], [cell.lat + halfLat, cell.lon + halfLon]],
-      { color, weight: 0.5, fillColor: color, fillOpacity: unavailable ? 0.18 : 0.38 }
-    );
-    const rain = cell.rain_48h == null ? 'data unavailable' : `${cell.rain_48h} mm`;
-    const forecast = cell.forecast_24h == null ? 'data unavailable' : `${cell.forecast_24h} mm`;
-    rectangle.bindTooltip(`
-        <div class="font-sans text-xs p-1">
-          <div class="font-extrabold text-slate-900">${cell.name}</div>
-          <div class="text-indigo-700 font-bold mt-0.5">${unavailable ? 'Data unavailable' : 'Risk Level: ' + cell.risk_level + ' / 5'}${cell.emerging ? ' · emerging' : ''}</div>
-          <div class="text-[11px] text-slate-500">48h ${rain} · forecast ${forecast}</div>
-        </div>
-      `, { sticky: true, className: 'leaflet-tooltip-light' });
-    rectangle.on('click', (e) => {
-      if (e.latlng) {
-        onPinLocationRef.current?.({
-          lat: Number(e.latlng.lat.toFixed(6)),
-          lng: Number(e.latlng.lng.toFixed(6))
-        });
-      }
-      onSelectRef.current?.({
-        id: cell.id,
-        name: cell.name,
-        risk_level: cell.risk_level,
-        cell_type: 'grid',
-        polygon: { type: 'Point', coordinates: [cell.lon, cell.lat] },
-        explanation: {
-          weather_status: cell.source_status,
-          rainfall_24h_mm: cell.forecast_24h,
-          rainfall_48h_mm: cell.rain_48h,
-          mean_elevation_m: cell.elevation_m,
-          why_this: cell.why_this,
-        },
-      });
-    });
-    group.addLayer(rectangle);
-  });
-  group.addTo(map);
-  layersRef.current.grid = group;
-  if (layersRef.current.zones) layersRef.current.zones.bringToFront();
-}, [riskGrid, showGrid]);
 
 // Update Risk Zones GeoJSON Layer
 useEffect(() => {
@@ -774,6 +698,44 @@ useEffect(() => {
   layersRef.current.hazards = hazardGroup;
   hazardGroup.bringToFront();
 }, [hazards, activeHazardFilters, selectedHazard, onSelectHazard]);
+
+// Citizen field photo reports (unverified until officer review)
+useEffect(() => {
+  const map = mapInstanceRef.current;
+  if (!map) return;
+  if (layersRef.current.citizenReports) {
+    map.removeLayer(layersRef.current.citizenReports);
+    layersRef.current.citizenReports = null;
+  }
+  if (!citizenReports?.length) return;
+
+  const group = L.featureGroup();
+  citizenReports.forEach((report) => {
+    if (report.lat == null || report.lng == null) return;
+    const selected = selectedCitizenReport?.id === report.id;
+    const pending = report.status === 'pending';
+    const color = pending ? '#EA580C' : report.status === 'accepted' ? '#16A34A' : '#64748B';
+    const marker = L.circleMarker([report.lat, report.lng], {
+      radius: selected ? 10 : 7,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      fillOpacity: 0.92,
+    });
+    marker.bindTooltip(`
+      <div class="font-sans text-xs p-1">
+        <div class="text-[10px] font-bold uppercase" style="color:${color}">Citizen report · ${report.status}</div>
+        <div class="font-bold text-slate-900">${report.phase} · ${report.citizen_display_name || report.citizen_username || 'citizen'}</div>
+        <div class="text-[11px] text-slate-600 mt-0.5">${(report.message || '').slice(0, 120)}</div>
+      </div>
+    `, { sticky: true });
+    marker.on('click', () => onSelectCitizenReportRef.current?.(report));
+    group.addLayer(marker);
+  });
+  group.addTo(map);
+  layersRef.current.citizenReports = group;
+  group.bringToFront();
+}, [citizenReports, selectedCitizenReport]);
 
 // Update Evacuation Route & Shelter Pin
 useEffect(() => {
@@ -1412,15 +1374,6 @@ return (
         <span>Patrol {patrolPoints.length > 0 ? `(${patrolPoints.length})` : ''}</span>
       </button>
 
-      <button
-        type="button"
-        onClick={() => setShowGrid((current) => !current)}
-        aria-pressed={showGrid}
-        className={`h-8 px-3 rounded-[6px] border text-[12px] font-medium shadow-sm ${showGrid ? 'bg-[#4338CA] text-white border-[#4338CA]' : 'bg-white text-[#475569] border-[#E2E8F0]'
-          }`}
-      >
-        City grid
-      </button>
     </div>
 
     {/* Snapped Road Toast */}

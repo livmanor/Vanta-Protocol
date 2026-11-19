@@ -1,5 +1,6 @@
 const API_BASE = '/api';
 const TOKEN_KEY = 'vanta_session_token';
+const CITIZEN_TOKEN_KEY = 'vanta_citizen_token';
 
 export function getStoredToken() {
   try {
@@ -18,17 +19,37 @@ export function setStoredToken(token) {
   }
 }
 
+export function getCitizenToken() {
+  try {
+    return localStorage.getItem(CITIZEN_TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setCitizenToken(token) {
+  try {
+    if (token) localStorage.setItem(CITIZEN_TOKEN_KEY, token);
+    else localStorage.removeItem(CITIZEN_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 async function apiFetch(path, options = {}) {
   const headers = { ...(options.headers || {}) };
-  const token = getStoredToken();
+  const useCitizen = Boolean(options.citizen);
+  const token = useCitizen ? getCitizenToken() : getStoredToken();
   if (token && !headers.Authorization) {
     headers.Authorization = `Bearer ${token}`;
   }
-  if (options.body && !headers['Content-Type']) {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (options.body && !headers['Content-Type'] && !isFormData) {
     headers['Content-Type'] = 'application/json';
   }
+  const { citizen: _citizenFlag, ...fetchOptions } = options;
   const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
     credentials: 'include',
   });
@@ -81,12 +102,6 @@ export async function fetchCurrentOfficer() {
 export async function fetchRiskZones() {
   const res = await apiFetch('/risk-zones');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute risk zones`);
-  return res.json();
-}
-
-export async function fetchRiskGrid() {
-  const res = await apiFetch('/risk-grid');
-  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute the city risk grid`);
   return res.json();
 }
 
@@ -439,4 +454,85 @@ export async function rejectHazardAction(actionId) {
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.detail || 'Could not reject action');
   return payload;
+}
+
+export async function registerCitizen(username, password, displayName = '') {
+  const res = await apiFetch('/citizen/register', {
+    method: 'POST',
+    citizen: true,
+    body: JSON.stringify({ username, password, display_name: displayName }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not create citizen account');
+  if (payload.token) setCitizenToken(payload.token);
+  return payload;
+}
+
+export async function loginCitizen(username, password) {
+  const res = await apiFetch('/citizen/login', {
+    method: 'POST',
+    citizen: true,
+    body: JSON.stringify({ username, password }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Citizen sign-in failed');
+  if (payload.token) setCitizenToken(payload.token);
+  return payload;
+}
+
+export async function logoutCitizen() {
+  const res = await apiFetch('/citizen/logout', { method: 'POST', citizen: true });
+  setCitizenToken('');
+  if (!res.ok) throw new Error('Citizen sign-out failed');
+  return res.json().catch(() => ({ status: 'ok' }));
+}
+
+export async function fetchCitizenMe() {
+  const res = await apiFetch('/citizen/me', { citizen: true });
+  if (res.status === 401) return null;
+  if (!res.ok) throw new Error('Could not load citizen profile');
+  return res.json();
+}
+
+export async function submitCitizenReport({ lat, lng, phase, message, photo }) {
+  const form = new FormData();
+  form.append('lat', String(lat));
+  form.append('lng', String(lng));
+  form.append('phase', phase);
+  form.append('message', message);
+  form.append('photo', photo);
+  const res = await apiFetch('/citizen/reports', {
+    method: 'POST',
+    citizen: true,
+    body: form,
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not submit report');
+  return payload;
+}
+
+export async function fetchMyCitizenReports() {
+  const res = await apiFetch('/citizen/reports/mine', { citizen: true });
+  if (!res.ok) throw new Error('Could not load your reports');
+  return res.json();
+}
+
+export async function fetchCitizenReports(status = null) {
+  const res = await apiFetch(`/citizen-reports${status ? `?status=${encodeURIComponent(status)}` : ''}`);
+  if (!res.ok) throw new Error('Could not load citizen reports');
+  return res.json();
+}
+
+export async function reviewCitizenReport(reportId, decision, createIncident = true) {
+  const res = await apiFetch(`/citizen-reports/${encodeURIComponent(reportId)}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ decision, create_incident: createIncident }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not review report');
+  return payload;
+}
+
+export function citizenReportPhotoUrl(reportId) {
+  return `${API_BASE}/citizen-reports/${encodeURIComponent(reportId)}/photo`;
 }

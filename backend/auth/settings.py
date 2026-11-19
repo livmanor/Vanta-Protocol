@@ -14,13 +14,19 @@ def auth_required() -> bool:
     return bool(settings.AUTH_REQUIRED)
 
 
+def cookie_secure() -> bool:
+    # Local Vite over http needs Secure=false. Turn on behind HTTPS.
+    return bool(settings.AUTH_COOKIE_SECURE)
+
+
 def public_auth_config() -> dict:
     return {
         "provider": "local",
         "required": auth_required(),
         "bootstrap_ready": bootstrap_configured(),
+        "citizen_signup": True,
         "note": (
-            "Sign in with a control-room officer account."
+            "Sign in with a control-room officer account, or use citizen signup for field reports."
             if auth_required()
             else "Authentication is optional. Set AUTH_REQUIRED=true for production."
         ),

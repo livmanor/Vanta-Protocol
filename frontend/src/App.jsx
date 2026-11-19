@@ -14,19 +14,18 @@ import PrepositionPanel from './components/PrepositionPanel';
 import UnitRegisterModal from './components/UnitRegisterModal';
 import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
-import SourceStatusBar from './components/SourceStatusBar';
-import AlertsBanner from './components/AlertsBanner';
 import CapFeedPage from './components/CapFeedPage';
 import HazardDetailPanel from './components/HazardDetailPanel';
+import CitizenPortal from './components/CitizenPortal';
 import { useLanguage } from './i18n.jsx';
 import {
-  fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit, updateUnitStatus, deleteUnit,
+  fetchRiskZones, fetchUnits, registerUnit, updateUnitStatus, deleteUnit,
   fetchIncidents, fetchIncidentTriage, reportIncident, updateIncidentStatus, deleteIncident,
   fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
-  refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts, fetchReplay,
-  fetchUnifiedHazards
+  refreshOperationsPlan, logoutOfficer, fetchCapAlerts, fetchReplay,
+  fetchUnifiedHazards, fetchCitizenReports, reviewCitizenReport
 } from './api';
 
 const NAV = [
@@ -39,7 +38,6 @@ const NAV = [
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [riskZones, setRiskZones] = useState([]);
-  const [riskGrid, setRiskGrid] = useState(null);
   const [riskZonesError, setRiskZonesError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
@@ -52,9 +50,11 @@ export default function App() {
   const [blockedRoads, setBlockedRoads] = useState([]);
   const [prepositionSuggestions, setPrepositionSuggestions] = useState([]);
   const [operationsPlan, setOperationsPlan] = useState(null);
-  const [dataSources, setDataSources] = useState([]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [capAlerts, setCapAlerts] = useState(null);
+  const [portal, setPortal] = useState('landing'); // landing | citizen | officer
+  const [citizenReports, setCitizenReports] = useState([]);
+  const [selectedCitizenReport, setSelectedCitizenReport] = useState(null);
 
   const [selectedZone, setSelectedZone] = useState(null);
   const [unifiedHazards, setUnifiedHazards] = useState([]);
@@ -108,7 +108,6 @@ export default function App() {
           setReplayBanner(replay.banner || 'REPLAY — historical data, not live');
           setRiskZones(Array.isArray(replay.zones) ? replay.zones : []);
           setRiskZonesError('');
-          setRiskGrid(replay.grid || null);
           setOperationsPlan(replay.operations_plan || null);
           setZoneWeather([]);
           setPrepositionSuggestions([]);
@@ -117,13 +116,11 @@ export default function App() {
           setRiskZonesError(err.message || 'Replay failed');
           setReplayBanner('REPLAY — historical data, not live');
         }
-        fetchDataSources().then(setDataSources).catch(err => console.error(err));
         return;
       }
 
       setReplayBanner('');
-      // Source status / CAP should not wait on weather or the risk grid.
-      fetchDataSources().then(setDataSources).catch(err => console.error(err));
+      // CAP alerts can load without waiting on weather or zone scoring.
       fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
 
       const loadZones = async () => {
@@ -140,7 +137,7 @@ export default function App() {
           }
         }
       };
-      const [rZones, weather, aStatus, uList, incList, triage, roads, rGrid, uHazards] = await Promise.all([
+      const [rZones, weather, aStatus, uList, incList, triage, roads, uHazards, cReports] = await Promise.all([
         loadZones(),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
@@ -148,11 +145,11 @@ export default function App() {
         fetchIncidents().catch(e => { console.error(e); return []; }),
         fetchIncidentTriage().catch(e => { console.error(e); return { items: [] }; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; }),
-        fetchRiskGrid().catch(e => { console.error(e); return null; }),
-        fetchUnifiedHazards().catch(e => { console.error(e); return { features: [] }; })
+        fetchUnifiedHazards().catch(e => { console.error(e); return { features: [] }; }),
+        fetchCitizenReports().catch(e => { console.error(e); return []; }),
       ]);
-      setRiskGrid(rGrid);
       setUnifiedHazards(Array.isArray(uHazards?.features) ? uHazards.features : []);
+      setCitizenReports(Array.isArray(cReports) ? cReports : []);
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
       if (normalizedZones) {
         setRiskZones(normalizedZones);
@@ -179,22 +176,6 @@ export default function App() {
       setLoadingRisk(false);
     }
   }, [replayMode, replayDate]);
-
-  const handleRefreshSources = async () => {
-    setSourcesLoading(true);
-    try {
-      const [sources, alerts] = await Promise.all([
-        fetchDataSources(),
-        fetchCapAlerts(true).catch(() => fetchCapAlerts()),
-      ]);
-      setDataSources(sources);
-      setCapAlerts(alerts);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSourcesLoading(false);
-    }
-  };
 
   const handleRefreshCapFeed = async () => {
     setSourcesLoading(true);
@@ -358,13 +339,40 @@ export default function App() {
     }
     setOfficer(null);
     setEntered(false);
+    setPortal('landing');
   };
+
+  const handleReviewCitizenReport = async (reportId, decision) => {
+    try {
+      const updated = await reviewCitizenReport(reportId, decision, decision === 'accepted');
+      setCitizenReports(prev => prev.map(r => (r.id === reportId ? updated : r)));
+      setSelectedCitizenReport(updated);
+      if (decision === 'accepted') {
+        const [incList, triage] = await Promise.all([
+          fetchIncidents().catch(() => null),
+          fetchIncidentTriage().catch(() => null),
+        ]);
+        if (Array.isArray(incList)) setIncidents(incList);
+        if (triage?.items) {
+          setTriageById(Object.fromEntries(triage.items.map(item => [item.incident_id, item])));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      window.alert(err.message || 'Could not review citizen report.');
+    }
+  };
+
+  if (portal === 'citizen') {
+    return <CitizenPortal onExit={() => setPortal('landing')} />;
+  }
 
   if (!entered) {
     return (
       <Landing
-        onEnter={() => setEntered(true)}
+        onEnter={() => { setPortal('officer'); setEntered(true); }}
         onAuthenticated={setOfficer}
+        onCitizenPortal={() => setPortal('citizen')}
       />
     );
   }
@@ -492,26 +500,11 @@ export default function App() {
           </div>
         </div>
       </header>
-      <SourceStatusBar sources={dataSources} onRefresh={handleRefreshSources} loading={sourcesLoading} />
       {replayMode && (
         <div className="shrink-0 border-b border-[#F59E0B] bg-[#FFFBEB] px-4 py-2 text-[13px] font-semibold tracking-wide text-[#92400E]">
           {replayBanner || 'REPLAY — historical data, not live'} · {replayDate}
         </div>
       )}
-      <button
-        type="button"
-        onClick={() => setView('cap')}
-        className="flex w-full items-center justify-between gap-3 border-b border-[#E2E8F0] bg-white px-4 py-2 text-left hover:bg-[#F8FAFC]"
-      >
-        <span className="flex min-w-0 items-center gap-2 text-[12px] text-[#334155]">
-          <Radio className="h-3.5 w-3.5 shrink-0 text-[#4338CA]" strokeWidth={1.6} />
-          <b className="shrink-0 text-[#0F172A]">CAP Feed</b>
-          <span className="truncate">
-            {capAlerts ? `${(capAlerts.alerts || []).filter(alert => !alert.expired).length} verified active · ${(capAlerts.unmatched || []).length} unverified · ${(capAlerts.source?.status || 'unknown').toUpperCase()}` : 'Loading alert status…'}
-          </span>
-        </span>
-        <span className="shrink-0 text-[12px] font-medium text-[#4338CA]">Open feed →</span>
-      </button>
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Nav Rail: Collapses to icon rail below 1024px */}
@@ -572,7 +565,6 @@ export default function App() {
             <div className="flex-1 h-full relative">
               <Map
                 riskZones={riskZones}
-                riskGrid={riskGrid}
                 selectedZone={selectedZone}
                 onSelectZone={(zone) => { setSelectedZone(zone); setView('map'); setActiveTab('zones'); }}
                 activeRoute={activeRoute}
@@ -593,6 +585,13 @@ export default function App() {
                 onSelectHazard={(h) => {
                   setSelectedHazard(h);
                   setActiveTab('hazards');
+                  setView('map');
+                }}
+                citizenReports={citizenReports}
+                selectedCitizenReport={selectedCitizenReport}
+                onSelectCitizenReport={(report) => {
+                  setSelectedCitizenReport(report);
+                  setActiveTab('incidents');
                   setView('map');
                 }}
               />
@@ -725,6 +724,67 @@ export default function App() {
 
                 {activeTab === 'incidents' && (
                   <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2 border border-[#FED7AA] bg-[#FFF7ED] rounded-[6px] p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] font-semibold text-[#9A3412]">
+                          Citizen photo reports ({citizenReports.filter(r => r.status === 'pending').length} pending)
+                        </span>
+                      </div>
+                      {citizenReports.length === 0 ? (
+                        <p className="text-[12px] text-[#9A3412]/80">No citizen field reports yet.</p>
+                      ) : (
+                        <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
+                          {citizenReports.map((report) => (
+                            <button
+                              key={report.id}
+                              type="button"
+                              onClick={() => setSelectedCitizenReport(report)}
+                              className={`text-left rounded-[6px] border px-2.5 py-2 ${
+                                selectedCitizenReport?.id === report.id ? 'border-[#EA580C] bg-white' : 'border-[#FDBA74] bg-white/70'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2 text-[11px]">
+                                <span className="font-semibold uppercase text-[#9A3412]">{report.phase}</span>
+                                <span className="text-[#64748B]">{report.status}</span>
+                              </div>
+                              <div className="text-[12px] text-[#0F172A] mt-0.5 line-clamp-2">{report.message}</div>
+                              <div className="text-[11px] text-[#64748B] mt-0.5">
+                                {report.citizen_display_name || report.citizen_username} · {new Date(report.created_at).toLocaleString()}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {selectedCitizenReport && (
+                        <div className="mt-1 rounded-[6px] border border-[#FDBA74] bg-white p-2.5 flex flex-col gap-2">
+                          <img
+                            src={`/api/citizen-reports/${selectedCitizenReport.id}/photo`}
+                            alt="Citizen field photo"
+                            className="w-full max-h-40 object-cover rounded-[4px] border border-[#E2E8F0]"
+                          />
+                          <p className="text-[12px] text-[#334155]">{selectedCitizenReport.message}</p>
+                          {selectedCitizenReport.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleReviewCitizenReport(selectedCitizenReport.id, 'accepted')}
+                                className="flex-1 h-8 rounded-[4px] bg-[#047857] text-white text-[12px] font-medium"
+                              >
+                                Accept → incident
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleReviewCitizenReport(selectedCitizenReport.id, 'rejected')}
+                                className="flex-1 h-8 rounded-[4px] bg-[#FEF2F2] text-[#B91C1C] text-[12px] font-medium border border-[#FECACA]"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <span className="text-[12px] font-medium text-[#64748B]">
                         {t('loggedIncidents')} ({incidents.length})
