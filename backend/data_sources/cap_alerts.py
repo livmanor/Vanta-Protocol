@@ -407,11 +407,26 @@ async def poll_cap_feeds(force: bool = False) -> dict[str, Any]:
                 # Dedupe links while preserving order
                 ordered = list(dict.fromkeys(links))
                 seen = len(ordered)
-                async with aiosqlite.connect(DB_PATH) as db:
-                    await ensure_cap_table(db)
-                    for link in ordered:
+                # Fetch CAP XML bodies concurrently; write to SQLite afterward so auth is not locked out.
+                sem = asyncio.Semaphore(6)
+
+                async def _download(link: str) -> tuple[str, bytes | None, str | None]:
+                    async with sem:
                         try:
                             body = await _fetch_bytes(client, link)
+                            return link, body, None
+                        except Exception as exc:
+                            return link, None, f"{type(exc).__name__}: {exc}"
+
+                downloads = await asyncio.gather(*[_download(link) for link in ordered])
+                async with aiosqlite.connect(DB_PATH) as db:
+                    await ensure_cap_table(db)
+                    for link, body, err in downloads:
+                        if err or body is None:
+                            failed += 1
+                            logger.warning("CAP item failed (%s): %s", link[:120], err or "empty")
+                            continue
+                        try:
                             alert = parse_cap_xml(body.decode("utf-8", errors="replace"))
                             if (alert.status or "").strip() != "Actual":
                                 continue

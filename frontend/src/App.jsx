@@ -29,10 +29,10 @@ import {
 } from './api';
 
 const NAV = [
-  { id: 'agents', label: 'AI Agents', Icon: Bot },
+  { id: 'cap', label: 'Alerts', Icon: Radio },
   { id: 'map', label: 'Tactical Map', Icon: MapIcon },
-  { id: 'windy', label: 'Windy Radar', Icon: Wind },
-  { id: 'cap', label: 'CAP Feed', Icon: Radio },
+  { id: 'windy', label: 'Radar', Icon: Wind },
+  { id: 'agents', label: 'AI Briefing', Icon: Bot },
 ];
 
 export default function App() {
@@ -77,7 +77,7 @@ export default function App() {
   const [isRoadModalOpen, setIsRoadModalOpen] = useState(false);
   const [isNewMenuOpen, setIsNewMenuOpen] = useState(false);
 
-  const [view, setView] = useState('agents'); // 'map' | 'agents'
+  const [view, setView] = useState('cap'); // 'cap' | 'map' | 'windy' | 'agents'
   const [entered, setEntered] = useState(false);
   const [officer, setOfficer] = useState(null);
   const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
@@ -121,6 +121,10 @@ export default function App() {
       }
 
       setReplayBanner('');
+      // Source status / CAP should not wait on weather or the risk grid.
+      fetchDataSources().then(setDataSources).catch(err => console.error(err));
+      fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
+
       const loadZones = async () => {
         try {
           return await fetchRiskZones();
@@ -170,8 +174,6 @@ export default function App() {
         setPrepositionSuggestions([]);
       }
       refreshOperationsPlan().then(setOperationsPlan).catch(err => console.error(err));
-      fetchDataSources().then(setDataSources).catch(err => console.error(err));
-      fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
     } finally {
       setLoadingRisk(false);
     }
@@ -516,7 +518,7 @@ export default function App() {
                 incidents={incidents}
                 blockedRoads={blockedRoads}
                 prepositionSuggestions={prepositionSuggestions}
-                onOpenWindy={() => setActiveTab('windy')}
+                onOpenWindy={() => setView('windy')}
                 pinnedLocation={pinnedLocation}
                 onPinLocation={setPinnedLocation}
                 onLogIncidentAtPin={(coords) => {
@@ -560,7 +562,6 @@ export default function App() {
                   { id: 'zones', label: t('zones') },
                   { id: 'preposition', label: t('prepare'), badge: prepositionSuggestions.length },
                   { id: 'incidents', label: t('incidents'), badge: incidents.length },
-                  { id: 'windy', label: 'Windy' },
                 ].map(({ id, label, badge }) => (
                   <button
                     key={id}
@@ -749,16 +750,11 @@ export default function App() {
                   </div>
                 )}
 
-                {activeTab === 'windy' && (
-                  <div className="flex-1 flex flex-col h-full min-h-[480px]">
-                    <WindyOverlay compact onExpand={() => setView('windy')} />
-                  </div>
-                )}
               </div>
             </aside>
           </div>
 
-          {/* AI AGENTS WORKBENCH VIEW */}
+          {/* AI BRIEFING WORKBENCH VIEW */}
           {view === 'agents' && (
             <div className="absolute inset-0 z-[450] overflow-y-auto bg-[#F8FAFC]">
               <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-8 pb-16 flex flex-col gap-8">
@@ -767,9 +763,18 @@ export default function App() {
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <h1 className="text-[20px] font-semibold text-[#0F172A] tracking-tight">
-                        Hyderabad Police Disaster Response
+                        AI Briefing
                       </h1>
-                      <div className="flex items-center gap-3 mt-1 text-[12px] text-[#64748B]">
+                      <p className="mt-1 text-[13px] text-[#475569]">
+                        On-demand briefing. Reviews the evidence you have already seen. Nothing is dispatched automatically.
+                      </p>
+                      <div className="flex items-center gap-3 mt-2 text-[12px] text-[#64748B]">
+                        <span className="font-medium text-[#0F172A]">Predict</span>
+                        <span>·</span>
+                        <span className="font-medium text-[#0F172A]">Prepare</span>
+                        <span>·</span>
+                        <span className="font-medium text-[#0F172A]">Respond</span>
+                        <span>·</span>
                         <span className="flex items-center gap-1.5 font-medium" style={{ color: allWeatherLive ? '#16A34A' : '#D97706' }}>
                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: allWeatherLive ? '#16A34A' : '#D97706' }} />
                           {allWeatherLive ? 'Active system' : 'Data status: partial'}
@@ -782,7 +787,7 @@ export default function App() {
                     {/* Underline Tab Bar (Clean, no redundant Tactical Map) */}
                     <div className="flex items-center gap-6 text-[14px]">
                       <span className="text-[#4338CA] font-semibold relative py-2">
-                        Agent Intelligence
+                        AI Briefing
                         <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA]" />
                       </span>
                       <button
@@ -827,10 +832,15 @@ export default function App() {
             </div>
           )}
 
-          {/* WINDY RADAR & ATMOSPHERIC OVERLAYS VIEW */}
+          {/* RADAR / ATMOSPHERIC OVERLAYS VIEW */}
           {view === 'windy' && (
             <div className="absolute inset-0 z-[450] flex flex-col bg-[#F8FAFC]">
-              <WindyOverlay />
+              <div className="shrink-0 border-b border-[#E2E8F0] bg-white px-4 py-2 text-[12px] text-[#64748B]">
+                Cross-check only. Not an input to the risk score.
+              </div>
+              <div className="flex-1 min-h-0">
+                <WindyOverlay />
+              </div>
             </div>
           )}
 
