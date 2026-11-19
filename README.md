@@ -1,226 +1,438 @@
-# Vanta Protocol — Version 1.0 (CipherCop 2026)
+# Vanta Protocol
 
-Real-time disaster-response planning tool for police control rooms, built for the **CipherCop 2026 AI Disaster Response track**.
+**CipherCop 2026 — AI Disaster Response track**
 
-This is the watch officer's decision loop, not a weather map. Live rain on **~64 monitored HTP waterlogging points** across GHMC divisions (Khairatabad, Golconda, Charminar, and others — Major/Minor from the live HTP page) and a 120-cell GHMC grid decides whether an evacuation window opens. Those 64 points collapse to **5 unique Open-Meteo ~0.1° weather cells** (see `docs/backtest_report.md`). A verified OpenStreetMap shelter and an OSRM corridor are attached only when one exists. The officer approves the calendar entry and any SMS. Nothing is dispatched automatically.
+A watch-officer control room for **Hyderabad flood / waterlogging response**.  
+It is a **decision loop**, not a weather toy: live feeds screen risk, the system drafts options, and a human officer approves anything that matters (calendar windows, SMS, dispatch).
 
----
-
-## Officer authentication
-
-Control-room access uses **local officer accounts** stored in SQLite. Passwords are bcrypt-hashed. Sessions are opaque tokens (httpOnly cookie and optional `Authorization: Bearer`). There is no Auth0 or Google login in this build.
-
-1. Set in `.env`:
-   - `AUTH_REQUIRED=true`
-   - `BOOTSTRAP_OFFICER_USERNAME=...`
-   - `BOOTSTRAP_OFFICER_PASSWORD=...` (change immediately; never commit)
-   - optional `BOOTSTRAP_OFFICER_DISPLAY_NAME=Watch Officer`
-2. Restart the backend. The bootstrap username is created once if it does not already exist.
-3. Open the landing page, sign in, then enter the control room.
-4. `/api/health` and `POST /api/sos/status` stay public. Every other `/api` route requires a session when `AUTH_REQUIRED=true`.
-
-`AUTH_REQUIRED` defaults to false so local tests keep working without an account. Production should turn it on.
-
-## Prime Directive & Real Data Policy
-
-In strict accordance with [`agent_rules.md`](./agent_rules.md):
-- **Zero Mock Data**: Incidents, field units, risk zones, weather, roads, and ETAs are never fabricated, placeholder, or seeded.
-- **Incident & Unit Intake**: The application starts with **zero incidents** and **zero units**. Incidents are added only via verified intake forms; units are registered with live browser GPS or station assignments.
-- **Honest States**: In the event an external feed is unreachable, the system displays an honest error or empty state with the last known timestamp.
-- **Human-in-the-Loop**: The system calculates recommendations; the watch officer reviews and authorizes dispatch.
+Nothing is auto-dispatched. Missing data stays blank — never invented.
 
 ---
 
-## Connected Live Data Sources (All Free & Public)
+## Table of contents
 
-Data feeds are fetched at runtime and displayed in the UI's **Source Status Bar** with live, partial, stale, or failed status and an update timestamp. A reachable endpoint is not proof that every requested field was returned.
-
-| # | Domain | External Source | Endpoint | How It's Used | Implementation File |
-|---|---|---|---|---|---|
-| 1 | **Rainfall & Weather** | **Open-Meteo Weather Forecast API** | `https://api.open-meteo.com/v1/forecast` | Fetches current conditions, today's daily precipitation/probability/wind, and hourly precipitation for a rolling past-48-hour sum at each monitored location. Requests use `Asia/Kolkata`, two past days, and three forecast days. No API key is required for this public endpoint. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
-| 2 | **River Discharge & Flooding** | **Open-Meteo GloFAS Flood API** | `https://flood-api.open-meteo.com/v1/flood` | Fetches real-time river discharge ($\text{m}^3/\text{s}$) to detect basin overflow hazards. | [`backend/data_sources/open_meteo.py`](backend/data_sources/open_meteo.py) |
-| 3 | **Terrain Elevation** | **Open-Elevation (SRTM)** | `https://api.open-elevation.com/api/v1/lookup` | Provides terrain context. Hyderabad hotspot scoring does not use a coastal absolute-elevation cutoff; the city grid may compare cells against the city median elevation. | [`backend/data_sources/elevation.py`](backend/data_sources/elevation.py) |
-| 4 | **Shelters & Police Stations** | **OpenStreetMap Overpass API** | `https://overpass-api.de/api/interpreter` | Queries verified civic shelters, community halls, hospitals, and police stations. | [`backend/data_sources/osm.py`](backend/data_sources/osm.py) |
-| 5 | **Evacuation Routing & ETAs** | **OSRM (Open Source Routing Machine)** | `https://router.project-osrm.org/route/v1/driving` | Requests alternative driving corridors and keeps the fastest one that stays more than `BLOCKED_ROAD_BUFFER_M` (default 30 m) from an officer-reported closure. A corridor that still crosses a closure is returned with a warning. Closures have no resolved status. | [`backend/services/routing.py`](backend/services/routing.py) |
-| 6 | **Official CAP alerts** | **NDMA SACHET + IMD CAP RSS** | `https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml` and `https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml` | Polls CAP 1.2 XML, matches Greater Hyderabad by LGD district code (`507,700,518,691`), and can raise the operations calendar band as a floor (orange→watch, red→heavy). Colour is derived from CAP severity when the message has no colour parameter. District-level only; text-only areas are shown as unverified and do not raise the floor. Does not change the flood risk score. | [`backend/data_sources/cap_alerts.py`](backend/data_sources/cap_alerts.py) |
-| 6b | **HTP waterlogging points** | **Hyderabad Traffic Police HTML list** | `https://echallan.tspolice.gov.in/htp/water_logging.html` | Polls ~64 Major/Minor points across GHMC. Successful polls are saved to SQLite `htp_snapshot`; a failed poll serves that snapshot as **stale** (no 6-point JSON fallback at runtime). | [`backend/data_sources/htp_waterlogging.py`](backend/data_sources/htp_waterlogging.py) |
-| 6c | **Replay** | **Open-Meteo Archive** | `GET /api/replay?date=YYYY-MM-DD` | Scores HTP points + the GHMC grid on archive rain for one IST day and drafts an operations plan **without** writing incidents, units, SMS, or calendar rows. UI shows a permanent `REPLAY — historical data, not live` banner. | [`backend/routers/replay.py`](backend/routers/replay.py) |
-| 7 | **Map Display** | **OpenStreetMap Carto Tiles** | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Basemap tiles. | [`frontend/src/components/Map.jsx`](frontend/src/components/Map.jsx) |
-| 8 | **City grid** | **Open-Meteo**, batched | `GET /api/risk-grid` | 120 GHMC cells. `forecast_24h` is the evidence for the evacuation window. A failed cell stays null. | [`backend/services/grid.py`](backend/services/grid.py) |
-| 9 | **Operations calendar** | Derived from the live risk grid | `POST /api/operations-calendar/refresh` | Under 25 mm: no evacuation window. At 25 mm or level 3: a 4-hour window. At 64.5 mm or level 4: a longer window. Officer approval required. A corridor warning is copied into the event details. | [`backend/services/operations_plan.py`](backend/services/operations_plan.py) |
-| 9b | **Incident triage** | Derived from logged incidents and live zone risk | `GET /api/incidents/triage` | Ranks active incidents from type, urgency, people, vulnerability, report age and zone risk. Model output only. It does not assign a unit. | [`backend/services/triage.py`](backend/services/triage.py) |
-| 10 | **Predict** | **Groq** | Officer-consented chat completion | Interprets the history question and writes the qualitative forecast. The question and summarized observations are sent only after consent. | [`backend/agents/groq.py`](backend/agents/groq.py) |
-| 11 | **Prepare and Respond** | **Google Gemini** | `GEMINI_MODEL` + `GEMINI_FALLBACK_MODELS` | Readiness actions and the SOS draft. Default primary is `gemini-2.5-flash` (documented reroute on 2026-12-01); configure comma-separated fallbacks in `.env`. Deprecation/redirect responses are logged. | [`backend/agents/gemini.py`](backend/agents/gemini.py) |
-| 12 | **Contacts and SOS** | **Twilio or MSG91** | Officer-approved `POST /api/sos/send` | Phone numbers are stored in SQLite for the officer's contact book and send record. They are not written to application logs. `SMS_TEST_MODE` defaults to on, so no SMS leaves the server until an officer turns it off and confirms a send. | [`backend/services/sms.py`](backend/services/sms.py) |
+1. [What you get](#what-you-get)
+2. [How to run (absolute beginner)](#how-to-run-absolute-beginner)
+3. [Sign in](#sign-in)
+4. [Architecture (current build)](#architecture-current-build)
+5. [Live data sources](#live-data-sources)
+6. [Control-room tabs](#control-room-tabs)
+7. [What the software will / will not do](#what-the-software-will--will-not-do)
+8. [Optional: SMS, labels, offline scripts](#optional-sms-labels-offline-scripts)
+9. [Useful URLs](#useful-urls)
+10. [Project layout](#project-layout)
 
 ---
 
-## Core Capabilities (V1)
+## What you get
 
-### Agent Workbench
-- The **Agents** workspace offers three separately selectable and independently run agents: Weather Predict, Prepare and Respond. Each has its own goal, data disclosure and report; one agent does not silently run the others.
-- The **Predict** agent uses Groq to interpret a freeform history question and produce a qualitative, per-hotspot forecast assessment from supplied observations. Its default history window is the last seven days through today's Hyderabad local date; officers can specify a different window. The Predict LLM receives forecast/history evidence without the shared map's fixed weighted risk score. `POST /api/agents/predict/search` parses a history question; `POST /api/agents/predict/run` runs a selected historical window.
-- The **Prepare** agent uses the forecast, those historical impacts, resource availability and deterministic positioning recommendations to produce evidence-linked pre-event readiness actions and officer checks. It can provide checks when no units are registered; it never creates units, changes assignments, or dispatches.
-- The workflow is manually started from the **Agents** tab; it does not call Gemini during automatic dashboard refreshes.
-- Each agent run requires provider-specific operator consent: Predict uses Groq, while Prepare and Respond use Gemini. Predict sends the officer's question for interpretation first, then sends selected forecast/history summaries only after separate run consent. Raw incident reports, unit IDs, station names and exact responder locations are excluded.
-- Historical rainfall is reanalysis rather than rain-gauge observation. Traffic evidence is limited to records entered in this app; no live traffic or external traffic archive is connected. No record means unknown/unreported, not that roads were clear.
-- For each location, `GET /api/weather` returns current conditions, a `today` daily forecast, and `rainfall_48h_mm` from hourly precipitation in the rolling interval `(now IST - 48 hours, now IST]`. Today's daily values are selected by matching the IST date in Open-Meteo's `daily.time`; arrays can begin in the past because the request includes `past_days=2`.
-- Weather status is `live` only when current, today's required daily fields, and rolling 48-hour precipitation are available; partial data is marked `partial`. Feed failures are `failed` or `stale` when only cached data is available. Missing rainfall is kept null (shown as `—`) and is never interpreted as zero. The numeric risk score is withheld if both today's and 48-hour rainfall are missing.
-- Risk levels are transparent screening heuristics, not a trained or locally calibrated flood prediction model. A live weather status means the requested fields were returned; it does not mean a gauge or officer verified conditions on the ground.
-- The event explorer shows the archive's actual available-through date because historical product freshness can vary. Event totals are point samples at six mapped waterlogging hotspots, not citywide rainfall totals. Only incidents and blocked roads recorded in Vanta during the selected dates appear as local effects.
-- Configure `GROQ_API_KEY` and optionally `GROQ_MODEL` in the project-root `.env` for Predict. `GEMINI_API_KEY` continues to power Prepare and Respond. The search question itself is sent to Groq for intent parsing; the UI asks for consent before that request and separately before sending summarized forecast/history evidence for analysis.
-- Configure `GEMINI_API_KEY` in the project-root `.env` file (never commit the key). `GEMINI_MODEL` can select the model.
-- `GET /api/agents/status` reports each provider's configuration and agent goals. `POST /api/agents/run/predict`, `/prepare` or `/respond` runs only the selected agent. The legacy `POST /api/agents/run` combined endpoint requires both provider keys and both consents. Without a provider key, the UI reports setup is required.
+| Piece | Role |
+|---|---|
+| **Backend** (FastAPI, port `8000`) | Talks to weather, CAP alerts, HTP waterlogging list, maps routing, AI agents; stores officer data in SQLite |
+| **Frontend** (React + Vite, port `5173`) | Control-room UI: Alerts → Map → Radar → AI Briefing |
+| **Officer login** | Local username/password in SQLite (no Google / Auth0) |
+| **Human gate** | Evacuation calendar + SOS SMS need officer approval |
 
-### 1. Predict Milestone
-- **Hyderabad Waterlogging Hotspot Risk**: Derives screening risk levels ($1\text{ to }5$) at geocoded points from the live [Hyderabad Traffic Police waterlogging list](https://echallan.tspolice.gov.in/htp/water_logging.html), **GHMC zone-wise** (`HTP_ZONE_FILTER=all` by default). Each point keeps division (Khairatabad, Golconda, …) and Major/Minor severity. The catalog refreshes on a poller so agents see page updates; points without coordinates are skipped. These are vulnerability points, not a live flood report.
-- **Explainable Model Output**: Every hotspot displays a transparent "Why this?" breakdown of available weather, discharge, elevation and published vulnerability inputs.
-- **Hotspot Weather Conditions**: Selecting a mapped hotspot shows Open-Meteo weather and forecast at that point; the panel includes feed status and update time. `GET /api/weather` exposes these readings per monitored location.
-
-### 2. Prepare Milestone
-- **Evacuation Corridors**: Identifies the nearest verified emergency shelter and asks OSRM for alternatives. The fastest corridor that stays clear of officer-reported closures is shown. If every alternative and the next two shelters still cross a closure, the shortest corridor is shown with an explicit warning. Closures have no resolved status, so the officer confirms they are still active.
-- **Patrol & Rescue Pre-Positioning**: Matches available field units (`rescue_boat`, `patrol`, `ambulance`) to high-risk zones based on asset suitability and proximity, calculating distance and response ETAs.
-- **Officer Approval Workflow**: Pre-positioning recommendations remain in a pending state until authorized by the watch officer; approved dispatches are logged to an audit trail.
-- **Road Diversions**: Officers can register road blocks or severe waterlogging zones to visually plan diversions.
+**Hyderabad focus:** ~64 HTP waterlogging points across GHMC, a 120-cell city grid, and Greater Hyderabad CAP district codes.
 
 ---
 
-## Architecture & Code Structure
+## How to run (absolute beginner)
 
-```
-Vanta Protocol/
-├── data/hyderabad_hotspots.json   # Seed coordinates for labelling only (not used at runtime)
-├── data/labels/                   # Human waterlogging labels (no invented rows)
-├── docs/backtest_report.md        # 64 HTP points -> 5 unique weather cells
-├── docs/model_report.md           # Train comparison or "labels below gate"
-├── tests/                         # Pytest. HTTP is mocked only here
-├── backend/
-│   ├── main.py
-│   ├── config.py
-│   ├── models.py                  # RiskZone.risk_level is null when rainfall is missing
-│   ├── db.py                      # Includes htp_snapshot for last good HTP list
-│   ├── agents/                    # Predict (Groq), Prepare and Respond (Gemini)
-│   ├── data_sources/              # Open-Meteo, elevation, Overpass, HTP, CAP
-│   ├── services/
-│   │   ├── risk_engine.py
-│   │   ├── grid.py                # 120-cell GHMC grid (+ archive replay)
-│   │   ├── routing.py             # Verified shelter or a clear failure
-│   │   ├── operations_plan.py     # Rainfall to evacuation window
-│   │   └── replay.py              # Historical day loop (read-only)
-│   └── routers/                   # risk, risk-grid, replay, routes, operations, agents
-└── frontend/src/
-    ├── App.jsx                    # Replay toggle + permanent REPLAY banner
-    ├── api.js
-    └── components/                # Map, calendar, SMS approval, intake modals
-```
+You need **two programs** installed on your PC:
 
----
+| Tool | Why | Check it works |
+|---|---|---|
+| **Python 3.10+** | Runs the API server | `python --version` |
+| **Node.js 18+** (includes `npm`) | Runs the website | `node --version` and `npm --version` |
 
-## Quickstart
+Also: a code editor and **two terminal windows** (one for backend, one for frontend).
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+ and npm
-
-### 1. Start the Backend (FastAPI)
-
-Windows, from the project root:
+### Step 0 — Open the project folder
 
 ```powershell
-.\venv\Scripts\python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+cd "C:\Users\YOUR_NAME\Desktop\Vanta Protocol"
 ```
 
-Linux or macOS, from the project root:
+(Use your real path.)
+
+### Step 1 — Create a Python virtual environment (once)
+
+A **venv** is a private Python folder so project packages do not mess up your system Python.
+
+**Windows (PowerShell):**
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**macOS / Linux:**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, run once:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Then try `Activate.ps1` again.
+
+### Step 2 — Create your `.env` file (once)
+
+Secrets live in `.env` at the **project root**. Never commit that file.
+
+```powershell
+copy .env.example .env
+```
+
+macOS / Linux: `cp .env.example .env`
+
+Open `.env` and set at least:
+
+```env
+AUTH_REQUIRED=true
+BOOTSTRAP_OFFICER_USERNAME=watch.officer
+BOOTSTRAP_OFFICER_PASSWORD=change-me-now
+BOOTSTRAP_OFFICER_DISPLAY_NAME=Watch Officer
+```
+
+Change the password. For AI Briefing agents (optional at first):
+
+```env
+GROQ_API_KEY=          # Predict agent
+GEMINI_API_KEY=        # Prepare + Respond agents
+```
+
+Weather, elevation, OSM, and OSRM work **without** keys.
+
+### Step 3 — Install frontend packages (once)
+
+```powershell
+cd frontend
+npm install
+cd ..
+```
+
+### Step 4 — Start the backend (terminal 1)
+
+Stay in the project root. Activate the venv if it is not already active.
+
+**Windows:**
+
+```powershell
+.\venv\Scripts\Activate.ps1
+.\venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+**macOS / Linux:**
 
 ```bash
 source venv/bin/activate
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-- API health: `http://127.0.0.1:8000/api/health`
-- OpenAPI docs: `http://127.0.0.1:8000/docs`
-- HTP points (live/stale snapshot): `http://127.0.0.1:8000/api/risk-zones`
-- City grid: `http://127.0.0.1:8000/api/risk-grid`
-- Replay a past day: `http://127.0.0.1:8000/api/replay?date=2024-09-01`
-- Feed health: `http://127.0.0.1:8000/api/sources`
+Leave this window open. You should see something like `Uvicorn running on http://127.0.0.1:8000`.
 
-Tests, from the project root, do not call live providers:
+Quick check: open [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health) — you want `"status":"online"`.
 
-```bash
-python -m pytest tests
-```
+### Step 5 — Start the frontend (terminal 2)
 
-### Agent provider setup
-If you do not already have a project-root `.env`, copy `.env.example` to `.env`. Set `GROQ_API_KEY` for Predict and `GEMINI_API_KEY` for Prepare and Respond. Optionally set `GEMINI_MODEL` and comma-separated `GEMINI_FALLBACK_MODELS` (primary `gemini-2.5-flash` is documented to reroute on 2026-12-01). Keep real keys out of source control and restart the backend after changing them. Public Open-Meteo endpoints do not require an API key.
-
-### 2. Start the Frontend (React + Vite)
 ```powershell
 cd frontend
 npm run dev
 ```
-- Control Room UI: `http://127.0.0.1:5173`
 
-On Linux or macOS the same frontend command is `cd frontend && npm run dev`.
+Leave this window open. Open the UI:
+
+**[http://127.0.0.1:5173](http://127.0.0.1:5173)**
+
+### Step 6 — Sign in and enter the control room
+
+1. Landing page → sign in with the bootstrap username / password from `.env`
+2. Enter the control room
+3. Source status and CAP alerts load early; weather uses **batched unique ~0.1° cells** (much faster than one request per hotspot)
+
+### Stuck?
+
+| Symptom | Likely fix |
+|---|---|
+| `python` not found | Install Python 3.10+ and tick “Add to PATH” |
+| `npm` not found | Install Node.js LTS |
+| Port 8000 already in use | Stop the other process using 8000, or change the uvicorn `--port` |
+| UI says unauthorized / blank APIs | Sign in again; confirm `AUTH_REQUIRED` and bootstrap password in `.env`, then restart backend |
+| Agents say setup required | Add `GROQ_API_KEY` / `GEMINI_API_KEY` and restart backend |
+| HTP / weather failed | Internet required; status bar should show `failed` / `stale` honestly |
+
+### Tests (optional)
+
+From project root, with venv active (HTTP to live providers is mocked in tests):
+
+```powershell
+.\venv\Scripts\python.exe -m pytest tests
+```
+
+---
+
+## Sign in
+
+Control-room APIs use **local officer accounts** in SQLite (bcrypt passwords, opaque session token via cookie or `Authorization: Bearer`).
+
+1. Set `AUTH_REQUIRED=true` and bootstrap fields in `.env`
+2. Restart backend — the bootstrap user is created **once** if missing
+3. Sign in from the landing page
+
+Public even when auth is on: `GET /api/health`, `POST /api/sos/status`.  
+Everything else under `/api` needs a session when `AUTH_REQUIRED=true`.
+
+`AUTH_REQUIRED` can be `false` for local hacking; production should keep it `true`.
+
+---
+
+## Architecture (current build)
+
+Snapshot through commit **`685593e`** (*Speed up live feeds with batched weather, parallel CAP, and early source status*).
+
+### System diagram
+
+```mermaid
+flowchart TB
+  subgraph Officer["Watch officer"]
+    UI["React control room<br/>Alerts · Map · Radar · AI Briefing"]
+  end
+
+  subgraph FE["Frontend :5173"]
+    App["App.jsx<br/>early /api/sources + /api/alerts"]
+    API["api.js session client"]
+  end
+
+  subgraph BE["FastAPI :8000"]
+    Auth["Auth middleware<br/>SQLite officers + sessions"]
+    RRisk["risk / risk-grid / weather"]
+    RCap["alerts · sources"]
+    ROps["operations · incidents · units · routes"]
+    RAgents["agents · predict history"]
+    RReplay["replay"]
+    RiskEng["risk_engine<br/>screening heuristics 1–5"]
+    Grid["grid 120 GHMC cells"]
+    OpsPlan["operations_plan<br/>draft evacuation window"]
+    WeatherBatch["weather router<br/>unique ~0.1° cells batched"]
+    CapPoll["cap_alerts<br/>parallel XML fetch · sem 6"]
+    HTP["htp_waterlogging<br/>live HTML + SQLite snapshot"]
+  end
+
+  subgraph Ext["External feeds"]
+    OM["Open-Meteo forecast / archive / GloFAS"]
+    Elev["Open-Elevation"]
+    OSM["Overpass shelters"]
+    OSRM["OSRM driving"]
+    SACHET["NDMA SACHET + IMD CAP RSS"]
+    HTPHTML["HTP water_logging.html"]
+    Groq["Groq · Predict"]
+    Gemini["Gemini · Prepare / Respond"]
+    SMS["Twilio / MSG91<br/>SMS_TEST_MODE default on"]
+  end
+
+  DB[(SQLite<br/>incidents units roads<br/>htp_snapshot CAP cache<br/>SOS log)]
+
+  Officer --> UI --> App --> API --> Auth
+  Auth --> RRisk & RCap & ROps & RAgents & RReplay
+  RRisk --> RiskEng & Grid & WeatherBatch
+  RCap --> CapPoll & HTP
+  ROps --> OpsPlan
+  WeatherBatch --> OM
+  RiskEng --> OM & Elev & HTP
+  Grid --> OM
+  CapPoll --> SACHET
+  HTP --> HTPHTML
+  HTP --> DB
+  CapPoll --> DB
+  ROps --> OSM & OSRM & DB
+  RAgents --> Groq & Gemini
+  ROps --> SMS
+  RReplay --> OM & RiskEng & OpsPlan
+```
+
+### Request path (live mode)
+
+1. Officer signs in → session token  
+2. UI kicks off **source status + CAP** immediately (does not wait for weather)  
+3. In parallel: risk zones (HTP), **batched** zone weather, city risk grid, units/incidents, operations plan  
+4. Risk engine scores each hotspot with transparent rainfall / wind / discharge / HTP factors  
+5. If rain / risk crosses watch lines → draft evacuation window → **officer must approve**  
+6. AI Briefing agents run only when the officer starts them and consents to send data to Groq/Gemini  
+
+### Replay mode
+
+Toggle **Replay**, pick an IST date → archive rain scores HTP + grid and drafts a plan.  
+Banner: `REPLAY — historical data, not live`.  
+No writes to incidents, units, SMS, or calendar.
+
+### Performance notes (latest)
+
+| Area | Behavior |
+|---|---|
+| Weather | ~64 HTP points → ~5 unique Open-Meteo ~0.1° cells, fetched in batches |
+| CAP | CAP XML bodies downloaded concurrently (semaphore 6), then written to SQLite |
+| UI | Source bar / alerts start before the heavy `Promise.all` finishes |
+
+---
+
+## Live data sources
+
+Feeds are real and runtime-fetched. The **Source Status Bar** shows `live` / `partial` / `stale` / `failed` plus a timestamp. Reachable ≠ every field present.
+
+| Domain | Source | Used for |
+|---|---|---|
+| Rainfall & weather | Open-Meteo Forecast | Current / today / rolling 48h precip (IST) |
+| River discharge | Open-Meteo GloFAS | Basin overflow context |
+| Elevation | Open-Elevation (SRTM) | Terrain context (not a coastal cutoff) |
+| Shelters / stations | OSM Overpass | Verified civic POIs for corridors |
+| Routing | OSRM | Fastest corridor clear of officer-reported blocks |
+| Official alerts | SACHET + IMD CAP | Greater Hyderabad LGD match; can raise calendar floor |
+| Waterlogging points | HTP HTML list | ~64 Major/Minor GHMC points; SQLite `htp_snapshot` if poll fails |
+| Map tiles | OSM Carto | Basemap |
+| City grid | Open-Meteo (batched) | 120 GHMC cells → evacuation evidence |
+| Predict | Groq | History question + qualitative forecast (consent) |
+| Prepare / Respond | Gemini | Readiness + SOS draft (consent) |
+| SMS | Twilio or MSG91 | Officer-approved send; test mode default |
+
+Implementation pointers: `backend/data_sources/`, `backend/services/`, `backend/routers/`.
+
+---
+
+## Control-room tabs
+
+| Tab | Purpose |
+|---|---|
+| **Alerts** | CAP / SACHET feed for Greater Hyderabad |
+| **Tactical Map** | HTP hotspots, risk grid, incidents, units, corridors |
+| **Radar** | External radar / windy-style view |
+| **AI Briefing** | Predict (Groq) · Prepare · Respond (Gemini) — manual, consented |
+
+---
+
+## What the software will / will not do
+
+**Will**
+
+- Screen flood-related risk with explainable heuristics (`risk_engine.py`)
+- Draft evacuation windows and corridors for officer review
+- Keep empty incidents/units until an officer enters them
+- Show honest empty / failed / stale feed states
+
+**Will not**
+
+- Invent weather, incidents, units, or ETAs
+- Auto-dispatch or auto-send SMS
+- Claim a calibrated flood ML model in production  
+  (offline eval lives in `docs/model_report.md`; live score is still rule-based)
+- Treat “no road row” as “roads are clear”
+
+**Data policy:** see [`agent_rules.md`](./agent_rules.md).
+
+---
+
+## Optional: SMS, labels, offline scripts
+
+### Going live with SMS
+
+`SMS_TEST_MODE=true` by default → sends are logged, provider not called.  
+Set `SMS_TEST_MODE=false`, configure Twilio or MSG91 in `.env`, restart backend. India delivery needs a DLT-registered template. Details stay in `.env.example`.
+
+### Waterlogging labels (offline)
+
+| Path | Role |
+|---|---|
+| `data/labels/hyderabad_events.csv` | Human-verified labels only |
+| `docs/LABELING_GUIDE.md` | How to label |
+| `python scripts/validate_labels.py` | Gate check |
+| `python scripts/train_model.py` | Event-day eval (or LOEO when both classes exist) |
+| `docs/model_report.md` | Latest eval write-up |
+
+Current status: **32 sourced positives / 5 events / 0 verified negatives** → no binary classifier fit; report uses **event-day evaluation**. Live `risk_engine` is unchanged by that script.
+
+### Trigger-frequency backtest
+
+```powershell
+.\venv\Scripts\python.exe scripts/backtest_thresholds.py
+```
+
+Writes `docs/backtest_report.md` (64 points → 5 unique weather cells). Frequency only — not labelled accuracy.
+
+---
+
+## Useful URLs
+
+| URL | What |
+|---|---|
+| http://127.0.0.1:5173 | Control-room UI |
+| http://127.0.0.1:8000/api/health | Backend alive? |
+| http://127.0.0.1:8000/docs | Interactive API docs |
+| http://127.0.0.1:8000/api/sources | Feed health |
+| http://127.0.0.1:8000/api/risk-zones | HTP points |
+| http://127.0.0.1:8000/api/risk-grid | City grid |
+| http://127.0.0.1:8000/api/weather | Per-zone weather (batched cells) |
+| http://127.0.0.1:8000/api/alerts | CAP alerts |
+| http://127.0.0.1:8000/api/replay?date=2024-09-01 | Historical day (auth required when enabled) |
+
+---
+
+## Project layout
+
+```
+Vanta Protocol/
+├── .env.example                 # Copy to .env — never commit secrets
+├── requirements.txt             # Python deps
+├── agent_rules.md               # No mock data / human-in-the-loop
+├── data/
+│   ├── hyderabad_hotspots.json  # Label seeds only (not runtime catalog)
+│   └── labels/                  # Human waterlogging labels
+├── docs/
+│   ├── backtest_report.md
+│   ├── model_report.md
+│   ├── rainfall_product_comparison.md
+│   └── LABELING_GUIDE.md
+├── scripts/                     # validate_labels, train_model, backtest_…
+├── tests/                       # pytest (providers mocked)
+├── backend/
+│   ├── main.py                  # FastAPI app + routers
+│   ├── config.py                # Settings from .env
+│   ├── db.py                    # SQLite + htp_snapshot
+│   ├── auth/                    # Officer sessions
+│   ├── agents/                  # Groq Predict · Gemini Prepare/Respond
+│   ├── data_sources/            # Open-Meteo, CAP, HTP, OSM, elevation
+│   ├── services/                # risk_engine, grid, routing, operations, replay
+│   └── routers/                 # HTTP API surface
+└── frontend/
+    ├── package.json
+    └── src/
+        ├── App.jsx              # Nav + early sources/CAP + Replay
+        ├── api.js
+        └── components/          # Map, alerts, agents, intake modals
+```
+
+---
 
 ## Hazard coverage
 
-Flood screening uses Open-Meteo rainfall and wind, GloFAS river discharge, elevation context, and the published Hyderabad Traffic Police waterlogging list. Heat screening uses the same Open-Meteo forecast's daily maximum and feels-like maximum. It is shown separately and does not change the flood level. The plain threshold is 40 C, the IMD heatwave criterion for plains, used here as a screening heuristic. A missing temperature stays blank.
+Flood screening: Open-Meteo rain/wind, GloFAS discharge, elevation context, HTP list.  
+Heat: daily max / feels-like from the same forecast (shown separately; does not change flood level).  
+Earthquake / landslide: **not** included — no ground-truth feed connected.
 
-Earthquake and landslide handling are not included. No ground-truth feed for those hazards is connected.
+---
 
-## Trigger-frequency check
+## Roadmap (not in live risk score)
 
-`python scripts/backtest_thresholds.py` loads all geocoded HTP points, snaps them to the Open-Meteo ~0.1° grid, and writes `docs/backtest_report.md`. Latest run: **64 points -> 5 unique weather cells**, with per-cell watch/heavy counts and hourly-peak misses (≥30 mm/hour while daily total is under 25 mm or missing). Missing archive days stay missing. This is trigger frequency only, not labelled accuracy, and is not an input to the live risk level.
-
-## Replay mode
-
-Toggle **Replay** in the control-room header, pick an IST date (e.g. `2024-09-01`, a heavy day in the backtest), and the map/calendar load archive-backed risk + a drafted evacuation window. The UI keeps a permanent banner: `REPLAY — historical data, not live`. Replay never writes incidents, units, SMS, or calendar rows.
-
-## Going live with SMS
-
-`SMS_TEST_MODE` defaults to true. In that mode the Respond banner says TEST MODE and a confirmed send is stored as queued. No provider is called.
-
-To send for real, set `SMS_TEST_MODE=false` and restart the backend. The banner then says LIVE MODE.
-
-Twilio:
-
-```
-SMS_PROVIDER=twilio
-SMS_SENDER=+1XXXXXXXXXX
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-SMS_DLT_TEMPLATE_ID=
-SMS_STATUS_CALLBACK_URL=https://<public-host>/api/sos/status
-```
-
-India delivery needs a DLT-registered template. Put its id in `SMS_DLT_TEMPLATE_ID`. Twilio then sends that content template instead of a free-form body. Delivery updates arrive at `POST /api/sos/status`. The handler checks the Twilio signature against `SMS_STATUS_CALLBACK_URL` and maps the provider status onto the send log (Queued, Sent, Delivered, or Failed).
-
-MSG91:
-
-```
-SMS_PROVIDER=msg91
-SMS_SENDER=<approved-sender-id>
-MSG91_AUTH_KEY=
-MSG91_TEMPLATE_ID=
-SMS_DLT_TEMPLATE_ID=
-```
-
-MSG91 also requires an approved DLT flow template. The status callback above is the Twilio webhook. MSG91 delivery updates are not given a separate callback in this build.
-
-Phone numbers stay in the SQLite contact book and the send log. They are not written to application logs. Rotate any key that was shared, pasted into a chat, or placed in a zip.
-
-## Waterlogging labels and model training
-
-`data/labels/hyderabad_events.csv` is for human-verified labels only (see `docs/LABELING_GUIDE.md`). Current file has location seeds with blank dates — **not trained yet, labels below gate** (`docs/model_report.md`).
-
-`python scripts/validate_labels.py` prints valid positives/negatives, distinct events, and how many more are needed to reach 30 positives / 3 events. Bad rows are rejected.
-
-`python scripts/train_model.py` refuses until that gate clears. When it runs, it compares the ≥25 mm baseline to logistic regression and gradient boosting with leave-one-event-out validation and writes real precision/recall/F1 to `docs/model_report.md` (including poor scores). Uncertain negatives are excluded. The live rule score in `backend/services/risk_engine.py` is unchanged.
-
-## Roadmap
-
-These are not inputs to the live risk score.
-
-- Windy API for an independent wind and precipitation cross-check.
-- CAP orange/red floors can raise the operations calendar band. They still do not change the numeric flood risk score on the map. Matching is district-code only for Greater Hyderabad.
-- Earthquake and landslide coverage. No ground-truth feed is connected.
+- Independent Windy cross-check for wind / precip  
+- CAP already can raise the **operations calendar** floor; it still does not change the numeric map flood score  
+- Earthquake / landslide if a trustworthy feed appears  
+- Threshold tuning only after verified **negative** labels exist
