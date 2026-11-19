@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.auth.middleware import SessionAuthMiddleware
+from backend.auth.citizens import ensure_bootstrap_citizen
 from backend.auth.sessions import ensure_bootstrap_officer
 from backend.config import settings
 from backend.data_sources.cap_alerts import start_cap_poller, stop_cap_poller
@@ -18,6 +19,7 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Vanta Protocol database...")
     await init_db()
     await ensure_bootstrap_officer()
+    await ensure_bootstrap_citizen()
     start_cap_poller()
     start_htp_poller()
     logger.info("Database initialized successfully.")
