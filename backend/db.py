@@ -218,11 +218,22 @@ async def insert_unit(unit: Unit):
         )
         await db.commit()
 
-async def update_unit_status(unit_id: str, status: str):
+async def update_unit_status(unit_id: str, status: str) -> bool:
     async with aiosqlite.connect(DB_PATH) as db:
         now_iso = datetime.now(timezone.utc).isoformat()
-        await db.execute("UPDATE units SET status = ?, position_updated_at = ? WHERE id = ?", (status, now_iso, unit_id))
+        cursor = await db.execute(
+            "UPDATE units SET status = ?, position_updated_at = ? WHERE id = ?",
+            (status, now_iso, unit_id),
+        )
         await db.commit()
+        return cursor.rowcount > 0
+
+
+async def delete_unit(unit_id: str) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("DELETE FROM units WHERE id = ?", (unit_id,))
+        await db.commit()
+        return cursor.rowcount > 0
 
 # --- Blocked Roads CRUD ---
 async def fetch_blocked_roads():

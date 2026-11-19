@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Activity, Bot, CheckCircle2, ChevronDown, Compass, Flame, Layers, Map as MapIcon, Plus, Route, Shield,
-  ShieldAlert, Siren, Wind, Radio
+  ShieldAlert, Siren, Trash2, Wind, Radio
 } from 'lucide-react';
 import Landing from './components/Landing';
 import Map from './components/Map';
@@ -20,7 +20,7 @@ import CapFeedPage from './components/CapFeedPage';
 import HazardDetailPanel from './components/HazardDetailPanel';
 import { useLanguage } from './i18n.jsx';
 import {
-  fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit,
+  fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit, updateUnitStatus, deleteUnit,
   fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
@@ -238,6 +238,31 @@ export default function App() {
   const handleRegisterUnit = async (unitData) => {
     await registerUnit(unitData);
     await loadData();
+  };
+
+  const handleCompleteUnitTask = async (unitId) => {
+    try {
+      await updateUnitStatus(unitId, 'available');
+      setUnits(prev => prev.map(u => (u.id === unitId ? { ...u, status: 'available' } : u)));
+      const prep = await fetchPrepositionSuggestions().catch(() => []);
+      setPrepositionSuggestions(prep);
+    } catch (err) {
+      console.error(err);
+      window.alert(err.message || 'Could not mark unit task complete.');
+    }
+  };
+
+  const handleDeleteUnit = async (unitId) => {
+    if (!window.confirm(`Remove unit ${unitId} from the roster?`)) return;
+    try {
+      await deleteUnit(unitId);
+      setUnits(prev => prev.filter(u => u.id !== unitId));
+      const prep = await fetchPrepositionSuggestions().catch(() => []);
+      setPrepositionSuggestions(prep);
+    } catch (err) {
+      console.error(err);
+      window.alert(err.message || 'Could not delete unit.');
+    }
   };
 
   const handleReportIncident = async (incidentData) => {
@@ -729,20 +754,42 @@ export default function App() {
                     ) : (
                       <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
                         {units.map((u) => (
-                          <div key={u.id} className="py-2 flex items-center justify-between">
-                            <div>
-                              <div className="text-[14px] font-medium text-[#0F172A]">{u.id}</div>
+                          <div key={u.id} className="py-2 flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-[14px] font-medium text-[#0F172A] truncate">{u.id}</div>
                               <div className="text-[12px] text-[#64748B]">{u.kind.replace('_', ' ')} · {u.station}</div>
                             </div>
-                            <span
-                              className="text-[12px] px-2 py-0.5 rounded-[4px] font-medium"
-                              style={{
-                                backgroundColor: u.status === 'available' ? '#DCFCE7' : '#F1F5F9',
-                                color: u.status === 'available' ? '#16A34A' : '#64748B',
-                              }}
-                            >
-                              {u.status === 'available' ? t('available') : u.status}
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span
+                                className="text-[12px] px-2 py-0.5 rounded-[4px] font-medium"
+                                style={{
+                                  backgroundColor: u.status === 'available' ? '#DCFCE7' : '#DBEAFE',
+                                  color: u.status === 'available' ? '#16A34A' : '#1D4ED8',
+                                }}
+                              >
+                                {u.status === 'available' ? t('available') : u.status}
+                              </span>
+                              {u.status === 'assigned' && (
+                                <button
+                                  type="button"
+                                  title="Mark task complete — unit becomes available"
+                                  onClick={() => handleCompleteUnitTask(u.id)}
+                                  className="text-[11px] px-2 py-0.5 rounded-[4px] font-medium bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] flex items-center gap-1"
+                                >
+                                  <CheckCircle2 className="w-3 h-3" strokeWidth={2} />
+                                  Complete
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                title="Remove unit from roster"
+                                onClick={() => handleDeleteUnit(u.id)}
+                                className="text-[11px] px-2 py-0.5 rounded-[4px] font-medium bg-[#FEF2F2] text-[#B91C1C] hover:bg-[#FEE2E2] flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3 h-3" strokeWidth={2} />
+                                Delete
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

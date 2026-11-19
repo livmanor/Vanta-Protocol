@@ -49,3 +49,18 @@ def test_watch_and_heavy_thresholds():
     assert level_heavy == 2
     assert score_very == 2.75
     assert level_very == 3
+
+
+def test_htp_severity_differentiates_and_dry_hotspots_stay_l1():
+    """HTP points are not a flat L2; major > minor; dry days stay category 1."""
+    major_level, major_score, _ = score_observations(
+        rainfall_24h=0.0, precip_prob_max=0, wind_max_kmh=10, river_discharge=1,
+        elevation_m=500, historical_flood=True, rainfall_48h=0.0, htp_severity="major",
+    )
+    minor_level, minor_score, _ = score_observations(
+        rainfall_24h=0.0, precip_prob_max=0, wind_max_kmh=10, river_discharge=1,
+        elevation_m=500, historical_flood=True, rainfall_48h=0.0, htp_severity="minor",
+    )
+    assert major_level == 1
+    assert minor_level == 1
+    assert major_score > minor_score

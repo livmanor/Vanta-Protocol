@@ -193,6 +193,25 @@ export async function registerUnit(unitData) {
   return res.json();
 }
 
+export async function updateUnitStatus(unitId, status) {
+  const res = await apiFetch(`/units/${encodeURIComponent(unitId)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Failed to update unit status`);
+  return payload;
+}
+
+export async function deleteUnit(unitId) {
+  const res = await apiFetch(`/units/${encodeURIComponent(unitId)}`, {
+    method: 'DELETE',
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Failed to delete unit`);
+  return payload;
+}
+
 export async function fetchIncidents() {
   const res = await apiFetch('/incidents');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch incidents`);

@@ -92,7 +92,6 @@ def score_urban_flood(
     historical_flood: bool,
     low_lying: bool = False,
     elevation_m: Optional[float] = None,
-    # kept for caller compat – NOT used in flood score
     htp_severity: Optional[str] = None,
     weather_status: Optional[str] = None,
     weather_last_updated: Optional[str] = None,
@@ -155,12 +154,23 @@ def score_urban_flood(
     else:
         warnings.append("River discharge unavailable.")
 
-    # 4. HTP waterlogging hotspot (published vulnerability)
+    # 4. HTP waterlogging hotspot (published vulnerability).
+    # Major/Minor must differentiate. A dry day with only the HTP flag must stay
+    # at category 1 (round(1.5) previously forced every hotspot to L2).
     if historical_flood:
-        score += 0.5
-        sev = (htp_severity or "major").lower()
+        sev = (htp_severity or "major").strip().lower()
+        if sev == "major":
+            bump = 0.35
+        elif sev == "minor":
+            bump = 0.15
+        else:
+            bump = 0.25
+        score += bump
         factors.append(ContributingFactor(
-            name="htp_waterlogging_hotspot", note=f"HTP severity: {sev}"
+            name="htp_waterlogging_hotspot",
+            value=bump,
+            unit="score",
+            note=f"HTP severity: {sev}",
         ))
 
     # 5. Low-lying (below city median elevation in the grid path)
