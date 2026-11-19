@@ -18,6 +18,7 @@ _PUBLIC = {
     ("POST", "/api/sos/status"),
     ("POST", "/api/citizen/register"),
     ("POST", "/api/citizen/login"),
+    ("GET", "/api/citizen/areas"),
 }
 
 _CITIZEN_PREFIXES = (

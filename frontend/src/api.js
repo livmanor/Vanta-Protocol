@@ -494,10 +494,15 @@ export async function fetchCitizenMe() {
   return res.json();
 }
 
-export async function submitCitizenReport({ lat, lng, phase, message, photo }) {
+export async function fetchCitizenAreas() {
+  const res = await apiFetch('/citizen/areas', { citizen: true });
+  if (!res.ok) throw new Error('Could not load area list');
+  return res.json();
+}
+
+export async function submitCitizenReport({ areaId, phase, message, photo }) {
   const form = new FormData();
-  form.append('lat', String(lat));
-  form.append('lng', String(lng));
+  form.append('area_id', areaId);
   form.append('phase', phase);
   form.append('message', message);
   form.append('photo', photo);

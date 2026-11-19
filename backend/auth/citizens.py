@@ -75,6 +75,7 @@ async def ensure_citizen_tables(db: aiosqlite.Connection) -> None:
             citizen_id TEXT NOT NULL,
             lat REAL NOT NULL,
             lng REAL NOT NULL,
+            area TEXT,
             phase TEXT NOT NULL,
             message TEXT NOT NULL,
             photo_path TEXT NOT NULL,
@@ -88,6 +89,10 @@ async def ensure_citizen_tables(db: aiosqlite.Connection) -> None:
         )
         """
     )
+    try:
+        await db.execute("ALTER TABLE citizen_reports ADD COLUMN area TEXT")
+    except Exception:
+        pass
 
 
 def ensure_upload_dir() -> Path:
@@ -233,13 +238,15 @@ async def logout_citizen(token: str | None) -> None:
 
 
 def _row_to_report(row: aiosqlite.Row) -> dict[str, Any]:
+    keys = row.keys()
     return {
         "id": row["id"],
         "citizen_id": row["citizen_id"],
-        "citizen_username": row["username"] if "username" in row.keys() else None,
-        "citizen_display_name": row["display_name"] if "display_name" in row.keys() else None,
+        "citizen_username": row["username"] if "username" in keys else None,
+        "citizen_display_name": row["display_name"] if "display_name" in keys else None,
         "lat": row["lat"],
         "lng": row["lng"],
+        "area": row["area"] if "area" in keys else None,
         "phase": row["phase"],
         "message": row["message"],
         "photo_content_type": row["photo_content_type"],
@@ -257,6 +264,7 @@ async def create_report(
     citizen_id: str,
     lat: float,
     lng: float,
+    area: str,
     phase: str,
     message: str,
     photo_bytes: bytes,
@@ -264,6 +272,9 @@ async def create_report(
 ) -> dict[str, Any]:
     if phase not in ("before", "during", "after"):
         raise ValueError("phase must be before, during, or after.")
+    clean_area = (area or "").strip()
+    if len(clean_area) < 2:
+        raise ValueError("Enter the area or landmark where the issue is.")
     clean_message = (message or "").strip()
     if len(clean_message) < 3:
         raise ValueError("Add a short description of what you see.")
@@ -286,13 +297,13 @@ async def create_report(
         await db.execute(
             """
             INSERT INTO citizen_reports (
-                id, citizen_id, lat, lng, phase, message, photo_path, photo_content_type,
+                id, citizen_id, lat, lng, area, phase, message, photo_path, photo_content_type,
                 status, created_at, reviewed_at, reviewed_by, linked_incident_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NULL, NULL, NULL)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NULL, NULL, NULL)
             """,
             (
-                report_id, citizen_id, float(lat), float(lng), phase, clean_message[:500],
-                str(dest), content_type, _iso(),
+                report_id, citizen_id, float(lat), float(lng), clean_area[:120], phase,
+                clean_message[:500], str(dest), content_type, _iso(),
             ),
         )
         await db.commit()

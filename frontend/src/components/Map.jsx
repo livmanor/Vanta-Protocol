@@ -726,6 +726,7 @@ useEffect(() => {
       <div class="font-sans text-xs p-1">
         <div class="text-[10px] font-bold uppercase" style="color:${color}">Citizen report · ${report.status}</div>
         <div class="font-bold text-slate-900">${report.phase} · ${report.citizen_display_name || report.citizen_username || 'citizen'}</div>
+        ${report.area ? `<div class="text-[11px] text-slate-700 mt-0.5">${String(report.area).slice(0, 80)}</div>` : ''}
         <div class="text-[11px] text-slate-600 mt-0.5">${(report.message || '').slice(0, 120)}</div>
       </div>
     `, { sticky: true });

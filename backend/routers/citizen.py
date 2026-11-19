@@ -25,6 +25,7 @@ from backend.auth.citizens import (
 )
 from backend.auth.officer import OfficerIdentity, get_optional_officer, require_officer
 from backend.auth.settings import cookie_secure
+from backend.citizen_areas import list_citizen_areas, resolve_citizen_area
 from backend.config import settings
 from backend.db import insert_incident, log_officer_decision
 from backend.models import Incident
@@ -115,26 +116,31 @@ async def citizen_me(citizen: dict = Depends(require_citizen)):
     return citizen
 
 
+@router.get("/api/citizen/areas")
+async def citizen_areas():
+    return list_citizen_areas()
+
+
 @router.post("/api/citizen/reports")
 async def submit_citizen_report(
-    lat: float = Form(...),
-    lng: float = Form(...),
+    area_id: str = Form(...),
     phase: str = Form(...),
     message: str = Form(...),
     photo: UploadFile = File(...),
     citizen: dict = Depends(require_citizen),
 ):
-    if not (settings.BBOX_MIN_LAT <= lat <= settings.BBOX_MAX_LAT and settings.BBOX_MIN_LNG <= lng <= settings.BBOX_MAX_LNG):
-        # Allow slightly outside GHMC but still Hyderabad metro-ish; warn via 400 if far
-        if not (17.0 <= lat <= 17.7 and 78.1 <= lng <= 78.8):
-            raise HTTPException(status_code=400, detail="Location must be in the Greater Hyderabad area.")
+    place = resolve_citizen_area(area_id=area_id)
+    if not place:
+        raise HTTPException(status_code=400, detail="Select an area from the list.")
+
     raw = await photo.read()
     content_type = (photo.content_type or "").split(";")[0].strip().lower() or "image/jpeg"
     try:
         return await create_report(
             citizen_id=citizen["id"],
-            lat=lat,
-            lng=lng,
+            lat=float(place["lat"]),
+            lng=float(place["lng"]),
+            area=place["name"],
             phase=phase,
             message=message,
             photo_bytes=raw,
@@ -211,7 +217,11 @@ async def officer_review_citizen_report(
             urgency=3,
             people=0,
             vulnerable=False,
-            message=f"[Citizen {phase_note}] {report['message']}",
+            message=(
+                f"[Citizen {phase_note}"
+                + (f" · {report['area']}" if report.get("area") else "")
+                + f"] {report['message']}"
+            ),
             timestamp=now_iso,
             status="new",
             source=f"citizen_report:{report_id}",
