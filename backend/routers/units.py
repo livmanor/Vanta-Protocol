@@ -4,7 +4,13 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Literal
 from backend.models import Unit, UnitCreate, PrepositionSuggestion
-from backend.db import fetch_units, insert_unit, update_unit_status, log_officer_decision
+from backend.db import (
+    delete_unit,
+    fetch_units,
+    insert_unit,
+    log_officer_decision,
+    update_unit_status,
+)
 from backend.services.risk_engine import compute_real_risk_zones
 from backend.services.prepositioning import generate_prepositioning_suggestions
 
@@ -12,6 +18,7 @@ router = APIRouter(prefix="/api", tags=["Units & Prepositioning"])
 
 class StatusUpdateRequest(BaseModel):
     status: Literal["available", "assigned"]
+    officer_id: str = "Officer-ControlRoom"
 
 class ApprovePrepositionRequest(BaseModel):
     suggestion_id: str
@@ -44,8 +51,32 @@ async def register_unit(req: UnitCreate):
 
 @router.patch("/units/{unit_id}/status")
 async def change_unit_status(unit_id: str, req: StatusUpdateRequest):
-    await update_unit_status(unit_id, req.status)
+    """Officer marks a unit available (task complete) or assigned."""
+    updated = await update_unit_status(unit_id, req.status)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    await log_officer_decision(
+        decision_id=f"unit-status-{uuid.uuid4().hex[:10]}",
+        decision_type="UNIT_STATUS_UPDATED",
+        details={"unit_id": unit_id, "new_status": req.status},
+        officer_id=req.officer_id,
+    )
     return {"status": "ok", "unit_id": unit_id, "new_status": req.status}
+
+
+@router.delete("/units/{unit_id}")
+async def remove_unit(unit_id: str, officer_id: str = "Officer-ControlRoom"):
+    """Officer removes a registered unit from the control room roster."""
+    deleted = await delete_unit(unit_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    await log_officer_decision(
+        decision_id=f"unit-delete-{uuid.uuid4().hex[:10]}",
+        decision_type="UNIT_DELETED",
+        details={"unit_id": unit_id},
+        officer_id=officer_id,
+    )
+    return {"status": "deleted", "unit_id": unit_id}
 
 @router.get("/prepositioning-suggestions", response_model=List[PrepositionSuggestion])
 async def get_prepositioning_suggestions():
