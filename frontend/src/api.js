@@ -261,6 +261,16 @@ export async function refreshOperationsPlan() {
   return payload;
 }
 
+export async function fetchReplay(date) {
+  const res = await apiFetch(`/replay?date=${encodeURIComponent(date)}`);
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = payload.detail;
+    throw new Error(typeof detail === 'string' ? detail : `HTTP ${res.status}: Replay failed`);
+  }
+  return payload;
+}
+
 export async function fetchBlockedRoads() {
   const res = await apiFetch('/blocked-roads');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch blocked roads`);

@@ -1,4 +1,4 @@
-"""HTP waterlogging page parse, GHMC zone coverage, and severity tags."""
+"""HTP waterlogging page parse, GHMC zone coverage, and snapshot fallback."""
 
 import asyncio
 from pathlib import Path
@@ -7,12 +7,13 @@ import pytest
 
 from backend.config import settings
 from backend.data_sources import htp_waterlogging as htp
+from backend import db as db_module
 
 FIXTURE = Path(__file__).parent / "fixtures" / "htp" / "water_logging_sample.html"
 
 
 @pytest.fixture(autouse=True)
-def _reset_htp(monkeypatch):
+def _reset_htp(monkeypatch, tmp_path):
     htp.reset_state_for_tests()
     monkeypatch.setattr(settings, "HTP_ZONE_FILTER", "all")
     monkeypatch.setattr(
@@ -20,6 +21,10 @@ def _reset_htp(monkeypatch):
         "HTP_WATERLOGGING_URL",
         "https://echallan.tspolice.gov.in/htp/water_logging.html",
     )
+    db_path = tmp_path / "htp_test.db"
+    monkeypatch.setattr(settings, "DATABASE_PATH", str(db_path))
+    monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
+    asyncio.run(db_module.init_db())
 
 
 def test_parse_all_ghmc_zones_include_golconda_and_khairatabad():
@@ -54,7 +59,7 @@ def test_catalog_items_expose_zone_and_severity_for_agents():
     assert sample["historical_flood_prone"] is True
 
 
-def test_poll_uses_fixture_via_httpx_mock(monkeypatch):
+def test_poll_success_saves_snapshot(monkeypatch):
     html = FIXTURE.read_text(encoding="utf-8")
 
     class FakeResponse:
@@ -80,4 +85,82 @@ def test_poll_uses_fixture_via_httpx_mock(monkeypatch):
     assert payload["status"] == "live"
     assert payload["point_count"] >= 40
     assert payload["zone_filter"] == "all"
+    assert not payload["using_fallback"]
+
+    snapshot = asyncio.run(db_module.load_htp_snapshot())
+    assert snapshot is not None
+    assert snapshot["point_count"] >= 40
+    assert len(snapshot["points"]) >= 40
+    assert snapshot["fetched_at"]
+
+
+def test_poll_failure_serves_stale_snapshot(monkeypatch):
+    html = FIXTURE.read_text(encoding="utf-8")
+
+    class LiveResponse:
+        status_code = 200
+        text = html
+
+    class FailClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def get(self, url):
+            raise RuntimeError("network down")
+
+    class LiveClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def get(self, url):
+            return LiveResponse()
+
+    monkeypatch.setattr(htp.httpx, "AsyncClient", LiveClient)
+    live = asyncio.run(htp.poll_htp_waterlogging(force=True))
+    assert live["status"] == "live"
+    snapshot_at = live["snapshot_fetched_at"]
+    live_count = live["point_count"]
+
+    htp.reset_state_for_tests()
+    monkeypatch.setattr(htp.httpx, "AsyncClient", FailClient)
+    stale = asyncio.run(htp.poll_htp_waterlogging(force=True))
+    assert stale["status"] == "stale"
+    assert stale["point_count"] == live_count
+    assert stale["snapshot_fetched_at"] == snapshot_at
+    assert "RuntimeError" in (stale.get("error_message") or "")
+    catalog = htp.get_hotspot_catalog()
+    assert len(catalog) == live_count
+
+
+def test_poll_failure_with_no_snapshot_returns_failed_empty(monkeypatch):
+    class FailClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def get(self, url):
+            raise RuntimeError("network down")
+
+    monkeypatch.setattr(htp.httpx, "AsyncClient", FailClient)
+    payload = asyncio.run(htp.poll_htp_waterlogging(force=True))
+    assert payload["status"] == "failed"
+    assert payload["point_count"] == 0
+    assert htp.get_hotspot_catalog() == []
     assert not payload["using_fallback"]

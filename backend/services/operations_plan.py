@@ -142,12 +142,21 @@ async def _save_plan(events, valid_from, valid_until, kept_ids):
         await db.commit()
 
 
-async def refresh_operations_plan(zones, cells, force: bool = False) -> dict:
+async def refresh_operations_plan(
+    zones,
+    cells,
+    force: bool = False,
+    *,
+    persist: bool = True,
+    as_of: Optional[datetime] = None,
+    use_cap: bool = True,
+) -> dict:
+    """Draft an operations window. Set persist=False for replay (no calendar DB writes)."""
     emerging = [cell for cell in cells if getattr(cell, "emerging", False)]
     locations = [*zones, *emerging]
     rain = rain_band(locations)
-    floor_alerts = await active_floor_alerts()
-    source = source_status_payload()
+    floor_alerts = await active_floor_alerts() if use_cap else []
+    source = source_status_payload() if use_cap else {"status": "skipped", "last_success_at": None}
     # Stale feed still applies unexpired alert floors; failed feed never lowers the band.
     band = combine_band(rain, floor_alerts)
     signature = (
@@ -158,11 +167,19 @@ async def refresh_operations_plan(zones, cells, force: bool = False) -> dict:
             (item.id, None if _peak_rain(item) is None else round(_peak_rain(item), 1), getattr(item, "risk_level", None))
             for item in locations
         )),
+        persist,
+        None if as_of is None else as_of.date().isoformat(),
     )
-    if not force and _cache["payload"] and _cache["signature"] == signature and time.time() - _cache["at"] < PLAN_CACHE_SECONDS:
+    if (
+        persist
+        and not force
+        and _cache["payload"]
+        and _cache["signature"] == signature
+        and time.time() - _cache["at"] < PLAN_CACHE_SECONDS
+    ):
         return _cache["payload"]
 
-    now = datetime.now(IST)
+    now = as_of.astimezone(IST) if as_of is not None else datetime.now(IST)
     if band == "heavy":
         start, end = now + timedelta(minutes=30), now + timedelta(hours=8, minutes=30)
     elif band == "watch":
@@ -170,12 +187,14 @@ async def refresh_operations_plan(zones, cells, force: bool = False) -> dict:
     else:
         start, end = now, now + timedelta(hours=6)
 
-    existing = await _stored_events()
-    units = await fetch_units()
+    existing = await _stored_events() if persist else {}
+    units = await fetch_units() if persist else []
     available = [unit for unit in units if unit.status == "available"]
     events = []
     peaks = [_peak_rain(item) for item in locations]
-    peak = max((value for value in peaks if value is not None), default=0.0)
+    # Peak for messaging only; missing rain stays absent from band logic above.
+    known_peaks = [value for value in peaks if value is not None]
+    peak = max(known_peaks) if known_peaks else 0.0
     trigger = _trigger_fingerprint(band, floor_alerts)
     raised_by_alert = bool(floor_alerts) and BAND_RANK.get(band, 0) > BAND_RANK.get(rain, 0)
 
@@ -315,7 +334,8 @@ async def refresh_operations_plan(zones, cells, force: bool = False) -> dict:
             kept.append(event_id)
             publish.append(previous)
 
-    await _save_plan(publish, start, end, set(kept))
+    if persist:
+        await _save_plan(publish, start, end, set(kept))
 
     if band == "quiet":
         summary = f"No evacuation window. Rain is under {WATCH_MM:.0f} mm and no cell is at level 3 or higher."
@@ -330,6 +350,8 @@ async def refresh_operations_plan(zones, cells, force: bool = False) -> dict:
         summary = f"Heavy rain or level 4 risk. Evacuation corridors are drafted to open at {start.strftime('%H:%M')} IST and still need officer approval."
     if source.get("status") == "stale" and floor_alerts:
         summary += f" CAP feed is stale (last success {source.get('last_success_at')})."
+    if not persist:
+        summary = "REPLAY — historical data, not live. " + summary
     payload = {
         "band": band,
         "rain_band": rain,
@@ -340,6 +362,8 @@ async def refresh_operations_plan(zones, cells, force: bool = False) -> dict:
         "events": publish,
         "cap_source_status": source.get("status"),
         "floor_alerts": floor_alerts,
+        "persisted": persist,
     }
-    _cache.update(signature=signature, at=time.time(), payload=payload)
+    if persist:
+        _cache.update(signature=signature, at=time.time(), payload=payload)
     return payload

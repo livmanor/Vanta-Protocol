@@ -30,9 +30,10 @@ class Settings(BaseSettings):
     OSM_CACHE_TTL: int = 3600
 
     GEMINI_API_KEY: Optional[SecretStr] = None
-    # gemini-3.8-flash is listed but was returning HTTP 503 high demand on 2026-11-17.
-    # gemini-2.5-flash still answers. It reroutes on 2026-12-01.
+    # gemini-2.5-flash still answers today; Google documents a reroute on 2026-12-01.
     GEMINI_MODEL: str = "gemini-2.5-flash"
+    # Comma-separated fallbacks tried after the primary model (empty body, schema mismatch, 429/5xx).
+    GEMINI_FALLBACK_MODELS: str = "gemini-2.0-flash,gemini-flash-latest"
     GROQ_API_KEY: Optional[SecretStr] = None
     GROQ_MODEL: str = "openai/gpt-oss-20b"
 

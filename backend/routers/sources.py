@@ -95,10 +95,13 @@ async def _cap_status() -> DataSourceStatus:
 
 async def _htp_status() -> DataSourceStatus:
     payload = htp_status_payload()
-    if payload.get("error_message") and payload.get("status") != "live":
+    if payload.get("status") == "stale":
+        stamp = payload.get("snapshot_fetched_at") or payload.get("last_updated") or "unknown"
+        detail = f"Stale snapshot from {stamp}; live HTP page unreachable."
+        if payload.get("error_message"):
+            detail = f"{detail} ({payload['error_message']})"
+    elif payload.get("error_message") and payload.get("status") != "live":
         detail = payload["error_message"]
-    elif payload.get("using_fallback"):
-        detail = "Using static fallback seed; live HTP page not loaded."
     else:
         detail = f"{payload.get('point_count', 0)} points · filter {payload.get('zone_filter')}"
     return DataSourceStatus(

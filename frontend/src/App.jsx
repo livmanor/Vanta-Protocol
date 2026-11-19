@@ -23,7 +23,7 @@ import {
   fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
-  refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts
+  refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts, fetchReplay
 } from './api';
 
 const NAV = [
@@ -70,6 +70,9 @@ export default function App() {
   const [entered, setEntered] = useState(false);
   const [officer, setOfficer] = useState(null);
   const [activeTab, setActiveTab] = useState('zones'); // 'zones' | 'preposition' | 'incidents'
+  const [replayMode, setReplayMode] = useState(false);
+  const [replayDate, setReplayDate] = useState('2024-09-01');
+  const [replayBanner, setReplayBanner] = useState('');
 
   const newMenuRef = useRef(null);
 
@@ -87,6 +90,26 @@ export default function App() {
   const loadData = useCallback(async () => {
     setLoadingRisk(true);
     try {
+      if (replayMode) {
+        try {
+          const replay = await fetchReplay(replayDate);
+          setReplayBanner(replay.banner || 'REPLAY — historical data, not live');
+          setRiskZones(Array.isArray(replay.zones) ? replay.zones : []);
+          setRiskZonesError('');
+          setRiskGrid(replay.grid || null);
+          setOperationsPlan(replay.operations_plan || null);
+          setZoneWeather([]);
+          setPrepositionSuggestions([]);
+        } catch (err) {
+          console.error(err);
+          setRiskZonesError(err.message || 'Replay failed');
+          setReplayBanner('REPLAY — historical data, not live');
+        }
+        fetchDataSources().then(setDataSources).catch(err => console.error(err));
+        return;
+      }
+
+      setReplayBanner('');
       const loadZones = async () => {
         try {
           return await fetchRiskZones();
@@ -139,7 +162,7 @@ export default function App() {
     } finally {
       setLoadingRisk(false);
     }
-  }, []);
+  }, [replayMode, replayDate]);
 
   const handleRefreshSources = async () => {
     setSourcesLoading(true);
@@ -299,6 +322,24 @@ export default function App() {
               </button>
             </div>
           )}
+          <div className="hidden md:flex items-center gap-2 rounded-[6px] border border-[#E2E8F0] px-2 h-[36px] bg-[#F8FAFC]">
+            <label className="flex items-center gap-1.5 text-[12px] text-[#334155]">
+              <input
+                type="checkbox"
+                checked={replayMode}
+                onChange={(event) => setReplayMode(event.target.checked)}
+              />
+              Replay
+            </label>
+            <input
+              type="date"
+              value={replayDate}
+              onChange={(event) => setReplayDate(event.target.value)}
+              disabled={!replayMode}
+              className="h-[28px] rounded-[4px] border border-[#E2E8F0] bg-white px-1.5 text-[12px] text-[#0F172A] disabled:opacity-50"
+            />
+          </div>
+
           {/* Language Switch: Segmented control 14px */}
           <div
             className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]"
@@ -375,6 +416,11 @@ export default function App() {
         </div>
       </header>
       <SourceStatusBar sources={dataSources} onRefresh={handleRefreshSources} loading={sourcesLoading} />
+      {replayMode && (
+        <div className="shrink-0 border-b border-[#F59E0B] bg-[#FFFBEB] px-4 py-2 text-[13px] font-semibold tracking-wide text-[#92400E]">
+          {replayBanner || 'REPLAY — historical data, not live'} · {replayDate}
+        </div>
+      )}
       <button
         type="button"
         onClick={() => setView('cap')}

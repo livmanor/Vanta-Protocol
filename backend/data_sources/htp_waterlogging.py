@@ -15,7 +15,6 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html.parser import HTMLParser
-from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlparse
 
@@ -26,7 +25,6 @@ from backend.config import settings
 logger = logging.getLogger("vanta.htp_waterlogging")
 
 HTP_HOST = "echallan.tspolice.gov.in"
-STATIC_FALLBACK = Path(__file__).resolve().parents[2] / "data" / "hyderabad_hotspots.json"
 
 _state: dict[str, Any] = {
     "status": "failed",
@@ -37,6 +35,7 @@ _state: dict[str, Any] = {
     "point_count": 0,
     "zone_filter": None,
     "using_fallback": False,
+    "snapshot_fetched_at": None,
 }
 _poll_task: Optional[asyncio.Task] = None
 _lock = asyncio.Lock()
@@ -199,37 +198,42 @@ def parse_htp_html(html: str, zone: str | None = None) -> list[HtpPoint]:
     return points
 
 
-def _load_static_fallback() -> list[dict[str, Any]]:
-    import json
-
-    if not STATIC_FALLBACK.exists():
-        return []
-    catalog = json.loads(STATIC_FALLBACK.read_text(encoding="utf-8"))
-    zones = []
-    for item in catalog.get("hotspots", []):
-        lat, lon = item["centroid"]
-        zones.append(
-            {
-                **item,
-                "centroid": (lat, lon),
-                "htp_area": item.get("htp_area") or "fallback",
-                "htp_zone": item.get("htp_zone") or "GHMC",
-                "htp_severity": (item.get("source_severity") or "major").lower(),
-                "list_label": catalog.get("label") or "static fallback",
-                "list_as_of": catalog.get("as_of"),
-                "list_source": catalog.get("source"),
-                "list_source_url": catalog.get("source_url"),
-            }
-        )
-    return zones
+def _points_from_catalog_items(items: list[dict[str, Any]]) -> list[HtpPoint]:
+    """Rebuild HtpPoint objects from a persisted catalog snapshot."""
+    restored: list[HtpPoint] = []
+    for item in items:
+        try:
+            centroid = item.get("centroid") or [None, None]
+            if isinstance(centroid, (list, tuple)) and len(centroid) >= 2:
+                lat, lng = float(centroid[0]), float(centroid[1])
+            else:
+                lat = float(item["lat"])
+                lng = float(item.get("lng") if item.get("lng") is not None else item["lon"])
+            sno = str(item.get("htp_sno") or "").strip()
+            if not sno and str(item.get("id") or "").startswith("htp-"):
+                sno = str(item["id"])[4:]
+            if not sno:
+                continue
+            restored.append(
+                HtpPoint(
+                    sno=sno,
+                    area=str(item.get("htp_area") or ""),
+                    zone=str(item.get("htp_zone") or ""),
+                    name=str(item.get("name") or sno),
+                    severity=str(item.get("htp_severity") or item.get("source_severity") or "minor").lower(),
+                    lat=lat,
+                    lng=lng,
+                )
+            )
+        except (TypeError, ValueError, KeyError):
+            continue
+    return restored
 
 
 def get_hotspot_catalog() -> list[dict[str, Any]]:
-    """Current HTP catalog (live cache or static fallback). Safe for sync callers."""
+    """Current HTP catalog from memory (live or stale snapshot). Never invents points."""
     points: list[HtpPoint] = list(_state.get("points") or [])
-    if points:
-        return [p.as_catalog_item() for p in points]
-    return _load_static_fallback()
+    return [p.as_catalog_item() for p in points]
 
 
 def source_status_payload() -> dict[str, Any]:
@@ -237,8 +241,9 @@ def source_status_payload() -> dict[str, Any]:
         "name": "Hyderabad Traffic Police waterlogging points",
         "endpoint": settings.HTP_WATERLOGGING_URL,
         "status": _state["status"],
-        "last_updated": _state.get("last_success_at") or _state.get("last_polled_at"),
+        "last_updated": _state.get("last_success_at") or _state.get("snapshot_fetched_at") or _state.get("last_polled_at"),
         "last_polled_at": _state.get("last_polled_at"),
+        "snapshot_fetched_at": _state.get("snapshot_fetched_at"),
         "error_message": _state.get("error_message"),
         "point_count": _state.get("point_count") or 0,
         "zone_filter": _state.get("zone_filter") or zone_filter(),
@@ -250,6 +255,43 @@ def catalog_by_id() -> dict[str, dict[str, Any]]:
     return {item["id"]: item for item in get_hotspot_catalog()}
 
 
+async def _apply_snapshot_or_fail(error_message: str) -> None:
+    """On fetch failure: reuse memory, else load SQLite snapshot, else empty+failed."""
+    from backend.db import load_htp_snapshot
+
+    if _state["points"]:
+        _state["status"] = "stale"
+        _state["error_message"] = error_message
+        _state["using_fallback"] = False
+        _state["point_count"] = len(_state["points"])
+        return
+
+    snapshot = await load_htp_snapshot()
+    if snapshot and snapshot.get("points"):
+        restored = _points_from_catalog_items(snapshot["points"])
+        if restored:
+            _state["points"] = restored
+            _state["point_count"] = len(restored)
+            _state["status"] = "stale"
+            _state["snapshot_fetched_at"] = snapshot.get("fetched_at")
+            _state["last_success_at"] = snapshot.get("fetched_at")
+            _state["error_message"] = error_message
+            _state["using_fallback"] = False
+            logger.warning(
+                "HTP feed failed; serving stale snapshot from %s (%s points).",
+                snapshot.get("fetched_at"),
+                len(restored),
+            )
+            return
+
+    _state["points"] = []
+    _state["point_count"] = 0
+    _state["status"] = "failed"
+    _state["error_message"] = error_message
+    _state["using_fallback"] = False
+    _state["snapshot_fetched_at"] = None
+
+
 async def poll_htp_waterlogging(force: bool = False) -> dict[str, Any]:
     """Fetch and parse the HTP page. Updates the in-memory catalog used by risk + agents."""
     async with _lock:
@@ -258,10 +300,7 @@ async def poll_htp_waterlogging(force: bool = False) -> dict[str, Any]:
         _state["zone_filter"] = zone_filter()
         url = (settings.HTP_WATERLOGGING_URL or "").strip()
         if not url or not _host_allowed(url):
-            _state["status"] = "failed"
-            _state["error_message"] = "HTP waterlogging URL host is not allowed."
-            if not _state["points"]:
-                _state["using_fallback"] = True
+            await _apply_snapshot_or_fail("HTP waterlogging URL host is not allowed.")
             return source_status_payload()
 
         try:
@@ -284,8 +323,13 @@ async def poll_htp_waterlogging(force: bool = False) -> dict[str, Any]:
             _state["point_count"] = len(parsed)
             _state["status"] = "live"
             _state["last_success_at"] = now
+            _state["snapshot_fetched_at"] = now
             _state["error_message"] = None
             _state["using_fallback"] = False
+            catalog_items = [p.as_catalog_item() for p in parsed]
+            from backend.db import save_htp_snapshot
+
+            await save_htp_snapshot(catalog_items, now, zone_filter())
             zones = sorted({p.zone for p in parsed})
             logger.info(
                 "HTP waterlogging refreshed: %s points across %s GHMC zones (%s)",
@@ -295,16 +339,7 @@ async def poll_htp_waterlogging(force: bool = False) -> dict[str, Any]:
             )
         except Exception as exc:
             logger.warning("HTP waterlogging poll failed: %s", type(exc).__name__)
-            if _state["points"]:
-                _state["status"] = "stale"
-                _state["error_message"] = f"{type(exc).__name__}: {str(exc)[:120]}"
-                _state["using_fallback"] = False
-            else:
-                fallback = _load_static_fallback()
-                _state["status"] = "failed"
-                _state["error_message"] = f"{type(exc).__name__}: {str(exc)[:120]}"
-                _state["using_fallback"] = bool(fallback)
-                _state["point_count"] = len(fallback)
+            await _apply_snapshot_or_fail(f"{type(exc).__name__}: {str(exc)[:120]}")
         return source_status_payload()
 
 
@@ -351,5 +386,6 @@ def reset_state_for_tests() -> None:
             "point_count": 0,
             "zone_filter": None,
             "using_fallback": False,
+            "snapshot_fetched_at": None,
         }
     )

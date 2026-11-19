@@ -9,7 +9,7 @@ from backend.data_sources.htp_waterlogging import ensure_catalog, get_hotspot_ca
 
 
 def load_hotspot_catalog() -> List[Dict[str, Any]]:
-    """Live HTP GHMC-zone points (or static fallback if the feed has not loaded)."""
+    """Live or stale HTP GHMC-zone points from memory/snapshot. Empty when none exist."""
     return get_hotspot_catalog()
 
 

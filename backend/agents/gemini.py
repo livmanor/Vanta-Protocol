@@ -11,15 +11,41 @@ logger = logging.getLogger("vanta.agents.gemini")
 
 # Transient HTTP status codes that are safe to retry on another model.
 _RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
-# gemini-3.8-flash is listed, but on 2026-11-17 it returned high-demand 503s and timeouts.
-# gemini-2.5-flash still answers. It reroutes on 2026-12-01.
-FALLBACK_MODEL = "gemini-2.5-flash"
+_DEPRECATION_MARKERS = (
+    "deprecated",
+    "deprecation",
+    "reroute",
+    "redirect",
+    "no longer available",
+    "has been shut down",
+    "migrate to",
+)
 _model_used: str | None = None
 
 
 def model_used() -> str:
     """The model that last produced a result, or the configured model if none has."""
     return _model_used or settings.GEMINI_MODEL
+
+
+def _fallback_models() -> list[str]:
+    raw = (settings.GEMINI_FALLBACK_MODELS or "").strip()
+    if not raw:
+        return []
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def _model_chain() -> list[str]:
+    models = [settings.GEMINI_MODEL]
+    for model in _fallback_models():
+        if model not in models:
+            models.append(model)
+    return models
+
+
+def _looks_like_deprecation(exc: Exception) -> bool:
+    text = str(exc or "").lower()
+    return any(marker in text for marker in _DEPRECATION_MARKERS)
 
 
 class AgentConfigurationError(RuntimeError):
@@ -45,9 +71,7 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
     from google.genai import types
 
     api_key = settings.GEMINI_API_KEY.get_secret_value()
-    models = [settings.GEMINI_MODEL]
-    if FALLBACK_MODEL not in models:
-        models.append(FALLBACK_MODEL)
+    models = _model_chain()
 
     last_exc: Exception | None = None
     failures: list[str] = []
@@ -70,7 +94,12 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
                 )
 
             if not response.text:
-                raise AgentProviderError("Gemini returned an empty response.")
+                last_exc = AgentProviderError("Gemini returned an empty response.")
+                failures.append(f"{model} empty response")
+                if index < len(models) - 1:
+                    logger.info("Trying Gemini fallback %s after empty response.", models[index + 1])
+                    continue
+                raise last_exc
 
             try:
                 parsed = schema.model_validate_json(response.text)
@@ -101,7 +130,6 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
         except AgentConfigurationError:
             raise
         except AgentProviderError:
-            # Already handled empty/schema above when a fallback remains; re-raise terminal ones.
             raise
         except asyncio.TimeoutError as exc:
             last_exc = exc
@@ -109,6 +137,14 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
             logger.warning("Gemini model %s timed out.", model)
         except Exception as exc:
             status_code = getattr(exc, "code", None)
+            if model == settings.GEMINI_MODEL and _looks_like_deprecation(exc):
+                logger.warning(
+                    "Primary Gemini model %s returned a deprecation/redirect signal (%s). "
+                    "gemini-2.5-flash is documented to reroute on 2026-12-01; "
+                    "set GEMINI_MODEL / GEMINI_FALLBACK_MODELS.",
+                    model,
+                    type(exc).__name__,
+                )
             logger.warning(
                 "Gemini structured request failed: model=%s exception=%s status=%s",
                 model, type(exc).__name__, status_code,
@@ -120,6 +156,12 @@ async def generate_structured(system_instruction: str, context: str, schema: Typ
                         "Check the configured key and API access." % status_code
                     ) from exc
                 if status_code == 404:
+                    # 404 often means the model id was retired; try the next fallback.
+                    last_exc = exc
+                    failures.append(f"{model} HTTP 404")
+                    if index < len(models) - 1:
+                        logger.info("Trying Gemini fallback %s after HTTP 404.", models[index + 1])
+                        continue
                     raise AgentProviderError(
                         "Gemini model %s was not found for this project (HTTP 404)." % model
                     ) from exc
