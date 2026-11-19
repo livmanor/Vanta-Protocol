@@ -76,7 +76,22 @@ class Settings(BaseSettings):
     CAP_FLOOR_ORANGE: str = "watch"
     CAP_FLOOR_RED: str = "heavy"
 
-    # Hyderabad Traffic Police live waterlogging list (HTML table).
+    # Grid resolution and boundary (overridable per deployment).
+    # Defaults reproduce the original 10×12=120 cell GHMC layout.
+    # Changing these changes the cell count; existing elevation cache entries remain
+    # valid because elevation is keyed by cell id which encodes row/col.
+    GRID_LAT_MIN: float = 17.30
+    GRID_LAT_MAX: float = 17.56
+    GRID_LON_MIN: float = 78.30
+    GRID_LON_MAX: float = 78.62
+    GRID_LAT_COUNT: int = 10
+    GRID_LON_COUNT: int = 12
+
+    # Optional DEM file for slope/terrain features.
+    # Provide an absolute path to a GeoTIFF or similar rasterio-readable file.
+    # Leave empty to skip DEM features (graceful fallback; no download attempted).
+    # Only files that already exist on disk are read; nothing is fetched remotely.
+    DEM_FILE_PATH: str = ""
     HTP_WATERLOGGING_URL: str = "https://echallan.tspolice.gov.in/htp/water_logging.html"
     # GHMC division filter on the HTP table. "all" = every geocoded city point (Khairatabad, Golconda, …).
     # Comma-separated names also work, e.g. Khairatabad,Golconda,Charminar.

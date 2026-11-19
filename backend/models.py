@@ -1,6 +1,63 @@
 from typing import Literal, Optional, List, Any, Dict
 from pydantic import BaseModel, Field
 
+
+# ── Unified Prediction Result ───────────────────────────────────────────────────
+# Every hazard score emitted by risk_engine.py uses this contract.
+# Rules enforced here and in risk_engine.py:
+#   - probability is only populated when a calibrated ML model produced it.
+#     Rule-based paths always leave it None.
+#   - method is ALWAYS "rule_based" for the heuristic engine. Never claim ML.
+#   - forecast_window_h: hours the category/probability covers (typically 24).
+#   - model_version: "none" when no saved model was applied.
+
+class ContributingFactor(BaseModel):
+    name: str
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    note: Optional[str] = None
+
+
+class DataFreshness(BaseModel):
+    source: str
+    status: Literal["live", "partial", "stale", "failed"]
+    fetched_at: Optional[str] = None
+    missing_fields: List[str] = Field(default_factory=list)
+
+
+class PredictionResult(BaseModel):
+    """Unified hazard prediction. See method/probability rules above."""
+    hazard: Literal["urban_flood", "cyclone_wind", "heat"]
+    location_id: str
+    location_name: str
+    lat: float
+    lon: float
+    timestamp: str                        # ISO-8601 UTC
+    forecast_window_h: int                # hours covered (usually 24)
+    category: Optional[int] = Field(default=None, ge=1, le=5)
+    probability: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    method: Literal["rule_based", "ml"] = "rule_based"
+    model_version: str = "none"
+    contributing_factors: List[ContributingFactor] = Field(default_factory=list)
+    data_freshness: List[DataFreshness] = Field(default_factory=list)
+    missing_data_warnings: List[str] = Field(default_factory=list)
+    summary: str                          # human-readable rationale
+
+
+class CycloneWindResult(BaseModel):
+    """Cyclone / wind-only hazard. Never merged into the urban flood score."""
+    location_id: str
+    location_name: str
+    lat: float
+    lon: float
+    timestamp: str
+    wind_speed_kmh: Optional[float] = None
+    wind_gusts_kmh: Optional[float] = None
+    category: Optional[int] = Field(default=None, ge=1, le=5)
+    summary: str
+    data_freshness: List[DataFreshness] = Field(default_factory=list)
+    missing_data_warnings: List[str] = Field(default_factory=list)
+
 # --- Frozen Data Contracts (agent_rules.md §4) ---
 
 class Incident(BaseModel):
@@ -99,6 +156,7 @@ class RiskGridCell(BaseModel):
     heat_temperature_max_c: Optional[float] = None
     heat_apparent_max_c: Optional[float] = None
     elevation_m: Optional[float] = None
+    slope_m_per_m: Optional[float] = None   # DEM-derived; None if no DEM
     low_lying: bool = False
     emerging: bool = False
     source_status: Literal["live", "partial", "stale", "failed"]
@@ -112,6 +170,10 @@ class RiskGridResponse(BaseModel):
     spacing_km: float
     lat_step: float
     lon_step: float
+    # True prediction resolution reported to the caller.
+    prediction_resolution_km: float          # same as spacing_km; explicit field
+    dem_resolution_m: Optional[int] = None   # None when no DEM was used
+    weather_source: str = "Open-Meteo per-cell"
     cells: List[RiskGridCell]
 
 # --- Preparedness Models ---
