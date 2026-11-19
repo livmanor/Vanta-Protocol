@@ -117,17 +117,35 @@ async def citizen_me(citizen: dict = Depends(require_citizen)):
 
 @router.post("/api/citizen/reports")
 async def submit_citizen_report(
-    lat: float = Form(...),
-    lng: float = Form(...),
+    area: str = Form(...),
     phase: str = Form(...),
     message: str = Form(...),
     photo: UploadFile = File(...),
     citizen: dict = Depends(require_citizen),
 ):
-    if not (settings.BBOX_MIN_LAT <= lat <= settings.BBOX_MAX_LAT and settings.BBOX_MIN_LNG <= lng <= settings.BBOX_MAX_LNG):
-        # Allow slightly outside GHMC but still Hyderabad metro-ish; warn via 400 if far
-        if not (17.0 <= lat <= 17.7 and 78.1 <= lng <= 78.8):
-            raise HTTPException(status_code=400, detail="Location must be in the Greater Hyderabad area.")
+    from backend.data_sources.geocoding import resolve_location
+
+    clean_area = (area or "").strip()
+    if len(clean_area) < 2:
+        raise HTTPException(status_code=400, detail="Enter the area or landmark where the issue is.")
+
+    query = clean_area if "hyderabad" in clean_area.lower() else f"{clean_area}, Hyderabad"
+    try:
+        place = await resolve_location(query)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{exc} Use a Hyderabad place name (e.g. Musi river, Charminar, Hitec City).",
+        ) from exc
+
+    lat = float(place["latitude"])
+    lng = float(place["longitude"])
+    if not (17.0 <= lat <= 17.7 and 78.1 <= lng <= 78.8):
+        raise HTTPException(
+            status_code=400,
+            detail="That place resolved outside Greater Hyderabad. Try a more specific local area name.",
+        )
+
     raw = await photo.read()
     content_type = (photo.content_type or "").split(";")[0].strip().lower() or "image/jpeg"
     try:
@@ -135,6 +153,7 @@ async def submit_citizen_report(
             citizen_id=citizen["id"],
             lat=lat,
             lng=lng,
+            area=clean_area,
             phase=phase,
             message=message,
             photo_bytes=raw,
@@ -211,7 +230,11 @@ async def officer_review_citizen_report(
             urgency=3,
             people=0,
             vulnerable=False,
-            message=f"[Citizen {phase_note}] {report['message']}",
+            message=(
+                f"[Citizen {phase_note}"
+                + (f" · {report['area']}" if report.get("area") else "")
+                + f"] {report['message']}"
+            ),
             timestamp=now_iso,
             status="new",
             source=f"citizen_report:{report_id}",

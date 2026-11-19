@@ -748,6 +748,9 @@ export default function App() {
                                 <span className="text-[#64748B]">{report.status}</span>
                               </div>
                               <div className="text-[12px] text-[#0F172A] mt-0.5 line-clamp-2">{report.message}</div>
+                              {report.area && (
+                                <div className="text-[11px] text-[#9A3412] mt-0.5">{report.area}</div>
+                              )}
                               <div className="text-[11px] text-[#64748B] mt-0.5">
                                 {report.citizen_display_name || report.citizen_username} · {new Date(report.created_at).toLocaleString()}
                               </div>

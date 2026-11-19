@@ -494,10 +494,9 @@ export async function fetchCitizenMe() {
   return res.json();
 }
 
-export async function submitCitizenReport({ lat, lng, phase, message, photo }) {
+export async function submitCitizenReport({ area, phase, message, photo }) {
   const form = new FormData();
-  form.append('lat', String(lat));
-  form.append('lng', String(lng));
+  form.append('area', area);
   form.append('phase', phase);
   form.append('message', message);
   form.append('photo', photo);

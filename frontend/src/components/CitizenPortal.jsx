@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Camera, LogOut, MapPin, RefreshCw, Upload } from 'lucide-react';
+import { Camera, LogOut, RefreshCw, Upload } from 'lucide-react';
 import {
   fetchCitizenMe,
   fetchMyCitizenReports,
@@ -25,10 +25,9 @@ export default function CitizenPortal({ onExit }) {
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('during');
   const [message, setMessage] = useState('');
+  const [area, setArea] = useState('');
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState('');
-  const [coords, setCoords] = useState(null);
-  const [geoError, setGeoError] = useState('');
   const [reports, setReports] = useState([]);
   const [submitMsg, setSubmitMsg] = useState('');
 
@@ -66,25 +65,6 @@ export default function CitizenPortal({ onExit }) {
     return () => URL.revokeObjectURL(url);
   }, [photo]);
 
-  const captureLocation = () => {
-    setGeoError('');
-    if (!navigator.geolocation) {
-      setGeoError('This browser cannot share GPS. Enter location manually is not available yet — try Chrome on your phone.');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCoords({
-          lat: Number(pos.coords.latitude.toFixed(6)),
-          lng: Number(pos.coords.longitude.toFixed(6)),
-          accuracy_m: pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : null,
-        });
-      },
-      (err) => setGeoError(err.message || 'Could not read GPS.'),
-      { enableHighAccuracy: true, timeout: 20000 },
-    );
-  };
-
   const handleAuth = async (event) => {
     event.preventDefault();
     setBusy(true);
@@ -121,20 +101,20 @@ export default function CitizenPortal({ onExit }) {
       setError('Add a photo of the waterlogging or damage.');
       return;
     }
-    if (!coords) {
-      setError('Share your GPS location so officers can place the report on the map.');
+    if (!area.trim()) {
+      setError('Enter the area or landmark where the issue is.');
       return;
     }
     setBusy(true);
     try {
       await submitCitizenReport({
-        lat: coords.lat,
-        lng: coords.lng,
+        area: area.trim(),
         phase,
         message,
         photo,
       });
       setMessage('');
+      setArea('');
       setPhoto(null);
       setSubmitMsg('Report sent. Watch officers can see it on the tactical map as unverified until they review it.');
       await refreshMine();
@@ -150,7 +130,7 @@ export default function CitizenPortal({ onExit }) {
       <header className="h-[56px] border-b border-[#E2E8F0] bg-white px-4 sm:px-6 flex items-center justify-between shrink-0">
         <div>
           <div className="text-[14px] font-semibold">Vanta · Citizen reports</div>
-          <div className="text-[12px] text-[#64748B]">Photo + GPS field intake for Hyderabad</div>
+          <div className="text-[12px] text-[#64748B]">Photo + area field intake for Hyderabad</div>
         </div>
         <div className="flex items-center gap-2">
           {citizen && (
@@ -263,6 +243,17 @@ export default function CitizenPortal({ onExit }) {
                 </div>
 
                 <label className="text-[12px] font-medium text-[#475569]">
+                  Area of the issue
+                  <input
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    required
+                    className="mt-1 h-10 w-full rounded-[6px] border border-[#E2E8F0] px-3 text-[14px]"
+                    placeholder="e.g. Musi river, Charminar, Hitec City underpass"
+                  />
+                </label>
+
+                <label className="text-[12px] font-medium text-[#475569]">
                   What do you see?
                   <textarea
                     value={message}
@@ -291,18 +282,6 @@ export default function CitizenPortal({ onExit }) {
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={captureLocation}
-                  className="h-10 rounded-[6px] border border-[#E2E8F0] text-[13px] font-medium inline-flex items-center justify-center gap-2 hover:bg-[#F8FAFC]"
-                >
-                  <MapPin className="w-4 h-4 text-[#4338CA]" />
-                  {coords ? `GPS ${coords.lat}, ${coords.lng}` : 'Use my current location'}
-                </button>
-                {coords?.accuracy_m != null && (
-                  <div className="text-[11px] text-[#64748B]">Approx. accuracy ±{coords.accuracy_m} m</div>
-                )}
-                {geoError && <div className="text-[12px] text-[#DC2626]">{geoError}</div>}
                 {error && <div className="text-[12px] text-[#DC2626]">{error}</div>}
                 {submitMsg && <div className="text-[12px] text-[#047857]">{submitMsg}</div>}
 
@@ -333,6 +312,7 @@ export default function CitizenPortal({ onExit }) {
                           <span className="px-2 py-0.5 rounded-[4px] bg-[#F1F5F9] text-[#475569]">{report.status}</span>
                         </div>
                         <div className="text-[#334155] mt-1">{report.message}</div>
+                        {report.area && <div className="text-[#475569] mt-0.5">{report.area}</div>}
                         <div className="text-[#64748B] mt-1">{new Date(report.created_at).toLocaleString()}</div>
                       </li>
                     ))}
