@@ -21,7 +21,8 @@ import HazardDetailPanel from './components/HazardDetailPanel';
 import { useLanguage } from './i18n.jsx';
 import {
   fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit, updateUnitStatus, deleteUnit,
-  fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
+  fetchIncidents, fetchIncidentTriage, reportIncident, updateIncidentStatus, deleteIncident,
+  fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
   refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts, fetchReplay,
@@ -262,6 +263,42 @@ export default function App() {
     } catch (err) {
       console.error(err);
       window.alert(err.message || 'Could not delete unit.');
+    }
+  };
+
+  const refreshIncidentTriage = async () => {
+    const triage = await fetchIncidentTriage().catch(() => ({ items: [] }));
+    const triageItems = Array.isArray(triage?.items) ? triage.items : [];
+    setTriageById(Object.fromEntries(triageItems.map(item => [item.incident_id, item])));
+  };
+
+  const handleCompleteIncident = async (incidentId) => {
+    try {
+      await updateIncidentStatus(incidentId, 'resolved');
+      setIncidents(prev => prev.map(inc => (
+        inc.id === incidentId ? { ...inc, status: 'resolved' } : inc
+      )));
+      await refreshIncidentTriage();
+    } catch (err) {
+      console.error(err);
+      window.alert(err.message || 'Could not mark incident complete.');
+    }
+  };
+
+  const handleDeleteIncident = async (incidentId) => {
+    if (!window.confirm(`Remove incident ${incidentId} from the log?`)) return;
+    try {
+      await deleteIncident(incidentId);
+      setIncidents(prev => prev.filter(inc => inc.id !== incidentId));
+      setTriageById(prev => {
+        const next = { ...prev };
+        delete next[incidentId];
+        return next;
+      });
+      await refreshIncidentTriage();
+    } catch (err) {
+      console.error(err);
+      window.alert(err.message || 'Could not delete incident.');
     }
   };
 
@@ -709,12 +746,12 @@ export default function App() {
                     ) : (
                       <div className="flex flex-col divide-y divide-[#E2E8F0] border-t border-b border-[#E2E8F0]">
                         {[...incidents].sort((a, b) => (triageById[a.id]?.rank ?? 9999) - (triageById[b.id]?.rank ?? 9999)).map((inc) => (
-                          <div key={inc.id} className="py-2.5 flex flex-col gap-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[12px] font-medium text-[#0F172A] uppercase">
+                          <div key={inc.id} className="py-2.5 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[12px] font-medium text-[#0F172A] uppercase min-w-0 truncate">
                                 {triageById[inc.id] ? `Rank ${triageById[inc.id].rank} · ` : ''}{inc.type} · Urgency {inc.urgency}
                               </span>
-                              <span className="vp-mono text-[12px] text-[#64748B]">
+                              <span className="vp-mono text-[12px] text-[#64748B] shrink-0">
                                 {new Date(inc.timestamp).toLocaleTimeString()}
                               </span>
                             </div>
@@ -724,9 +761,42 @@ export default function App() {
                               </p>
                             )}
                             <div className="text-[14px] text-[#334155]">{inc.message}</div>
-                            <div className="text-[12px] flex items-center justify-between text-[#64748B]">
+                            <div className="text-[12px] flex items-center justify-between gap-2 text-[#64748B]">
                               <span>{t('people')}: <strong className="text-[#0F172A] font-medium">{inc.people}</strong></span>
-                              <span>{inc.source}</span>
+                              <span className="truncate">{inc.source}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span
+                                className="text-[12px] px-2 py-0.5 rounded-[4px] font-medium"
+                                style={{
+                                  backgroundColor: inc.status === 'resolved' ? '#F1F5F9' : inc.status === 'assigned' ? '#DBEAFE' : '#FEF3C7',
+                                  color: inc.status === 'resolved' ? '#64748B' : inc.status === 'assigned' ? '#1D4ED8' : '#B45309',
+                                }}
+                              >
+                                {inc.status || 'new'}
+                              </span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {inc.status !== 'resolved' && (
+                                  <button
+                                    type="button"
+                                    title="Mark incident resolved"
+                                    onClick={() => handleCompleteIncident(inc.id)}
+                                    className="text-[11px] px-2 py-0.5 rounded-[4px] font-medium bg-[#ECFDF5] text-[#047857] hover:bg-[#D1FAE5] flex items-center gap-1"
+                                  >
+                                    <CheckCircle2 className="w-3 h-3" strokeWidth={2} />
+                                    Complete
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  title="Remove incident from log"
+                                  onClick={() => handleDeleteIncident(inc.id)}
+                                  className="text-[11px] px-2 py-0.5 rounded-[4px] font-medium bg-[#FEF2F2] text-[#B91C1C] hover:bg-[#FEE2E2] flex items-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" strokeWidth={2} />
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
