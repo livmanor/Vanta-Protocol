@@ -84,12 +84,6 @@ export async function fetchRiskZones() {
   return res.json();
 }
 
-export async function fetchRiskGrid() {
-  const res = await apiFetch('/risk-grid');
-  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to compute the city risk grid`);
-  return res.json();
-}
-
 export async function fetchZoneWeather() {
   const res = await apiFetch('/weather');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch Open-Meteo weather`);

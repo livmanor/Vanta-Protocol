@@ -20,7 +20,7 @@ import CapFeedPage from './components/CapFeedPage';
 import HazardDetailPanel from './components/HazardDetailPanel';
 import { useLanguage } from './i18n.jsx';
 import {
-  fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit, updateUnitStatus, deleteUnit,
+  fetchRiskZones, fetchUnits, registerUnit, updateUnitStatus, deleteUnit,
   fetchIncidents, fetchIncidentTriage, reportIncident, updateIncidentStatus, deleteIncident,
   fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
@@ -39,7 +39,6 @@ const NAV = [
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [riskZones, setRiskZones] = useState([]);
-  const [riskGrid, setRiskGrid] = useState(null);
   const [riskZonesError, setRiskZonesError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null);
@@ -108,7 +107,6 @@ export default function App() {
           setReplayBanner(replay.banner || 'REPLAY — historical data, not live');
           setRiskZones(Array.isArray(replay.zones) ? replay.zones : []);
           setRiskZonesError('');
-          setRiskGrid(replay.grid || null);
           setOperationsPlan(replay.operations_plan || null);
           setZoneWeather([]);
           setPrepositionSuggestions([]);
@@ -122,7 +120,7 @@ export default function App() {
       }
 
       setReplayBanner('');
-      // Source status / CAP should not wait on weather or the risk grid.
+      // Source status / CAP should not wait on weather or zone scoring.
       fetchDataSources().then(setDataSources).catch(err => console.error(err));
       fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
 
@@ -140,7 +138,7 @@ export default function App() {
           }
         }
       };
-      const [rZones, weather, aStatus, uList, incList, triage, roads, rGrid, uHazards] = await Promise.all([
+      const [rZones, weather, aStatus, uList, incList, triage, roads, uHazards] = await Promise.all([
         loadZones(),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
@@ -148,10 +146,8 @@ export default function App() {
         fetchIncidents().catch(e => { console.error(e); return []; }),
         fetchIncidentTriage().catch(e => { console.error(e); return { items: [] }; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; }),
-        fetchRiskGrid().catch(e => { console.error(e); return null; }),
         fetchUnifiedHazards().catch(e => { console.error(e); return { features: [] }; })
       ]);
-      setRiskGrid(rGrid);
       setUnifiedHazards(Array.isArray(uHazards?.features) ? uHazards.features : []);
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
       if (normalizedZones) {
@@ -572,7 +568,6 @@ export default function App() {
             <div className="flex-1 h-full relative">
               <Map
                 riskZones={riskZones}
-                riskGrid={riskGrid}
                 selectedZone={selectedZone}
                 onSelectZone={(zone) => { setSelectedZone(zone); setView('map'); setActiveTab('zones'); }}
                 activeRoute={activeRoute}
