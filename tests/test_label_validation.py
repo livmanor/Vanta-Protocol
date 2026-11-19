@@ -24,12 +24,15 @@ def _row(**overrides):
 
 def test_template_seeds_are_not_labels():
     rows = read_rows(LABELS_PATH)
-    seeds = [row for row in rows if is_seed(row)]
-    real = [row for row in rows if not is_seed(row)]
-    assert len(seeds) == 6
-    assert len(real) >= 1
-    assert all(validate_row(row, TODAY) == [] for row in seeds)
-    assert all(validate_row(row, TODAY) == [] for row in real)
+    seed_rows = [r for r in rows if is_seed(r)]
+    non_seed_rows = [r for r in rows if not is_seed(r)]
+    # The CSV ships with exactly 6 coordinate seeds; real labels may also be present.
+    assert len(seed_rows) == 6, f"Expected 6 seeds, got {len(seed_rows)}"
+    assert all(validate_row(r, TODAY) == [] for r in seed_rows)
+    # Every non-seed row must pass validation too (no corrupt entries slipped in).
+    for r in non_seed_rows:
+        errors = validate_row(r, TODAY)
+        assert errors == [], f"Non-seed row {r.get('event_id')} has errors: {errors}"
 
 
 def test_missing_date_or_source_is_rejected():

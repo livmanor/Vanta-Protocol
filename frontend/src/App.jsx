@@ -17,13 +17,15 @@ import BlockedRoadModal from './components/BlockedRoadModal';
 import SourceStatusBar from './components/SourceStatusBar';
 import AlertsBanner from './components/AlertsBanner';
 import CapFeedPage from './components/CapFeedPage';
+import HazardDetailPanel from './components/HazardDetailPanel';
 import { useLanguage } from './i18n.jsx';
 import {
   fetchRiskZones, fetchRiskGrid, fetchUnits, registerUnit,
   fetchIncidents, fetchIncidentTriage, reportIncident, fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
-  refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts, fetchReplay
+  refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts, fetchReplay,
+  fetchUnifiedHazards
 } from './api';
 
 const NAV = [
@@ -54,6 +56,15 @@ export default function App() {
   const [capAlerts, setCapAlerts] = useState(null);
 
   const [selectedZone, setSelectedZone] = useState(null);
+  const [unifiedHazards, setUnifiedHazards] = useState([]);
+  const [selectedHazard, setSelectedHazard] = useState(null);
+  const [hazardFilters, setHazardFilters] = useState({
+    earthquake: true,
+    cyclone: true,
+    wildfire: true,
+    urban_flood: true,
+    heat: true,
+  });
   const [activeRoute, setActiveRoute] = useState(null);
   const [routeNotice, setRouteNotice] = useState(null);
   const [pinnedLocation, setPinnedLocation] = useState(null);
@@ -128,7 +139,7 @@ export default function App() {
           }
         }
       };
-      const [rZones, weather, aStatus, uList, incList, triage, roads, rGrid] = await Promise.all([
+      const [rZones, weather, aStatus, uList, incList, triage, roads, rGrid, uHazards] = await Promise.all([
         loadZones(),
         fetchZoneWeather().catch(e => { console.error(e); return []; }),
         fetchAgentStatus().catch(e => { console.error(e); return null; }),
@@ -136,9 +147,11 @@ export default function App() {
         fetchIncidents().catch(e => { console.error(e); return []; }),
         fetchIncidentTriage().catch(e => { console.error(e); return { items: [] }; }),
         fetchBlockedRoads().catch(e => { console.error(e); return []; }),
-        fetchRiskGrid().catch(e => { console.error(e); return null; })
+        fetchRiskGrid().catch(e => { console.error(e); return null; }),
+        fetchUnifiedHazards().catch(e => { console.error(e); return { features: [] }; })
       ]);
       setRiskGrid(rGrid);
+      setUnifiedHazards(Array.isArray(uHazards?.features) ? uHazards.features : []);
       const normalizedZones = Array.isArray(rZones) ? rZones : Array.isArray(rZones?.zones) ? rZones.zones : null;
       if (normalizedZones) {
         setRiskZones(normalizedZones);
@@ -512,6 +525,14 @@ export default function App() {
                   setPinnedLocation(coords);
                   setIsIncidentModalOpen(true);
                 }}
+                hazards={unifiedHazards}
+                activeHazardFilters={hazardFilters}
+                selectedHazard={selectedHazard}
+                onSelectHazard={(h) => {
+                  setSelectedHazard(h);
+                  setActiveTab('hazards');
+                  setView('map');
+                }}
               />
 
               {routeNotice && (
@@ -535,8 +556,9 @@ export default function App() {
             {/* Tactical Map Right Panel: 360px wide, white, one left hairline border */}
             <aside className="w-[360px] max-w-[45vw] flex flex-col border-l border-[#E2E8F0] z-[400] h-full bg-white">
               {/* Underline tab bar */}
-              <div className="flex border-b border-[#E2E8F0] px-4 gap-6 text-[14px] shrink-0">
+              <div className="flex border-b border-[#E2E8F0] px-4 gap-5 text-[13px] shrink-0 overflow-x-auto">
                 {[
+                  { id: 'hazards', label: 'Hazards', badge: unifiedHazards.length },
                   { id: 'zones', label: t('zones') },
                   { id: 'preposition', label: t('prepare'), badge: prepositionSuggestions.length },
                   { id: 'incidents', label: t('incidents'), badge: incidents.length },
@@ -544,7 +566,7 @@ export default function App() {
                   <button
                     key={id}
                     onClick={() => setActiveTab(id)}
-                    className={`relative py-3 font-medium transition flex items-center gap-1.5 ${
+                    className={`relative py-3 font-medium transition flex items-center gap-1.5 shrink-0 ${
                       activeTab === id
                         ? 'text-[#4338CA] font-semibold'
                         : 'text-[#64748B] hover:text-[#0F172A]'
@@ -552,7 +574,7 @@ export default function App() {
                   >
                     <span>{label}</span>
                     {badge > 0 && (
-                      <span className="text-[12px] px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569] font-medium">
+                      <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569] font-medium">
                         {badge}
                       </span>
                     )}
@@ -565,6 +587,17 @@ export default function App() {
 
               {/* Panel Content */}
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                {activeTab === 'hazards' && (
+                  <HazardDetailPanel
+                    selectedHazard={selectedHazard}
+                    onClose={() => setSelectedHazard(null)}
+                    onSelectHazard={setSelectedHazard}
+                    activeFilters={hazardFilters}
+                    onToggleFilter={(hid) => setHazardFilters(prev => ({ ...prev, [hid]: !prev[hid] }))}
+                    onRefresh={loadData}
+                  />
+                )}
+
                 {activeTab === 'zones' && (
                   <div className="flex flex-col gap-4">
                     {selectedZone ? (
