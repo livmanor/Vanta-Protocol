@@ -8,7 +8,7 @@ from backend.config import settings
 from backend.data_sources.cap_alerts import start_cap_poller, stop_cap_poller
 from backend.data_sources.htp_waterlogging import start_htp_poller, stop_htp_poller
 from backend.db import init_db
-from backend.routers import risk, routes, units, incidents, sources, weather, agents, predict_history, operations, auth, alerts, replay, hazards
+from backend.routers import risk, routes, units, incidents, sources, weather, agents, predict_history, operations, auth, alerts, replay, hazards, citizen
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("vanta")
@@ -58,6 +58,7 @@ app.include_router(predict_history.router)
 app.include_router(operations.router)
 app.include_router(replay.router)
 app.include_router(hazards.router)
+app.include_router(citizen.router)
 
 @app.get("/api/health")
 async def health_check():

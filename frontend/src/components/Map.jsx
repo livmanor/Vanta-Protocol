@@ -33,6 +33,9 @@ export default function Map({
   activeHazardFilters = {},
   selectedHazard = null,
   onSelectHazard = () => {},
+  citizenReports = [],
+  selectedCitizenReport = null,
+  onSelectCitizenReport = () => {},
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -415,8 +418,12 @@ const handleSelectLocation = (loc) => {
     pin: null,
     patrolMarkers: null,
     patrolRoute: null,
-    patrolSnapLines: null
+    patrolSnapLines: null,
+    hazards: null,
+    citizenReports: null,
   });
+  const onSelectCitizenReportRef = useRef(onSelectCitizenReport);
+  onSelectCitizenReportRef.current = onSelectCitizenReport;
 
   // Initialize Map
   useEffect(() => {
@@ -691,6 +698,44 @@ useEffect(() => {
   layersRef.current.hazards = hazardGroup;
   hazardGroup.bringToFront();
 }, [hazards, activeHazardFilters, selectedHazard, onSelectHazard]);
+
+// Citizen field photo reports (unverified until officer review)
+useEffect(() => {
+  const map = mapInstanceRef.current;
+  if (!map) return;
+  if (layersRef.current.citizenReports) {
+    map.removeLayer(layersRef.current.citizenReports);
+    layersRef.current.citizenReports = null;
+  }
+  if (!citizenReports?.length) return;
+
+  const group = L.featureGroup();
+  citizenReports.forEach((report) => {
+    if (report.lat == null || report.lng == null) return;
+    const selected = selectedCitizenReport?.id === report.id;
+    const pending = report.status === 'pending';
+    const color = pending ? '#EA580C' : report.status === 'accepted' ? '#16A34A' : '#64748B';
+    const marker = L.circleMarker([report.lat, report.lng], {
+      radius: selected ? 10 : 7,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      fillOpacity: 0.92,
+    });
+    marker.bindTooltip(`
+      <div class="font-sans text-xs p-1">
+        <div class="text-[10px] font-bold uppercase" style="color:${color}">Citizen report · ${report.status}</div>
+        <div class="font-bold text-slate-900">${report.phase} · ${report.citizen_display_name || report.citizen_username || 'citizen'}</div>
+        <div class="text-[11px] text-slate-600 mt-0.5">${(report.message || '').slice(0, 120)}</div>
+      </div>
+    `, { sticky: true });
+    marker.on('click', () => onSelectCitizenReportRef.current?.(report));
+    group.addLayer(marker);
+  });
+  group.addTo(map);
+  layersRef.current.citizenReports = group;
+  group.bringToFront();
+}, [citizenReports, selectedCitizenReport]);
 
 // Update Evacuation Route & Shelter Pin
 useEffect(() => {

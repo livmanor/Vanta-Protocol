@@ -4,7 +4,7 @@ import { useLanguage } from '../i18n.jsx';
 import { fetchAuthConfig, fetchCurrentOfficer, loginOfficer } from '../api';
 import Radar from './Radar.jsx';
 
-export default function Landing({ onEnter, onAuthenticated }) {
+export default function Landing({ onEnter, onAuthenticated, onCitizenPortal }) {
   const { language, setLanguage, t } = useLanguage();
   const [authConfig, setAuthConfig] = useState(null);
   const [officer, setOfficer] = useState(null);
@@ -146,17 +146,26 @@ export default function Landing({ onEnter, onAuthenticated }) {
             {t('landingSub')}
           </p>
 
-          <button
-            onClick={handleEnter}
-            className="group mt-8 inline-flex items-center justify-center gap-2 h-[44px] px-6 text-[14px] font-medium bg-[#4338CA] hover:bg-[#3730A3] text-white rounded-[6px] transition-colors"
-          >
-            <span>{officer || !authRequired ? t('enterApp') : 'Sign in to enter'}</span>
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.5} />
-          </button>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={handleEnter}
+              className="group inline-flex items-center justify-center gap-2 h-[44px] px-6 text-[14px] font-medium bg-[#4338CA] hover:bg-[#3730A3] text-white rounded-[6px] transition-colors"
+            >
+              <span>{officer || !authRequired ? t('enterApp') : 'Officer sign-in'}</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.5} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onCitizenPortal?.()}
+              className="inline-flex items-center justify-center gap-2 h-[44px] px-6 text-[14px] font-medium border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] text-[#0F172A] rounded-[6px]"
+            >
+              Citizen field report
+            </button>
+          </div>
           {bootError && <p className="mt-3 text-[12px] text-[#DC2626]">{bootError}</p>}
           {authRequired && !officer && (
             <p className="mt-3 text-[12px] text-[#64748B]">
-              Officer login is required before the map and agents open.
+              Officers use the control room. Citizens can submit photo + GPS reports separately.
             </p>
           )}
 

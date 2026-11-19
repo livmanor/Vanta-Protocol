@@ -94,10 +94,13 @@ async def init_db():
             points_json TEXT NOT NULL
         )""")
         from backend.auth.sessions import ensure_auth_tables
+        from backend.auth.citizens import ensure_citizen_tables, ensure_upload_dir
         from backend.data_sources.cap_alerts import ensure_cap_table
         await ensure_auth_tables(db)
+        await ensure_citizen_tables(db)
         await ensure_cap_table(db)
         await db.commit()
+        ensure_upload_dir()
 
 
 async def save_htp_snapshot(points: list, fetched_at: str, zone_filter: str | None = None) -> None:
