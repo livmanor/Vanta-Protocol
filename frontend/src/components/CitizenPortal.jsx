@@ -146,7 +146,7 @@ export default function CitizenPortal({ onExit }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col">
+    <div className="h-full max-h-[100dvh] bg-[#F8FAFC] text-[#0F172A] flex flex-col overflow-hidden">
       <header className="h-[56px] border-b border-[#E2E8F0] bg-white px-4 sm:px-6 flex items-center justify-between shrink-0">
         <div>
           <div className="text-[14px] font-semibold">Vanta · Citizen reports</div>
@@ -177,8 +177,8 @@ export default function CitizenPortal({ onExit }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-        <div className="mx-auto w-full max-w-lg flex flex-col gap-5">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-6">
+        <div className="mx-auto w-full max-w-lg flex flex-col gap-5 pb-8">
           {!citizen ? (
             <form onSubmit={handleAuth} className="bg-white border border-[#E2E8F0] rounded-[8px] p-5 flex flex-col gap-3">
               <h1 className="text-[18px] font-semibold">
