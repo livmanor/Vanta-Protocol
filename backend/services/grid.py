@@ -6,7 +6,7 @@ import json
 import logging
 import math
 import statistics
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
@@ -148,6 +148,39 @@ def _readings_from_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _daily_value_on(payload: Dict[str, Any], key: str, day: str) -> Any:
+    daily = payload.get("daily") or {}
+    dates = daily.get("time") or []
+    try:
+        index = dates.index(day)
+        values = daily.get(key) or []
+        return values[index] if index < len(values) else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _readings_from_archive_payload(payload: Dict[str, Any], day: str, previous_day: str) -> Dict[str, Any]:
+    forecast = _daily_value_on(payload, "precipitation_sum", day)
+    prior = _daily_value_on(payload, "precipitation_sum", previous_day)
+    if forecast is None or prior is None:
+        rain_48h = None
+    else:
+        rain_48h = float(forecast) + float(prior)
+    if forecast is None and rain_48h is None:
+        status = "failed"
+    elif forecast is None or rain_48h is None:
+        status = "partial"
+    else:
+        status = "live"
+    return {
+        "forecast_24h": None if forecast is None else float(forecast),
+        "rain_48h": rain_48h,
+        "status": status,
+        "temperature_max_c": _daily_value_on(payload, "temperature_2m_max", day),
+        "apparent_temperature_max_c": _daily_value_on(payload, "apparent_temperature_max", day),
+    }
+
+
 async def _fetch_weather(cells: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     cache_key = _weather_cache_key(cells)
     cached = global_cache.get(cache_key)
@@ -200,6 +233,55 @@ async def _fetch_weather(cells: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any
     return readings
 
 
+async def _fetch_archive_weather(cells: List[Dict[str, Any]], day: date) -> Dict[str, Dict[str, Any]]:
+    """Open-Meteo archive readings for one IST calendar day. Missing stays null."""
+    day_s = day.isoformat()
+    previous = (day - timedelta(days=1)).isoformat()
+    readings: Dict[str, Dict[str, Any]] = {}
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for start in range(0, len(cells), WEATHER_BATCH):
+            batch = cells[start:start + WEATHER_BATCH]
+            params = {
+                "latitude": ",".join(f"{cell['lat']:.5f}" for cell in batch),
+                "longitude": ",".join(f"{cell['lon']:.5f}" for cell in batch),
+                "start_date": previous,
+                "end_date": day_s,
+                "daily": "precipitation_sum,temperature_2m_max,apparent_temperature_max",
+                "timezone": "Asia/Kolkata",
+            }
+            try:
+                response = await client.get(settings.OPEN_METEO_ARCHIVE_URL, params=params)
+                response.raise_for_status()
+                payload = response.json()
+            except Exception as exc:
+                logger.warning("Open-Meteo archive grid batch failed: %s", exc)
+                for cell in batch:
+                    readings[cell["id"]] = {
+                        "forecast_24h": None,
+                        "rain_48h": None,
+                        "status": "failed",
+                        "temperature_max_c": None,
+                        "apparent_temperature_max_c": None,
+                    }
+                continue
+            rows = payload if isinstance(payload, list) else [payload]
+            if len(rows) != len(batch):
+                for cell in batch:
+                    readings[cell["id"]] = {
+                        "forecast_24h": None,
+                        "rain_48h": None,
+                        "status": "failed",
+                        "temperature_max_c": None,
+                        "apparent_temperature_max_c": None,
+                    }
+                continue
+            for cell, row in zip(batch, rows):
+                readings[cell["id"]] = _readings_from_archive_payload(
+                    row if isinstance(row, dict) else {}, day_s, previous
+                )
+    return readings
+
+
 def _recent_incidents(incidents, now: datetime):
     cutoff = now - timedelta(hours=24)
     recent = []
@@ -214,18 +296,29 @@ def _near_incident(lat: float, lon: float, incidents) -> bool:
     return any(_distance_m(lat, lon, incident.lat, incident.lng) <= INCIDENT_RADIUS_M for incident in incidents)
 
 
-async def compute_risk_grid() -> RiskGridResponse:
-    """Score every GHMC cell. A failed weather feed stays null, never 0 mm."""
+async def compute_risk_grid(as_of: Optional[date] = None) -> RiskGridResponse:
+    """Score every GHMC cell. A failed weather feed stays null, never 0 mm.
+
+    When as_of is set, Open-Meteo archive data for that IST day is used (replay).
+    Replay does not read or write incidents.
+    """
     async with _grid_lock:
         cells = generate_grid_cells()
-        elevations, readings, incidents = await asyncio.gather(
-            _elevations_for(cells),
-            _fetch_weather(cells),
-            fetch_incidents(),
-        )
+        if as_of is None:
+            elevations, readings, incidents = await asyncio.gather(
+                _elevations_for(cells),
+                _fetch_weather(cells),
+                fetch_incidents(),
+            )
+            recent = _recent_incidents(incidents, datetime.now(timezone.utc))
+        else:
+            elevations, readings = await asyncio.gather(
+                _elevations_for(cells),
+                _fetch_archive_weather(cells, as_of),
+            )
+            recent = []
         measured = [value for value in elevations.values() if isinstance(value, (int, float)) and not isinstance(value, bool)]
         median = statistics.median(measured) if measured else None
-        recent = _recent_incidents(incidents, datetime.now(timezone.utc))
         lat_step, lon_step = grid_steps()
         scored: List[RiskGridCell] = []
         for cell in cells:
@@ -252,6 +345,8 @@ async def compute_risk_grid() -> RiskGridResponse:
             if status == "live" and elevation is None:
                 status = "partial"
             why = "data unavailable" if level is None else explanation.why_this
+            if as_of is not None and level is not None:
+                why = f"REPLAY {as_of.isoformat()} archive. " + why
             emerging = (level is not None and level >= 3) or _near_incident(cell["lat"], cell["lon"], recent)
             scored.append(RiskGridCell(
                 id=cell["id"],

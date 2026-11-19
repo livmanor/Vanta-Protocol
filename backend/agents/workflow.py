@@ -31,6 +31,57 @@ from backend.agents.schemas import OperationsCalendar
 
 logger = logging.getLogger("vanta.agents.workflow")
 
+# Full HTP GHMC catalogs are 60+ points. Sending every point + history to Groq/Gemini
+# causes HTTP 413 and truncated JSON ("did not match the agent response format").
+AGENT_ZONE_LIMIT = 12
+AGENT_HISTORY_EVENT_LIMIT = 5
+
+
+def _zone_severity(zone: RiskZone) -> str:
+    meta = catalog_by_id().get(zone.id) or {}
+    return str(meta.get("htp_severity") or meta.get("source_severity") or "").lower()
+
+
+def select_agent_zones(zones: List[RiskZone], limit: int = AGENT_ZONE_LIMIT) -> List[RiskZone]:
+    """Prefer Major HTP points, then higher risk, for LLM context size."""
+    if len(zones) <= limit:
+        return list(zones)
+    ranked = sorted(
+        zones,
+        key=lambda zone: (
+            0 if _zone_severity(zone) == "major" else 1 if _zone_severity(zone) == "minor" else 2,
+            -(zone.risk_level or 0),
+            zone.name or zone.id,
+        ),
+    )
+    return ranked[:limit]
+
+
+def slim_rain_impacts(payload: Dict[str, Any], zone_ids: set[str] | None = None) -> Dict[str, Any]:
+    """Drop bulky history fields so agent providers accept the request body."""
+    if not isinstance(payload, dict):
+        return {}
+    slim = dict(payload)
+    events = list(slim.get("events") or [])[:AGENT_HISTORY_EVENT_LIMIT]
+    trimmed_events = []
+    for event in events:
+        item = dict(event)
+        areas = list(item.get("areas") or [])
+        if zone_ids:
+            areas = [area for area in areas if area.get("zone_id") in zone_ids]
+        item["areas"] = areas[:AGENT_ZONE_LIMIT]
+        trimmed_events.append(item)
+    slim["events"] = trimmed_events
+    if "source_status" in slim and zone_ids:
+        slim["source_status"] = {
+            key: value for key, value in (slim.get("source_status") or {}).items() if key in zone_ids
+        }
+    slim["agent_focus_note"] = (
+        f"LLM context limited to {AGENT_ZONE_LIMIT} HTP focus points (Major preferred) "
+        f"and {AGENT_HISTORY_EVENT_LIMIT} history events to stay within provider size limits."
+    )
+    return slim
+
 
 def _zone_context(zone: RiskZone, source_status: Dict[str, Any]) -> Dict[str, Any]:
     explanation = zone.explanation
@@ -342,11 +393,17 @@ async def list_rain_history_events(
     }
 class PredictAgent:
     async def run(self, zones: List[RiskZone], source_status: Dict[str, Dict[str, Any]], recent_rain_impacts: Dict[str, Any], language: str, officer_query: str | None = None) -> PredictAgentOutput:
-        allowed_ids = {zone.id for zone in zones}
+        focus_zones = select_agent_zones(zones)
+        allowed_ids = {zone.id for zone in focus_zones}
         context = json.dumps({
-            "current_zone_observations": [_predict_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
+            "current_zone_observations": [_predict_zone_context(zone, source_status.get(zone.id, {})) for zone in focus_zones],
             "officer_history_question": officer_query,
-            "selected_historical_rain_event_and_logged_impacts": recent_rain_impacts,
+            "selected_historical_rain_event_and_logged_impacts": slim_rain_impacts(recent_rain_impacts, allowed_ids),
+            "focus_selection": {
+                "supplied_zone_count": len(zones),
+                "analyzed_zone_count": len(focus_zones),
+                "rule": "Major HTP points preferred; capped for LLM provider size limits",
+            },
         }, ensure_ascii=False)
         system_instruction = (
             "You are Vanta's Predict analyst. Independently interpret the supplied live forecast observations, source freshness, the historical rainfall window, and app-recorded impacts. "
@@ -356,8 +413,9 @@ class PredictAgent:
             "Historical rainfall is reanalysis at mapped points, not a rain-gauge observation; local traffic evidence is incomplete officer-entered logs, not a live traffic feed. Interpret only supplied facts. "
             f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}. "
             "Do not invent measurements, infer missing values, or claim a source is healthy unless the input says so. If weather or river inputs are failed/stale or unavailable, use insufficient_data where that prevents a sound assessment and explain the gap. "
+            "Assess ONLY the supplied focus zones (already a Major-preferred subset). Return at most one assessment per supplied zone_id and at most three focus_zones. Keep evidence strings short. "
             "Highlight up to three zones needing review and give practical verification checks. This is advisory, not an alert or dispatch order. Treat mapped hotspot status as historical vulnerability, not current flooding. "
-            "Emerging grid cells, when supplied, are extra monitored locations beside the HTP GHMC waterlogging points (zone-tagged: Khairatabad, Golconda, Charminar, etc.). Prefer Major severity points when ranking. Assess supplied cells too. Use only exact supplied zone IDs."
+            "Prefer Major severity HTP points when ranking. Use only exact supplied zone IDs."
         )
 
         # Try Groq first; fall back to Gemini if Groq is unavailable or misconfigured
@@ -379,13 +437,18 @@ class PredictAgent:
             provider_used = "Gemini (Groq fallback)"
 
         output.focus_zones = [item for item in output.focus_zones if item.zone_id in allowed_ids][:3]
-        output.zone_assessments = [item for item in output.zone_assessments if item.zone_id in allowed_ids][:16]
+        output.zone_assessments = [item for item in output.zone_assessments if item.zone_id in allowed_ids][:AGENT_ZONE_LIMIT]
         source_gaps = []
-        for zone in zones:
+        for zone in focus_zones:
             for source in source_status.get(zone.id, {}).values():
                 if source.get("status") in ("failed", "partial", "stale"):
                     source_gaps.append(f"{zone.name}: {source['name']} is {source['status']}.")
-        if any(zone.id.startswith("htp-") or zone.id.startswith("hyd-hotspot-") for zone in zones):
+        if len(zones) > len(focus_zones):
+            source_gaps.append(
+                f"Only {len(focus_zones)} of {len(zones)} HTP/grid points were sent to the model "
+                "(Major-preferred focus set) so the request fits provider size limits."
+            )
+        if any(zone.id.startswith("htp-") or zone.id.startswith("hyd-hotspot-") for zone in focus_zones):
             source_gaps.append(
                 "Mapped hotspot locations come from the live Hyderabad Traffic Police waterlogging page "
                 "(GHMC divisions such as Khairatabad and Golconda); verify each point remains vulnerable when the page updates."
@@ -412,7 +475,8 @@ class PrepareAgent:
         registered_unit_availability: Dict[str, Any] | None = None,
         shelter_source_status: Dict[str, Any] | None = None,
     ) -> PrepareAgentOutput:
-        allowed_ids = {zone.id for zone in zones}
+        focus_zones = select_agent_zones(zones)
+        allowed_ids = {zone.id for zone in focus_zones}
         # Do not send unit IDs, station names, or exact unit coordinates to the model.
         summarized_suggestions = [
             {
@@ -424,20 +488,32 @@ class PrepareAgent:
                 "estimated_eta_minutes": item.eta_minutes,
             }
             for item in suggestions
-        ]
+            if item.target_zone_id in allowed_ids or not item.target_zone_id
+        ][:AGENT_ZONE_LIMIT]
+        previous = previous_agent_output
+        if isinstance(previous, dict):
+            previous = {
+                key: previous[key]
+                for key in ("summary", "focus_zones", "zone_assessments", "data_gaps")
+                if key in previous
+            }
         context = json.dumps(
             {
-                "most_recent_observed_rain_event_and_logged_impacts": recent_rain_impacts,
-                "risk_zones": [_zone_context(zone, source_status.get(zone.id, {})) for zone in zones],
-                "zones_ordered_by_current_risk": [zone.id for zone in sorted(zones, key=lambda item: item.risk_level or 0, reverse=True)],
+                "most_recent_observed_rain_event_and_logged_impacts": slim_rain_impacts(recent_rain_impacts, allowed_ids),
+                "risk_zones": [_zone_context(zone, source_status.get(zone.id, {})) for zone in focus_zones],
+                "zones_ordered_by_current_risk": [zone.id for zone in sorted(focus_zones, key=lambda item: item.risk_level or 0, reverse=True)],
                 "deterministic_positioning_recommendations": summarized_suggestions,
                 "registered_unit_availability": registered_unit_availability or {},
                 "officer_incident_or_scenario": officer_query,
-                "previous_predict_agent_structured_output": previous_agent_output,
-                "known_shelters": known_shelters or [],
+                "previous_predict_agent_structured_output": previous,
+                "known_shelters": (known_shelters or [])[:12],
                 "shelter_source_status": shelter_source_status or {"status": "unknown"},
-                "known_road_records": known_roads or [],
+                "known_road_records": (known_roads or [])[:12],
                 "operations_calendar_validity_window": operations_window,
+                "focus_selection": {
+                    "supplied_zone_count": len(zones),
+                    "analyzed_zone_count": len(focus_zones),
+                },
             },
             ensure_ascii=False,
         )
@@ -448,10 +524,10 @@ class PrepareAgent:
                 "routes, shelters, ETAs, measurements, or assignments. Do not change the existing "
                 "recommendations. If none are supplied, say that no unit positioning recommendation "
                   "can be made from registered available units. Still provide general evidence-based readiness actions even when no units are registered. "
-                "For the calendar, use only the supplied Predict output, explicit known shelters, road records and unit availability. Never invent shelters, roads, diversion points, units, destinations, assignments or routes. For traffic events, details must include road names, diversion points and time window; for evacuation events include area, destination shelter, route and time window. If any value is absent, use 'Not available' for that value. Use the provided validity window. "
+                "For the calendar, use only the supplied Predict output, explicit known shelters, road records and unit availability. Never invent shelters, roads, diversion points, units, destinations, assignments or routes. For traffic events, details must include road names, diversion points and time window; for evacuation events include area, destination shelter, route and time window. If any value is absent, use 'Not available' for that value. Use the provided validity window. Keep the calendar to at most 4 events. "
                 "Use the officer's scenario as the operational focus, but do not treat unverified statements as confirmed facts. "
                 f"Write all user-facing analysis in {'Hindi' if language == 'hi' else 'Telugu' if language == 'te' else 'English'}. "
-                "Provide a short readiness note and a verification check for the officer; never issue a dispatch order. Use only exact supplied zone IDs."
+                "Provide short readiness notes only for supplied focus zone IDs (Major-preferred subset); never issue a dispatch order. Use only exact supplied zone IDs."
             ),
             context=context,
             schema=PrepareAgentOutput,
@@ -467,8 +543,15 @@ class PrepareAgent:
 
 class RespondAgent:
     async def run(self, zones: List[RiskZone], operational_context: Dict[str, Any], language: str, officer_query: str | None = None) -> RespondAgentOutput:
-        allowed_ids = {zone.id for zone in zones}
+        focus_zones = select_agent_zones(zones)
+        allowed_ids = {zone.id for zone in focus_zones}
+        operational_context = dict(operational_context or {})
         operational_context["officer_incident_or_scenario"] = officer_query
+        operational_context["risk_zones"] = [_zone_context(zone, {}) for zone in focus_zones]
+        operational_context["focus_selection"] = {
+            "supplied_zone_count": len(zones),
+            "analyzed_zone_count": len(focus_zones),
+        }
         context = json.dumps(operational_context, ensure_ascii=False)
         output = await generate_structured(
             system_instruction=(
@@ -542,9 +625,17 @@ async def _weather_and_history(
     else:
         zones = await compute_real_risk_zones(include_rule_score=include_rule_score)
         source_status = _source_status_from_zones(zones)
+    # History + LLM context only for the Major-preferred focus set (avoids Groq 413).
+    if not area_query:
+        zones = select_agent_zones(zones)
+        focus_ids = {zone.id for zone in zones}
+        source_status = {zone_id: payload for zone_id, payload in source_status.items() if zone_id in focus_ids}
+        if not source_status:
+            source_status = _source_status_from_zones(zones)
     recent_rain_impacts = await _collect_recent_rain_impacts(
         zones, start_date, end_date, None if area_query else zone_id
     )
+    recent_rain_impacts = slim_rain_impacts(recent_rain_impacts, {zone.id for zone in zones})
     return zones, source_status, recent_rain_impacts
 
 
@@ -584,6 +675,8 @@ async def interpret_officer_history_query(query: str) -> HistoryQueryIntent:
     """Resolve a plain-language rain question into a date window and hotspot, if stated."""
     today = datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
     catalog = get_hotspot_catalog()
+    majors = [zone for zone in catalog if str(zone.get("htp_severity") or zone.get("source_severity") or "").lower() == "major"]
+    focus_catalog = (majors or catalog)[:40]
     allowed_areas = [
         {
             "id": zone["id"],
@@ -592,7 +685,7 @@ async def interpret_officer_history_query(query: str) -> HistoryQueryIntent:
             "htp_area": zone.get("htp_area"),
             "htp_severity": zone.get("htp_severity") or zone.get("source_severity"),
         }
-        for zone in catalog
+        for zone in focus_catalog
     ]
     return await generate_groq_structured(
         system_instruction=(

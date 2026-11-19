@@ -28,18 +28,30 @@ def main(path: Path | None = None) -> int:
         print(f"No label file at {target}")
         return 1
     summary = training_gate(read_rows(target), ist_today())
+    positives = summary["positives"]
+    negatives = summary["negatives"]
+    events = summary["events"]
+    need_positives = max(0, MIN_POSITIVES - positives)
+    need_events = max(0, MIN_EVENTS - len(events))
+
     print(f"File: {target}")
-    print(f"Location seeds (not labels): {summary['seeds']}")
-    print(f"Accepted labels: {summary['accepted']}")
-    print(f"Positives: {summary['positives']}")
-    print(f"Negatives: {summary['negatives']}")
-    print(f"Date range: {summary['date_min'] or '—'} to {summary['date_max'] or '—'}")
-    print(f"Distinct positive events: {len(summary['events'])}")
-    if summary["positives_per_event"]:
+    print("--- Progress summary ---")
+    print(f"Valid positives: {positives}")
+    print(f"Valid negatives: {negatives}")
+    print(f"Distinct event dates (positive event_ids): {len(events)}")
+    if events:
         for event_id, count in summary["positives_per_event"].items():
             print(f"  {event_id}: {count} positive(s)")
     else:
-        print("  none")
+        print("  none yet")
+    print(
+        f"Still needed for training gate: {need_positives} more positive(s) "
+        f"to reach {MIN_POSITIVES}; {need_events} more distinct event(s) to reach {MIN_EVENTS}."
+    )
+    print(f"ready = {str(summary['ready']).lower()}")
+    print(f"Location seeds (not labels): {summary['seeds']}")
+    print(f"Accepted labels: {summary['accepted']}")
+    print(f"Date range: {summary['date_min'] or '—'} to {summary['date_max'] or '—'}")
     if summary["negatives"] or summary["positives"]:
         total = summary["positives"] + summary["negatives"]
         print(f"Positive rate among accepted labels: {summary['positives']}/{total}")
@@ -48,14 +60,14 @@ def main(path: Path | None = None) -> int:
     if summary["rejected"]:
         print(f"Rejected {len(summary['rejected'])} row(s).")
         return 1
-    if summary["positives"] < MIN_POSITIVES or len(summary["events"]) < MIN_EVENTS:
+    if need_positives or need_events:
         print(
             f"STOP. Training needs at least {MIN_POSITIVES} sourced positives "
             f"and {MIN_EVENTS} distinct events. "
-            f"This file has {summary['positives']} positive(s) and {len(summary['events'])} event(s)."
+            f"This file has {positives} positive(s) and {len(events)} event(s)."
         )
         return 0
-    print("Label count clears the training gate. Features and a time split are still required.")
+    print("Label count clears the training gate. Features and a leave-one-event-out split are still required.")
     return 0
 
 

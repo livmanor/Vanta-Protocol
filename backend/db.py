@@ -86,11 +86,61 @@ async def init_db():
             elevation_m REAL,
             fetched_at TEXT
         )""")
+        await db.execute("""CREATE TABLE IF NOT EXISTS htp_snapshot (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            fetched_at TEXT NOT NULL,
+            point_count INTEGER NOT NULL,
+            zone_filter TEXT,
+            points_json TEXT NOT NULL
+        )""")
         from backend.auth.sessions import ensure_auth_tables
         from backend.data_sources.cap_alerts import ensure_cap_table
         await ensure_auth_tables(db)
         await ensure_cap_table(db)
         await db.commit()
+
+
+async def save_htp_snapshot(points: list, fetched_at: str, zone_filter: str | None = None) -> None:
+    """Persist the last successful HTP catalog. Replaces the single row."""
+    payload = json.dumps(points, ensure_ascii=False)
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO htp_snapshot (id, fetched_at, point_count, zone_filter, points_json)
+            VALUES (1, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                fetched_at = excluded.fetched_at,
+                point_count = excluded.point_count,
+                zone_filter = excluded.zone_filter,
+                points_json = excluded.points_json
+            """,
+            (fetched_at, len(points), zone_filter, payload),
+        )
+        await db.commit()
+
+
+async def load_htp_snapshot() -> dict | None:
+    """Return the latest HTP snapshot or None when none has been saved."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT fetched_at, point_count, zone_filter, points_json FROM htp_snapshot WHERE id = 1"
+        ) as cursor:
+            row = await cursor.fetchone()
+    if not row:
+        return None
+    try:
+        points = json.loads(row["points_json"] or "[]")
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(points, list) or not points:
+        return None
+    return {
+        "fetched_at": row["fetched_at"],
+        "point_count": row["point_count"],
+        "zone_filter": row["zone_filter"],
+        "points": points,
+    }
 
 # --- Incidents CRUD ---
 async def fetch_incidents():
