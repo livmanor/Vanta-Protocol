@@ -110,6 +110,10 @@ export default function App() {
       }
 
       setReplayBanner('');
+      // Source status / CAP should not wait on weather or the risk grid.
+      fetchDataSources().then(setDataSources).catch(err => console.error(err));
+      fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
+
       const loadZones = async () => {
         try {
           return await fetchRiskZones();
@@ -157,8 +161,6 @@ export default function App() {
         setPrepositionSuggestions([]);
       }
       refreshOperationsPlan().then(setOperationsPlan).catch(err => console.error(err));
-      fetchDataSources().then(setDataSources).catch(err => console.error(err));
-      fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
     } finally {
       setLoadingRisk(false);
     }

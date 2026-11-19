@@ -24,9 +24,12 @@ def _row(**overrides):
 
 def test_template_seeds_are_not_labels():
     rows = read_rows(LABELS_PATH)
-    assert len(rows) == 6
-    assert all(is_seed(row) for row in rows)
-    assert all(validate_row(row, TODAY) == [] for row in rows)
+    seeds = [row for row in rows if is_seed(row)]
+    real = [row for row in rows if not is_seed(row)]
+    assert len(seeds) == 6
+    assert len(real) >= 1
+    assert all(validate_row(row, TODAY) == [] for row in seeds)
+    assert all(validate_row(row, TODAY) == [] for row in real)
 
 
 def test_missing_date_or_source_is_rejected():
