@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Camera, LogOut, RefreshCw, Upload } from 'lucide-react';
 import {
+  fetchCitizenAreas,
   fetchCitizenMe,
   fetchMyCitizenReports,
   loginCitizen,
@@ -25,7 +26,8 @@ export default function CitizenPortal({ onExit }) {
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('during');
   const [message, setMessage] = useState('');
-  const [area, setArea] = useState('');
+  const [areaId, setAreaId] = useState('');
+  const [areas, setAreas] = useState([]);
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState('');
   const [reports, setReports] = useState([]);
@@ -37,6 +39,19 @@ export default function CitizenPortal({ onExit }) {
     } catch (err) {
       console.error(err);
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await fetchCitizenAreas();
+        if (!cancelled) setAreas(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -101,20 +116,20 @@ export default function CitizenPortal({ onExit }) {
       setError('Add a photo of the waterlogging or damage.');
       return;
     }
-    if (!area.trim()) {
-      setError('Enter the area or landmark where the issue is.');
+    if (!areaId) {
+      setError('Select the area of the issue from the list.');
       return;
     }
     setBusy(true);
     try {
       await submitCitizenReport({
-        area: area.trim(),
+        areaId,
         phase,
         message,
         photo,
       });
       setMessage('');
-      setArea('');
+      setAreaId('');
       setPhoto(null);
       setSubmitMsg('Report sent. Watch officers can see it on the tactical map as unverified until they review it.');
       await refreshMine();
@@ -244,13 +259,17 @@ export default function CitizenPortal({ onExit }) {
 
                 <label className="text-[12px] font-medium text-[#475569]">
                   Area of the issue
-                  <input
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
+                  <select
+                    value={areaId}
+                    onChange={(e) => setAreaId(e.target.value)}
                     required
-                    className="mt-1 h-10 w-full rounded-[6px] border border-[#E2E8F0] px-3 text-[14px]"
-                    placeholder="e.g. Musi river, Charminar, Hitec City underpass"
-                  />
+                    className="mt-1 h-10 w-full rounded-[6px] border border-[#E2E8F0] px-3 text-[14px] bg-white"
+                  >
+                    <option value="">Select an area…</option>
+                    {areas.map((item) => (
+                      <option key={item.id} value={item.id}>{item.name}</option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="text-[12px] font-medium text-[#475569]">

@@ -25,6 +25,7 @@ from backend.auth.citizens import (
 )
 from backend.auth.officer import OfficerIdentity, get_optional_officer, require_officer
 from backend.auth.settings import cookie_secure
+from backend.citizen_areas import list_citizen_areas, resolve_citizen_area
 from backend.config import settings
 from backend.db import insert_incident, log_officer_decision
 from backend.models import Incident
@@ -115,45 +116,31 @@ async def citizen_me(citizen: dict = Depends(require_citizen)):
     return citizen
 
 
+@router.get("/api/citizen/areas")
+async def citizen_areas():
+    return list_citizen_areas()
+
+
 @router.post("/api/citizen/reports")
 async def submit_citizen_report(
-    area: str = Form(...),
+    area_id: str = Form(...),
     phase: str = Form(...),
     message: str = Form(...),
     photo: UploadFile = File(...),
     citizen: dict = Depends(require_citizen),
 ):
-    from backend.data_sources.geocoding import resolve_location
-
-    clean_area = (area or "").strip()
-    if len(clean_area) < 2:
-        raise HTTPException(status_code=400, detail="Enter the area or landmark where the issue is.")
-
-    query = clean_area if "hyderabad" in clean_area.lower() else f"{clean_area}, Hyderabad"
-    try:
-        place = await resolve_location(query)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{exc} Use a Hyderabad place name (e.g. Musi river, Charminar, Hitec City).",
-        ) from exc
-
-    lat = float(place["latitude"])
-    lng = float(place["longitude"])
-    if not (17.0 <= lat <= 17.7 and 78.1 <= lng <= 78.8):
-        raise HTTPException(
-            status_code=400,
-            detail="That place resolved outside Greater Hyderabad. Try a more specific local area name.",
-        )
+    place = resolve_citizen_area(area_id=area_id)
+    if not place:
+        raise HTTPException(status_code=400, detail="Select an area from the list.")
 
     raw = await photo.read()
     content_type = (photo.content_type or "").split(";")[0].strip().lower() or "image/jpeg"
     try:
         return await create_report(
             citizen_id=citizen["id"],
-            lat=lat,
-            lng=lng,
-            area=clean_area,
+            lat=float(place["lat"]),
+            lng=float(place["lng"]),
+            area=place["name"],
             phase=phase,
             message=message,
             photo_bytes=raw,
