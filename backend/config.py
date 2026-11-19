@@ -1,5 +1,5 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr
 from typing import Optional
 
@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     BBOX_MIN_LNG: float = 78.30
     BBOX_MAX_LAT: float = 17.50
     BBOX_MAX_LNG: float = 78.57
+
+    # Regional & National Bounding Boxes
+    INDIA_BBOX_MIN_LAT: float = 6.5
+    INDIA_BBOX_MAX_LAT: float = 37.5
+    INDIA_BBOX_MIN_LON: float = 68.0
+    INDIA_BBOX_MAX_LON: float = 98.0
 
     OPEN_METEO_FORECAST_URL: str = "https://api.open-meteo.com/v1/forecast"
     OPEN_METEO_ARCHIVE_URL: str = "https://archive-api.open-meteo.com/v1/archive"
@@ -54,7 +60,7 @@ class Settings(BaseSettings):
     DATABASE_PATH: str = "vanta.db"
 
     # Local officer login. Passwords are bcrypt-hashed in SQLite; never logged.
-    AUTH_REQUIRED: bool = False
+    AUTH_REQUIRED: bool = True
     BOOTSTRAP_OFFICER_USERNAME: str = ""
     BOOTSTRAP_OFFICER_PASSWORD: Optional[SecretStr] = None
     BOOTSTRAP_OFFICER_DISPLAY_NAME: str = "Watch Officer"
@@ -76,20 +82,33 @@ class Settings(BaseSettings):
     CAP_FLOOR_ORANGE: str = "watch"
     CAP_FLOOR_RED: str = "heavy"
 
-    # Hyderabad Traffic Police live waterlogging list (HTML table).
+    # Grid resolution and boundary (overridable per deployment).
+    # Defaults reproduce the original 10×12=120 cell GHMC layout.
+    # Changing these changes the cell count; existing elevation cache entries remain
+    # valid because elevation is keyed by cell id which encodes row/col.
+    GRID_LAT_MIN: float = 17.30
+    GRID_LAT_MAX: float = 17.56
+    GRID_LON_MIN: float = 78.30
+    GRID_LON_MAX: float = 78.62
+    GRID_LAT_COUNT: int = 10
+    GRID_LON_COUNT: int = 12
+
+    # Optional DEM file for slope/terrain features.
+    DEM_FILE_PATH: str = ""
     HTP_WATERLOGGING_URL: str = "https://echallan.tspolice.gov.in/htp/water_logging.html"
-    # GHMC division filter on the HTP table. "all" = every geocoded city point (Khairatabad, Golconda, …).
-    # Comma-separated names also work, e.g. Khairatabad,Golconda,Charminar.
     HTP_ZONE_FILTER: str = "all"
     HTP_POLL_SECONDS: int = 900
     HTP_HTTP_TIMEOUT_SECONDS: float = 15.0
     HTP_MAX_BODY_BYTES: int = 2_000_000
-    # Parallel Open-Meteo calls per risk-zones refresh (HTP catalog can be 60+ points).
     HTP_WEATHER_CONCURRENCY: int = 8
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    # Tier A Hazard APIs
+    MAP_KEY: str = ""
+    NASA_FIRMS_MAP_KEY: str = ""
+    USGS_EARTHQUAKE_URL: str = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+    IBTRACS_DATA_PATH: str = "data/ibtracs_active.json"
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
 

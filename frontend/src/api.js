@@ -369,3 +369,36 @@ export async function fetchPatrolRoute(waypoints) {
   }
   return null;
 }
+
+export async function fetchUnifiedHazards(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const res = await apiFetch(`/hazards${query ? `?${query}` : ''}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch unified hazards`);
+  return res.json();
+}
+
+export async function fetchHazardModules() {
+  const res = await apiFetch('/hazards/modules');
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch hazard module statuses`);
+  return res.json();
+}
+
+export async function fetchHazardActions(status = null) {
+  const res = await apiFetch(`/hazards/actions${status ? `?status=${status}` : ''}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch hazard recommended actions`);
+  return res.json();
+}
+
+export async function approveHazardAction(actionId) {
+  const res = await apiFetch(`/hazards/actions/${encodeURIComponent(actionId)}/approve`, { method: 'POST' });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not approve action');
+  return payload;
+}
+
+export async function rejectHazardAction(actionId) {
+  const res = await apiFetch(`/hazards/actions/${encodeURIComponent(actionId)}/reject`, { method: 'POST' });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || 'Could not reject action');
+  return payload;
+}

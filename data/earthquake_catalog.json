@@ -1,0 +1,6822 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "generated": 1795106841000,
+    "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=2.5&minlatitude=6.5&maxlatitude=37.5&minlongitude=68.0&maxlongitude=98.0&starttime=2026-08-21&endtime=2026-11-19&limit=200",
+    "title": "USGS Earthquakes",
+    "status": 200,
+    "api": "2.8.4",
+    "limit": 200,
+    "offset": 1
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "21 km ESE of Khorugh, Tajikistan",
+        "time": 1794927549523,
+        "updated": 1794938439040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tyss",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tyss&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tyss",
+        "ids": ",us7000tyss,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 32,
+        "dmin": 2.039,
+        "rms": 0.99,
+        "gap": 64,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 21 km ESE of Khorugh, Tajikistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.7849,
+          37.4353,
+          131.901
+        ]
+      },
+      "id": "us7000tyss"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "43 km S of Jurm, Afghanistan",
+        "time": 1794852145427,
+        "updated": 1794869417040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tykx",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tykx&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tykx",
+        "ids": ",us7000tykx,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 28,
+        "dmin": 2.36,
+        "rms": 0.6,
+        "gap": 108,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 43 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.7503,
+          36.4773,
+          202.737
+        ]
+      },
+      "id": "us7000tykx"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.9,
+        "place": "44 km S of Jurm, Afghanistan",
+        "time": 1794778641082,
+        "updated": 1794780978040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tyga",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tyga&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 369,
+        "net": "us",
+        "code": "7000tyga",
+        "ids": ",us7000tyga,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 67,
+        "dmin": 2.431,
+        "rms": 0.78,
+        "gap": 56,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 4.9 - 44 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.9205,
+          36.4657,
+          191.363
+        ]
+      },
+      "id": "us7000tyga"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5,
+        "place": "74 km N of P\u0101r\u016bn, Afghanistan",
+        "time": 1794764916959,
+        "updated": 1794766098040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tyfh",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tyfh&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 385,
+        "net": "us",
+        "code": "7000tyfh",
+        "ids": ",us7000tyfh,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 96,
+        "dmin": 2.165,
+        "rms": 0.67,
+        "gap": 55,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 5.0 - 74 km N of P\u0101r\u016bn, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.9503,
+          36.0947,
+          100.728
+        ]
+      },
+      "id": "us7000tyfh"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "27 km SW of Minbu, Burma (Myanmar)",
+        "time": 1794753123788,
+        "updated": 1794771851040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tyeu",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tyeu&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tyeu",
+        "ids": ",us7000tyeu,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 28,
+        "dmin": 1.235,
+        "rms": 0.39,
+        "gap": 173,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 27 km SW of Minbu, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.7157,
+          19.9786,
+          81.566
+        ]
+      },
+      "id": "us7000tyeu"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4,
+        "place": "32 km SE of Kargil, India",
+        "time": 1794632367508,
+        "updated": 1794634908040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ty72",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ty72&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 246,
+        "net": "us",
+        "code": "7000ty72",
+        "ids": ",us7000ty72,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 2.689,
+        "rms": 0.76,
+        "gap": 186,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.0 - 32 km SE of Kargil, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          76.392,
+          34.3601,
+          10
+        ]
+      },
+      "id": "us7000ty72"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "25 km NNW of Dh\u016blia, India",
+        "time": 1794627927019,
+        "updated": 1795063832980,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ty6u",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ty6u&format=geojson",
+        "felt": 3,
+        "cdi": 3.3,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 272,
+        "net": "us",
+        "code": "7000ty6u",
+        "ids": ",us7000ty6u,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 22,
+        "dmin": 12.543,
+        "rms": 0.97,
+        "gap": 214,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 25 km NNW of Dh\u016blia, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          74.7283,
+          21.1258,
+          10
+        ]
+      },
+      "id": "us7000ty6u"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "29 km WNW of Baghl\u0101n, Afghanistan",
+        "time": 1794565039293,
+        "updated": 1794595119040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000txz7",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000txz7&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000txz7",
+        "ids": ",us7000txz7,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 1.793,
+        "rms": 0.53,
+        "gap": 149,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 29 km WNW of Baghl\u0101n, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          68.3878,
+          36.2047,
+          10
+        ]
+      },
+      "id": "us7000txz7"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "66 km SSE of Farkh\u0101r, Afghanistan",
+        "time": 1794564456127,
+        "updated": 1794596759040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000txz5",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000txz5&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000txz5",
+        "ids": ",us7000txz5,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 19,
+        "dmin": 1.785,
+        "rms": 0.9,
+        "gap": 123,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 66 km SSE of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.2408,
+          36.0578,
+          10
+        ]
+      },
+      "id": "us7000txz5"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "73 km NNW of Gyalshing, India",
+        "time": 1794438022433,
+        "updated": 1794607664819,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000txpk",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000txpk&format=geojson",
+        "felt": 6,
+        "cdi": 4.1,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 328,
+        "net": "us",
+        "code": "7000txpk",
+        "ids": ",us7000txpk,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 40,
+        "dmin": 9.216,
+        "rms": 0.91,
+        "gap": 161,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 73 km NNW of Gyalshing, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8857,
+          27.8692,
+          10
+        ]
+      },
+      "id": "us7000txpk"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "western Xizang",
+        "time": 1794386872006,
+        "updated": 1794390266040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000txi2",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000txi2&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000txi2",
+        "ids": ",us7000txi2,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 34,
+        "dmin": 10.69,
+        "rms": 0.98,
+        "gap": 151,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - western Xizang"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          86.5462,
+          34.149,
+          10
+        ]
+      },
+      "id": "us7000txi2"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4,
+        "place": "14 km E of Khorugh, Tajikistan",
+        "time": 1794266104191,
+        "updated": 1795063846040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tx7n",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tx7n&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 246,
+        "net": "us",
+        "code": "7000tx7n",
+        "ids": ",us7000tx7n,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 1.031,
+        "rms": 0.51,
+        "gap": 159,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.0 - 14 km E of Khorugh, Tajikistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.7181,
+          37.4777,
+          138.715
+        ]
+      },
+      "id": "us7000tx7n"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "western Xizang",
+        "time": 1794215477316,
+        "updated": 1794226297040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tx2y",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tx2y&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tx2y",
+        "ids": ",us7000tx2y,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 17,
+        "dmin": 10.724,
+        "rms": 0.39,
+        "gap": 199,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - western Xizang"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          86.0958,
+          33.912,
+          10
+        ]
+      },
+      "id": "us7000tx2y"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5,
+        "place": "135 km ENE of Thang, India",
+        "time": 1793897786175,
+        "updated": 1794775284628,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tw8p",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tw8p&format=geojson",
+        "felt": 1,
+        "cdi": 2,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 385,
+        "net": "us",
+        "code": "7000tw8p",
+        "ids": ",us7000tw8p,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 88,
+        "dmin": 5.2,
+        "rms": 0.75,
+        "gap": 57,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.0 - 135 km ENE of Thang, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          78.0343,
+          35.6054,
+          85.287
+        ]
+      },
+      "id": "us7000tw8p"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "226 km ENE of Nagqu, China",
+        "time": 1793839755589,
+        "updated": 1793840607040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tw53",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tw53&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tw53",
+        "ids": ",us7000tw53,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 25,
+        "dmin": 8.64,
+        "rms": 0.77,
+        "gap": 106,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 226 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.1224,
+          32.5065,
+          10
+        ]
+      },
+      "id": "us7000tw53"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "47 km SSW of Jurm, Afghanistan",
+        "time": 1793818489398,
+        "updated": 1793833199040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tw2x",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tw2x&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000tw2x",
+        "ids": ",us7000tw2x,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 41,
+        "dmin": 2.32,
+        "rms": 0.86,
+        "gap": 87,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 47 km SSW of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.7177,
+          36.446,
+          199.264
+        ]
+      },
+      "id": "us7000tw2x"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "31 km E of Mawlaik, Burma (Myanmar)",
+        "time": 1793683424068,
+        "updated": 1793699491040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tv3l",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tv3l&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000tv3l",
+        "ids": ",us7000tv3l,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 70,
+        "dmin": 2.393,
+        "rms": 0.56,
+        "gap": 60,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 31 km E of Mawlaik, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.7089,
+          23.6023,
+          116.353
+        ]
+      },
+      "id": "us7000tv3l"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "170 km ENE of Nagqu, China",
+        "time": 1793665628534,
+        "updated": 1794462177040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tv1v",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tv1v&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tv1v",
+        "ids": ",us7000tv1v,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 54,
+        "dmin": 9.14,
+        "rms": 0.66,
+        "gap": 97,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 170 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.5975,
+          32.2766,
+          10
+        ]
+      },
+      "id": "us7000tv1v"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "186 km ENE of Nagqu, China",
+        "time": 1793652893714,
+        "updated": 1793912645040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuzz",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuzz&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000tuzz",
+        "ids": ",us7000tuzz,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 60,
+        "dmin": 8.995,
+        "rms": 0.45,
+        "gap": 105,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 186 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7833,
+          32.2855,
+          10
+        ]
+      },
+      "id": "us7000tuzz"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "212 km ENE of Nagqu, China",
+        "time": 1793644390139,
+        "updated": 1793904460040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuyi",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuyi&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000tuyi",
+        "ids": ",us7000tuyi,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 55,
+        "dmin": 11.226,
+        "rms": 0.39,
+        "gap": 118,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 212 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9955,
+          32.4467,
+          10
+        ]
+      },
+      "id": "us7000tuyi"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.7,
+        "place": "187 km ENE of Nagqu, China",
+        "time": 1793633712247,
+        "updated": 1794600399040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuxi",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuxi&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 340,
+        "net": "us",
+        "code": "7000tuxi",
+        "ids": ",us7000tuxi,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 54,
+        "dmin": 8.988,
+        "rms": 0.72,
+        "gap": 96,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.7 - 187 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7691,
+          32.3247,
+          10
+        ]
+      },
+      "id": "us7000tuxi"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "117 km NNE of Barishal, Pakistan",
+        "time": 1793555864661,
+        "updated": 1793573492040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuqq",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuqq&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tuqq",
+        "ids": ",us7000tuqq,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 44,
+        "dmin": 2.256,
+        "rms": 0.83,
+        "gap": 111,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 117 km NNE of Barishal, Pakistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.054,
+          37.336,
+          10
+        ]
+      },
+      "id": "us7000tuqq"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "39 km SSE of Farkh\u0101r, Afghanistan",
+        "time": 1793531025352,
+        "updated": 1794912550040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tupb",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tupb&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tupb",
+        "ids": ",us7000tupb,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 33,
+        "dmin": 1.876,
+        "rms": 1.03,
+        "gap": 80,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 39 km SSE of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.0367,
+          36.244,
+          124.153
+        ]
+      },
+      "id": "us7000tupb"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "190 km NNW of Nagqu, China",
+        "time": 1793453919154,
+        "updated": 1793462005040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuj2",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuj2&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tuj2",
+        "ids": ",us7000tuj2,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 48,
+        "dmin": 10.348,
+        "rms": 0.66,
+        "gap": 68,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 190 km NNW of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.6138,
+          33.1525,
+          10
+        ]
+      },
+      "id": "us7000tuj2"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "220 km ENE of Nagqu, China",
+        "time": 1793425923319,
+        "updated": 1794910874040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuh8",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuh8&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tuh8",
+        "ids": ",us7000tuh8,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 44,
+        "dmin": 8.691,
+        "rms": 0.79,
+        "gap": 114,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 220 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0512,
+          32.5136,
+          10
+        ]
+      },
+      "id": "us7000tuh8"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.2,
+        "place": "214 km NNW of Bamboo Flat, India",
+        "time": 1793263782262,
+        "updated": 1794474438205,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tty7",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tty7&format=geojson",
+        "felt": 1,
+        "cdi": 1,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 416,
+        "net": "us",
+        "code": "7000tty7",
+        "ids": ",us7000tty7,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 90,
+        "dmin": 7.355,
+        "rms": 0.86,
+        "gap": 43,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.2 - 214 km NNW of Bamboo Flat, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.6285,
+          13.3213,
+          10
+        ]
+      },
+      "id": "us7000tty7"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "235 km ENE of Nagqu, China",
+        "time": 1793223996398,
+        "updated": 1794181572040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000twlg",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000twlg&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000twlg",
+        "ids": ",us7000twlg,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 37,
+        "dmin": 8.565,
+        "rms": 0.83,
+        "gap": 123,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 235 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.1481,
+          32.6364,
+          10
+        ]
+      },
+      "id": "us7000twlg"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "200 km ENE of Nagqu, China",
+        "time": 1793223975958,
+        "updated": 1794180843040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttu9",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttu9&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000ttu9",
+        "ids": ",us7000ttu9,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 31,
+        "dmin": 8.872,
+        "rms": 0.84,
+        "gap": 144,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 200 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8788,
+          32.4007,
+          10
+        ]
+      },
+      "id": "us7000ttu9"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4,
+        "place": "249 km NE of Nagqu, China",
+        "time": 1793209698037,
+        "updated": 1793222182040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttsq",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttsq&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 246,
+        "net": "us",
+        "code": "7000ttsq",
+        "ids": ",us7000ttsq,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 37,
+        "dmin": 8.444,
+        "rms": 0.71,
+        "gap": 116,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.0 - 249 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.2416,
+          32.7514,
+          10
+        ]
+      },
+      "id": "us7000ttsq"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "32 km WSW of Ashk\u0101sham, Afghanistan",
+        "time": 1793190810814,
+        "updated": 1794904199040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttnr",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttnr&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000ttnr",
+        "ids": ",us7000ttnr,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 63,
+        "dmin": 2.644,
+        "rms": 0.54,
+        "gap": 73,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 32 km WSW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.2125,
+          36.5487,
+          216.084
+        ]
+      },
+      "id": "us7000ttnr"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "47 km ESE of Khorugh, Tajikistan",
+        "time": 1793171259319,
+        "updated": 1794904401040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttmk",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttmk&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000ttmk",
+        "ids": ",us7000ttmk,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 26,
+        "dmin": 1.018,
+        "rms": 1.26,
+        "gap": 123,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 47 km ESE of Khorugh, Tajikistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.0594,
+          37.3503,
+          165.505
+        ]
+      },
+      "id": "us7000ttmk"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.4,
+        "place": "206 km ENE of Nagqu, China",
+        "time": 1793127472912,
+        "updated": 1794262370219,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttis",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttis&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": 6.422,
+        "alert": "green",
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 449,
+        "net": "us",
+        "code": "7000ttis",
+        "ids": ",us7000ttis,",
+        "sources": ",us,",
+        "types": ",ground-failure,losspager,origin,phase-data,shakemap,",
+        "nst": 137,
+        "dmin": 8.819,
+        "rms": 0.75,
+        "gap": 38,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.4 - 206 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9084,
+          32.4692,
+          10
+        ]
+      },
+      "id": "us7000ttis"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "288 km N of Bamboo Flat, India",
+        "time": 1793121765478,
+        "updated": 1794260788040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttii",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttii&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000ttii",
+        "ids": ",us7000ttii,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 5.848,
+        "rms": 0.86,
+        "gap": 135,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 288 km N of Bamboo Flat, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.0886,
+          14.2825,
+          10
+        ]
+      },
+      "id": "us7000ttii"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "32 km SW of Ashk\u0101sham, Afghanistan",
+        "time": 1793116622376,
+        "updated": 1793125032040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttgz",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttgz&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000ttgz",
+        "ids": ",us7000ttgz,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 63,
+        "dmin": 2.079,
+        "rms": 0.77,
+        "gap": 60,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 32 km SW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.318,
+          36.4496,
+          123.853
+        ]
+      },
+      "id": "us7000ttgz"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "41 km S of Farkh\u0101r, Afghanistan",
+        "time": 1793110146874,
+        "updated": 1793121739040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttgc",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttgc&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "7000ttgc",
+        "ids": ",us7000ttgc,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 132,
+        "dmin": 1.799,
+        "rms": 0.56,
+        "gap": 42,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 41 km S of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          69.9044,
+          36.2043,
+          115.076
+        ]
+      },
+      "id": "us7000ttgc"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "193 km ENE of Nagqu, China",
+        "time": 1792972301268,
+        "updated": 1794982064040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tw0s",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tw0s&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tw0s",
+        "ids": ",us7000tw0s,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 22,
+        "dmin": 15.919,
+        "rms": 0.94,
+        "gap": 223,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 193 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9258,
+          32.1806,
+          10
+        ]
+      },
+      "id": "us7000tw0s"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "77 km ENE of Yairipok, India",
+        "time": 1792971453625,
+        "updated": 1794981517040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tw0r",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tw0r&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tw0r",
+        "ids": ",us7000tw0r,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 21,
+        "dmin": 3.604,
+        "rms": 0.69,
+        "gap": 100,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 77 km ENE of Yairipok, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.7994,
+          24.8255,
+          92.091
+        ]
+      },
+      "id": "us7000tw0r"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.7,
+        "place": "174 km ENE of Nagqu, China",
+        "time": 1792965695878,
+        "updated": 1793841753040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4wc",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4wc&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 340,
+        "net": "us",
+        "code": "6000u4wc",
+        "ids": ",us6000u4wc,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 74,
+        "dmin": 9.102,
+        "rms": 0.62,
+        "gap": 75,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.7 - 174 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.6649,
+          32.2464,
+          10
+        ]
+      },
+      "id": "us6000u4wc"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.2,
+        "place": "56 km SW of Ashk\u0101sham, Afghanistan",
+        "time": 1792950264344,
+        "updated": 1794607976791,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4va",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4va&format=geojson",
+        "felt": 6,
+        "cdi": 2.7,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 418,
+        "net": "us",
+        "code": "6000u4va",
+        "ids": ",us6000u4va,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 129,
+        "dmin": 2.289,
+        "rms": 0.74,
+        "gap": 18,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 5.2 - 56 km SW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.1332,
+          36.2899,
+          118.444
+        ]
+      },
+      "id": "us6000u4va"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "201 km ENE of Nagqu, China",
+        "time": 1792946808343,
+        "updated": 1794078843040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4ux",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4ux&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000u4ux",
+        "ids": ",us6000u4ux,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 70,
+        "dmin": 8.871,
+        "rms": 0.83,
+        "gap": 62,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 201 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8301,
+          32.4861,
+          10
+        ]
+      },
+      "id": "us6000u4ux"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "219 km NE of Nagqu, China",
+        "time": 1792929316227,
+        "updated": 1794033356040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4u4",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4u4&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u4u4",
+        "ids": ",us6000u4u4,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 34,
+        "dmin": 8.74,
+        "rms": 0.49,
+        "gap": 133,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 219 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.875,
+          32.715,
+          10
+        ]
+      },
+      "id": "us6000u4u4"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.9,
+        "place": "214 km ENE of Nagqu, China",
+        "time": 1792927557039,
+        "updated": 1794745843300,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4ty",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4ty&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": 7.214,
+        "alert": "green",
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 536,
+        "net": "us",
+        "code": "6000u4ty",
+        "ids": ",us6000u4ty,usauto6000u4ty,",
+        "sources": ",us,usauto,",
+        "types": ",ground-failure,internal-moment-tensor,losspager,moment-tensor,origin,phase-data,shakemap,",
+        "nst": 117,
+        "dmin": 8.742,
+        "rms": 0.56,
+        "gap": 35,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 5.9 - 214 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0105,
+          32.4675,
+          7
+        ]
+      },
+      "id": "us6000u4ty"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5,
+        "place": "197 km ENE of Nagqu, China",
+        "time": 1792927453959,
+        "updated": 1794745160040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4tx",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4tx&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 385,
+        "net": "us",
+        "code": "6000u4tx",
+        "ids": ",us6000u4tx,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 70,
+        "dmin": 8.896,
+        "rms": 0.5,
+        "gap": 71,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.0 - 197 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.863,
+          32.3733,
+          10
+        ]
+      },
+      "id": "us6000u4tx"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "35 km SE of D\u0101rchul\u0101, Nepal",
+        "time": 1792912897857,
+        "updated": 1794058810040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tvzm",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tvzm&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tvzm",
+        "ids": ",us7000tvzm,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 22,
+        "dmin": 7.584,
+        "rms": 0.99,
+        "gap": 166,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 35 km SE of D\u0101rchul\u0101, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8002,
+          29.6017,
+          10
+        ]
+      },
+      "id": "us7000tvzm"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "41 km SSW of Ashk\u0101sham, Afghanistan",
+        "time": 1792883289114,
+        "updated": 1794024471040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4qc",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4qc&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000u4qc",
+        "ids": ",us6000u4qc,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 25,
+        "dmin": 2.162,
+        "rms": 0.96,
+        "gap": 117,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 41 km SSW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.287,
+          36.3699,
+          106.594
+        ]
+      },
+      "id": "us6000u4qc"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "71 km SW of Rikaze, China",
+        "time": 1792870453347,
+        "updated": 1794612479040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4p1",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4p1&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000u4p1",
+        "ids": ",us6000u4p1,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 60,
+        "dmin": 9.558,
+        "rms": 1.23,
+        "gap": 149,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 71 km SW of Rikaze, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.411,
+          28.7608,
+          10
+        ]
+      },
+      "id": "us6000u4p1"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "197 km NE of Nagqu, China",
+        "time": 1792848394262,
+        "updated": 1795023738040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4mg",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4mg&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000u4mg",
+        "ids": ",us6000u4mg,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 92,
+        "dmin": 8.926,
+        "rms": 0.73,
+        "gap": 57,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 197 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.711,
+          32.572,
+          10
+        ]
+      },
+      "id": "us6000u4mg"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "80 km S of Mawlaik, Burma (Myanmar)",
+        "time": 1792836983693,
+        "updated": 1794036280040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4lz",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4lz&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u4lz",
+        "ids": ",us6000u4lz,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 45,
+        "dmin": 1.75,
+        "rms": 0.42,
+        "gap": 92,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 80 km S of Mawlaik, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.5231,
+          22.926,
+          105.638
+        ]
+      },
+      "id": "us6000u4lz"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "20 km NNE of Myingyan, Burma (Myanmar)",
+        "time": 1792836403864,
+        "updated": 1794035883040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tv79",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tv79&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tv79",
+        "ids": ",us7000tv79,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 25,
+        "dmin": 0.667,
+        "rms": 0.75,
+        "gap": 116,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 20 km NNE of Myingyan, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          95.4698,
+          21.6315,
+          10
+        ]
+      },
+      "id": "us7000tv79"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.3,
+        "place": "218 km ENE of Nagqu, China",
+        "time": 1792831193065,
+        "updated": 1794740449040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4lg",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4lg&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 432,
+        "net": "us",
+        "code": "6000u4lg",
+        "ids": ",us6000u4lg,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 102,
+        "dmin": 8.713,
+        "rms": 0.62,
+        "gap": 61,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.3 - 218 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0081,
+          32.539,
+          10
+        ]
+      },
+      "id": "us6000u4lg"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.9,
+        "place": "211 km ENE of Nagqu, China",
+        "time": 1792800476225,
+        "updated": 1794006926040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4i8",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4i8&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 369,
+        "net": "us",
+        "code": "6000u4i8",
+        "ids": ",us6000u4i8,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 55,
+        "dmin": 8.776,
+        "rms": 0.6,
+        "gap": 57,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.9 - 211 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9589,
+          32.4809,
+          10
+        ]
+      },
+      "id": "us6000u4i8"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "221 km NE of Nagqu, China",
+        "time": 1792795150202,
+        "updated": 1793945809040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4hp",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4hp&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000u4hp",
+        "ids": ",us6000u4hp,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 37,
+        "dmin": 8.703,
+        "rms": 0.64,
+        "gap": 123,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 221 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9602,
+          32.6479,
+          10
+        ]
+      },
+      "id": "us6000u4hp"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "47 km SSW of Jurm, Afghanistan",
+        "time": 1792793395831,
+        "updated": 1793944034040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4h9",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4h9&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "6000u4h9",
+        "ids": ",us6000u4h9,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 39,
+        "dmin": 2.291,
+        "rms": 0.57,
+        "gap": 98,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 47 km SSW of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.5703,
+          36.489,
+          213.07
+        ]
+      },
+      "id": "us6000u4h9"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.8,
+        "place": "203 km ENE of Nagqu, China",
+        "time": 1792787861926,
+        "updated": 1794956415040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4gj",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4gj&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 354,
+        "net": "us",
+        "code": "6000u4gj",
+        "ids": ",us6000u4gj,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 142,
+        "dmin": 8.844,
+        "rms": 0.45,
+        "gap": 39,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.8 - 203 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8874,
+          32.4478,
+          10
+        ]
+      },
+      "id": "us6000u4gj"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4,
+        "place": "194 km ENE of Nagqu, China",
+        "time": 1792784272043,
+        "updated": 1794952906040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4g4",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4g4&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 246,
+        "net": "us",
+        "code": "6000u4g4",
+        "ids": ",us6000u4g4,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 30,
+        "dmin": 8.932,
+        "rms": 0.47,
+        "gap": 96,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.0 - 194 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7667,
+          32.4576,
+          10
+        ]
+      },
+      "id": "us6000u4g4"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "96 km ESE of Tuensang, India",
+        "time": 1792775184571,
+        "updated": 1794679763040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4f5",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4f5&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000u4f5",
+        "ids": ",us6000u4f5,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 68,
+        "dmin": 4.828,
+        "rms": 0.7,
+        "gap": 69,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 96 km ESE of Tuensang, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          95.7372,
+          25.9964,
+          110.315
+        ]
+      },
+      "id": "us6000u4f5"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "225 km ENE of Nagqu, China",
+        "time": 1792766476350,
+        "updated": 1794000052040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4dk",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4dk&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u4dk",
+        "ids": ",us6000u4dk,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 34,
+        "dmin": 8.65,
+        "rms": 0.62,
+        "gap": 114,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 225 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0679,
+          32.5802,
+          10
+        ]
+      },
+      "id": "us6000u4dk"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.7,
+        "place": "222 km NE of Nagqu, China",
+        "time": 1792764844559,
+        "updated": 1793994147040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4df",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4df&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 340,
+        "net": "us",
+        "code": "6000u4df",
+        "ids": ",us6000u4df,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 56,
+        "dmin": 8.688,
+        "rms": 0.71,
+        "gap": 71,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.7 - 222 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9994,
+          32.6134,
+          10
+        ]
+      },
+      "id": "us6000u4df"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "227 km ENE of Nagqu, China",
+        "time": 1792744394736,
+        "updated": 1793430963040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tu9v",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tu9v&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000tu9v",
+        "ids": ",us7000tu9v,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 13.629,
+        "rms": 0.46,
+        "gap": 129,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 227 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.1068,
+          32.5527,
+          10
+        ]
+      },
+      "id": "us7000tu9v"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "192 km ENE of Nagqu, China",
+        "time": 1792725226751,
+        "updated": 1794810266040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tu9h",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tu9h&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tu9h",
+        "ids": ",us7000tu9h,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 13,
+        "dmin": 13.575,
+        "rms": 0.75,
+        "gap": 164,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 192 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7764,
+          32.414,
+          10
+        ]
+      },
+      "id": "us7000tu9h"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "191 km ENE of Nagqu, China",
+        "time": 1792724020662,
+        "updated": 1794807409040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u49h",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u49h&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u49h",
+        "ids": ",us6000u49h,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 65,
+        "dmin": 8.95,
+        "rms": 0.45,
+        "gap": 104,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 191 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8207,
+          32.3236,
+          10
+        ]
+      },
+      "id": "us6000u49h"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "210 km ENE of Nagqu, China",
+        "time": 1792715711522,
+        "updated": 1793943127040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u48s",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u48s&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "6000u48s",
+        "ids": ",us6000u48s,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 24,
+        "dmin": 8.78,
+        "rms": 0.63,
+        "gap": 104,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 210 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9973,
+          32.4042,
+          10
+        ]
+      },
+      "id": "us6000u48s"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "202 km NE of Nagqu, China",
+        "time": 1792715057664,
+        "updated": 1793942955040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u48r",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u48r&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u48r",
+        "ids": ",us6000u48r,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 33,
+        "dmin": 8.89,
+        "rms": 0.63,
+        "gap": 156,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 202 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7373,
+          32.6095,
+          10
+        ]
+      },
+      "id": "us6000u48r"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5,
+        "place": "213 km ENE of Nagqu, China",
+        "time": 1792692403845,
+        "updated": 1794170339040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u45j",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u45j&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 385,
+        "net": "us",
+        "code": "6000u45j",
+        "ids": ",us6000u45j,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 92,
+        "dmin": 20.371,
+        "rms": 0.59,
+        "gap": 57,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.0 - 213 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0527,
+          32.3865,
+          10
+        ]
+      },
+      "id": "us6000u45j"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "51 km E of Lobuche, Nepal",
+        "time": 1792689087957,
+        "updated": 1794154962040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u45b",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u45b&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000u45b",
+        "ids": ",us6000u45b,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 55,
+        "dmin": 9.685,
+        "rms": 0.65,
+        "gap": 159,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 51 km E of Lobuche, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.3256,
+          28.0314,
+          10
+        ]
+      },
+      "id": "us6000u45b"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.7,
+        "place": "189 km ENE of Nagqu, China",
+        "time": 1792688274041,
+        "updated": 1793572571040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u45a",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u45a&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 340,
+        "net": "us",
+        "code": "6000u45a",
+        "ids": ",us6000u45a,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 62,
+        "dmin": 8.973,
+        "rms": 0.53,
+        "gap": 66,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.7 - 189 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7806,
+          32.3406,
+          10
+        ]
+      },
+      "id": "us6000u45a"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "211 km ENE of Nagqu, China",
+        "time": 1792687816759,
+        "updated": 1793571892040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u458",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u458&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000u458",
+        "ids": ",us6000u458,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 50,
+        "dmin": 11.246,
+        "rms": 0.89,
+        "gap": 106,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 211 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9735,
+          32.4657,
+          10
+        ]
+      },
+      "id": "us6000u458"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "187 km ENE of Nagqu, China",
+        "time": 1792687500682,
+        "updated": 1793571767040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u455",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u455&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000u455",
+        "ids": ",us6000u455,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 52,
+        "dmin": 8.991,
+        "rms": 0.68,
+        "gap": 96,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 187 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7429,
+          32.3638,
+          10
+        ]
+      },
+      "id": "us6000u455"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.9,
+        "place": "202 km ENE of Nagqu, China",
+        "time": 1792686093644,
+        "updated": 1793571258040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u451",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u451&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 369,
+        "net": "us",
+        "code": "6000u451",
+        "ids": ",us6000u451,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 66,
+        "dmin": 8.863,
+        "rms": 0.68,
+        "gap": 62,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.9 - 202 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8384,
+          32.4917,
+          10
+        ]
+      },
+      "id": "us6000u451"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "227 km NE of Nagqu, China",
+        "time": 1792685829329,
+        "updated": 1793571107040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tud3",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tud3&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000tud3",
+        "ids": ",us7000tud3,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 11.567,
+        "rms": 0.84,
+        "gap": 109,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 227 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9116,
+          32.7845,
+          10
+        ]
+      },
+      "id": "us7000tud3"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "217 km ENE of Nagqu, China",
+        "time": 1792684675170,
+        "updated": 1793567586040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u44z",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u44z&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000u44z",
+        "ids": ",us6000u44z,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 23,
+        "dmin": 13.619,
+        "rms": 0.52,
+        "gap": 112,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 217 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0093,
+          32.5185,
+          10
+        ]
+      },
+      "id": "us6000u44z"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "224 km ENE of Nagqu, China",
+        "time": 1792684377683,
+        "updated": 1793566526040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u44y",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u44y&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000u44y",
+        "ids": ",us6000u44y,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 42,
+        "dmin": 13.542,
+        "rms": 0.65,
+        "gap": 126,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 224 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.1299,
+          32.4678,
+          10
+        ]
+      },
+      "id": "us6000u44y"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.9,
+        "place": "western Xizang",
+        "time": 1792683937290,
+        "updated": 1793565996040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u44w",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u44w&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 369,
+        "net": "us",
+        "code": "6000u44w",
+        "ids": ",us6000u44w,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 53,
+        "dmin": 10.822,
+        "rms": 0.97,
+        "gap": 86,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.9 - western Xizang"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          86.2623,
+          33.8182,
+          10
+        ]
+      },
+      "id": "us6000u44w"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "189 km ENE of Nagqu, China",
+        "time": 1792683553224,
+        "updated": 1793565415040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u44v",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u44v&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u44v",
+        "ids": ",us6000u44v,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 35,
+        "dmin": 8.962,
+        "rms": 0.67,
+        "gap": 120,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 189 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8562,
+          32.2371,
+          10
+        ]
+      },
+      "id": "us6000u44v"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "215 km NE of Nagqu, China",
+        "time": 1792682403590,
+        "updated": 1793564263040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tub1",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tub1&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tub1",
+        "ids": ",us7000tub1,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 25,
+        "dmin": 16.723,
+        "rms": 0.76,
+        "gap": 158,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 215 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9066,
+          32.6075,
+          10
+        ]
+      },
+      "id": "us7000tub1"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "222 km NE of Nagqu, China",
+        "time": 1792682334986,
+        "updated": 1793563721040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuax",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuax&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tuax",
+        "ids": ",us7000tuax,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 15.505,
+        "rms": 1.23,
+        "gap": 138,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 222 km NE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.9066,
+          32.7256,
+          10
+        ]
+      },
+      "id": "us7000tuax"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.9,
+        "place": "204 km ENE of Nagqu, China",
+        "time": 1792682024781,
+        "updated": 1793562575040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuaw",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuaw&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 369,
+        "net": "us",
+        "code": "7000tuaw",
+        "ids": ",us7000tuaw,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 66,
+        "dmin": 11.269,
+        "rms": 0.93,
+        "gap": 95,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.9 - 204 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8768,
+          32.4816,
+          10
+        ]
+      },
+      "id": "us7000tuaw"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.2,
+        "place": "197 km ENE of Nagqu, China",
+        "time": 1792681924407,
+        "updated": 1793559448040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u44n",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u44n&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 416,
+        "net": "us",
+        "code": "6000u44n",
+        "ids": ",us6000u44n,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 78,
+        "dmin": 8.896,
+        "rms": 0.72,
+        "gap": 57,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.2 - 197 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.8437,
+          32.4058,
+          10
+        ]
+      },
+      "id": "us6000u44n"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "186 km ENE of Nagqu, China",
+        "time": 1792681179697,
+        "updated": 1793558649040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuas",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuas&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "7000tuas",
+        "ids": ",us7000tuas,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 33,
+        "dmin": 11.155,
+        "rms": 0.92,
+        "gap": 105,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 186 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7346,
+          32.3553,
+          10
+        ]
+      },
+      "id": "us7000tuas"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "225 km ENE of Nagqu, China",
+        "time": 1792680373831,
+        "updated": 1793557708040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tuau",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tuau&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000tuau",
+        "ids": ",us7000tuau,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 24,
+        "dmin": 17.043,
+        "rms": 0.93,
+        "gap": 106,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 225 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.1972,
+          32.3767,
+          10
+        ]
+      },
+      "id": "us7000tuau"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 7,
+        "place": "189 km ENE of Nagqu, China",
+        "time": 1792679620289,
+        "updated": 1794299257066,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u43g",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u43g&format=geojson",
+        "felt": 9,
+        "cdi": 7.4,
+        "mmi": 8.75,
+        "alert": "orange",
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 1007,
+        "net": "us",
+        "code": "6000u43g",
+        "ids": ",us6000u43g,usauto6000u43g,attnbcg6,",
+        "sources": ",us,usauto,at,",
+        "types": ",dyfi,finite-fault,general-text,ground-failure,impact-text,internal-moment-tensor,internal-origin,losspager,moment-tensor,origin,phase-data,shakemap,",
+        "nst": 134,
+        "dmin": 8.972,
+        "rms": 0.95,
+        "gap": 22,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 7.0 - 189 km ENE of Nagqu, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7837,
+          32.3376,
+          18
+        ]
+      },
+      "id": "us6000u43g"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "12 km W of Ashk\u0101sham, Afghanistan",
+        "time": 1792663661669,
+        "updated": 1794840655040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u42e",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u42e&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000u42e",
+        "ids": ",us6000u42e,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 88,
+        "dmin": 1.848,
+        "rms": 0.86,
+        "gap": 51,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 12 km W of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.389,
+          36.6802,
+          174.102
+        ]
+      },
+      "id": "us6000u42e"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "western Xizang",
+        "time": 1792631233654,
+        "updated": 1794549408040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u3zv",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u3zv&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000u3zv",
+        "ids": ",us6000u3zv,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 32,
+        "dmin": 11.768,
+        "rms": 0.55,
+        "gap": 119,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - western Xizang"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.4359,
+          33.8453,
+          10
+        ]
+      },
+      "id": "us6000u3zv"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "113 km NNE of Barishal, Pakistan",
+        "time": 1792538204545,
+        "updated": 1794439418040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u3r1",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u3r1&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000u3r1",
+        "ids": ",us6000u3r1,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 51,
+        "dmin": 3.329,
+        "rms": 0.67,
+        "gap": 65,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 113 km NNE of Barishal, Pakistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.0239,
+          37.3136,
+          69.584
+        ]
+      },
+      "id": "us6000u3r1"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "17 km NW of Fayzabad, Afghanistan",
+        "time": 1792391418982,
+        "updated": 1794487075040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u3b0",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u3b0&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000u3b0",
+        "ids": ",us6000u3b0,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 42,
+        "dmin": 2.506,
+        "rms": 0.66,
+        "gap": 100,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 17 km NW of Fayzabad, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.4197,
+          37.2144,
+          10
+        ]
+      },
+      "id": "us6000u3b0"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.7,
+        "place": "10 km SE of Khawhai, India",
+        "time": 1792391383292,
+        "updated": 1794488366040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ttr0",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ttr0&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 340,
+        "net": "us",
+        "code": "7000ttr0",
+        "ids": ",us7000ttr0,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 40,
+        "dmin": 2.631,
+        "rms": 0.53,
+        "gap": 84,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.7 - 10 km SE of Khawhai, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.2135,
+          23.3218,
+          44.344
+        ]
+      },
+      "id": "us7000ttr0"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "western Xizang",
+        "time": 1792261847419,
+        "updated": 1794178658040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u315",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u315&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000u315",
+        "ids": ",us6000u315,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 39,
+        "dmin": 10.778,
+        "rms": 0.72,
+        "gap": 87,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - western Xizang"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          86.2041,
+          33.7337,
+          10
+        ]
+      },
+      "id": "us6000u315"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "231 km S of Port Blair, India",
+        "time": 1792230178499,
+        "updated": 1793183137040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tthn",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tthn&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tthn",
+        "ids": ",us7000tthn,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 15,
+        "dmin": 6.942,
+        "rms": 0.61,
+        "gap": 200,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 231 km S of Port Blair, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          92.6416,
+          9.5769,
+          36.758
+        ]
+      },
+      "id": "us7000tthn"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "9 km ESE of R\u0101mpur, India",
+        "time": 1792191988801,
+        "updated": 1793684926462,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u2wp",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u2wp&format=geojson",
+        "felt": 4,
+        "cdi": 3.6,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 286,
+        "net": "us",
+        "code": "6000u2wp",
+        "ids": ",us6000u2wp,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 44,
+        "dmin": 4.375,
+        "rms": 0.56,
+        "gap": 95,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 9 km ESE of R\u0101mpur, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.7287,
+          31.4181,
+          29.899
+        ]
+      },
+      "id": "us6000u2wp"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "98 km NNE of Lobuche, Nepal",
+        "time": 1792179317741,
+        "updated": 1794090757040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4em",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u4em&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000u4em",
+        "ids": ",us6000u4em,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 19,
+        "dmin": 10.117,
+        "rms": 0.71,
+        "gap": 160,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 98 km NNE of Lobuche, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.3652,
+          28.6874,
+          10
+        ]
+      },
+      "id": "us6000u4em"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "25 km ESE of Jurm, Afghanistan",
+        "time": 1792127830936,
+        "updated": 1794475693040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u2n6",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u2n6&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000u2n6",
+        "ids": ",us6000u2n6,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 30,
+        "dmin": 2.752,
+        "rms": 0.76,
+        "gap": 94,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 25 km ESE of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.1016,
+          36.777,
+          213.723
+        ]
+      },
+      "id": "us6000u2n6"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "25 km NE of Rust\u0101q, Afghanistan",
+        "time": 1792057889803,
+        "updated": 1794391388040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u2fx",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u2fx&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u2fx",
+        "ids": ",us6000u2fx,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 28,
+        "dmin": 2.593,
+        "rms": 1.25,
+        "gap": 95,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 25 km NE of Rust\u0101q, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.0392,
+          37.2806,
+          59.018
+        ]
+      },
+      "id": "us6000u2fx"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "178 km N of Bamboo Flat, India",
+        "time": 1792000938141,
+        "updated": 1793985428040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u46c",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u46c&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u46c",
+        "ids": ",us6000u46c,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 24,
+        "dmin": 7.157,
+        "rms": 0.6,
+        "gap": 104,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 178 km N of Bamboo Flat, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          92.5017,
+          13.3026,
+          15.786
+        ]
+      },
+      "id": "us6000u46c"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "8 km N of M\u012br Bachah K\u014d\u1e6f, Afghanistan",
+        "time": 1791950598404,
+        "updated": 1793765540040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u279",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u279&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000u279",
+        "ids": ",us6000u279,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 17,
+        "dmin": 0.308,
+        "rms": 1.17,
+        "gap": 85,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 8 km N of M\u012br Bachah K\u014d\u1e6f, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          69.1185,
+          34.8235,
+          10
+        ]
+      },
+      "id": "us6000u279"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "37 km S of Jurm, Afghanistan",
+        "time": 1791893566785,
+        "updated": 1793886813040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u211",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u211&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000u211",
+        "ids": ",us6000u211,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 61,
+        "dmin": 2.458,
+        "rms": 0.85,
+        "gap": 70,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 37 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.8739,
+          36.5273,
+          188.329
+        ]
+      },
+      "id": "us6000u211"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "165 km SSE of Port Blair, India",
+        "time": 1791819442219,
+        "updated": 1793633219040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u1sk",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u1sk&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000u1sk",
+        "ids": ",us6000u1sk,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 29,
+        "dmin": 6.565,
+        "rms": 0.84,
+        "gap": 85,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 165 km SSE of Port Blair, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.1537,
+          10.2276,
+          98.628
+        ]
+      },
+      "id": "us6000u1sk"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "38 km E of W\u0101ngjing, India",
+        "time": 1791768499910,
+        "updated": 1793581385324,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u1nr",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u1nr&format=geojson",
+        "felt": 1,
+        "cdi": 1,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000u1nr",
+        "ids": ",us6000u1nr,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 76,
+        "dmin": 3.435,
+        "rms": 0.56,
+        "gap": 63,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 38 km E of W\u0101ngjing, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.439,
+          24.6284,
+          74.25
+        ]
+      },
+      "id": "us6000u1nr"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "29 km SE of Jurm, Afghanistan",
+        "time": 1791702467172,
+        "updated": 1792583960040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u1iz",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u1iz&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000u1iz",
+        "ids": ",us6000u1iz,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 37,
+        "dmin": 2.626,
+        "rms": 0.61,
+        "gap": 86,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 29 km SE of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.0244,
+          36.6471,
+          197.222
+        ]
+      },
+      "id": "us6000u1iz"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "32 km W of Ashk\u0101sham, Afghanistan",
+        "time": 1791673862730,
+        "updated": 1793572341040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u1h9",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u1h9&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000u1h9",
+        "ids": ",us6000u1h9,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 21,
+        "dmin": 2.764,
+        "rms": 0.4,
+        "gap": 116,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 32 km W of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.1701,
+          36.7321,
+          206.319
+        ]
+      },
+      "id": "us6000u1h9"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 3.8,
+        "place": "64 km ENE of Besisahar, Nepal",
+        "time": 1791671938000,
+        "updated": 1794873343040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u1j7",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u1j7&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 222,
+        "net": "us",
+        "code": "6000u1j7",
+        "ids": ",us6000u1j7,",
+        "sources": ",us,",
+        "types": ",general-header,impact-text,origin,phase-data,",
+        "nst": 0,
+        "dmin": null,
+        "rms": 1.17,
+        "gap": null,
+        "magType": "ms_vx",
+        "type": "landslide",
+        "title": "M 3.8 Landslide - 64 km ENE of Besisahar, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          84.942,
+          28.532,
+          0
+        ]
+      },
+      "id": "us6000u1j7"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "9 km NNE of Uttark\u0101shi, India",
+        "time": 1791643051202,
+        "updated": 1793899273040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u1f1",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u1f1&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u1f1",
+        "ids": ",us6000u1f1,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 57,
+        "dmin": 5.25,
+        "rms": 0.55,
+        "gap": 85,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 9 km NNE of Uttark\u0101shi, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          78.4864,
+          30.8109,
+          20.964
+        ]
+      },
+      "id": "us6000u1f1"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "26 km SSE of Jurm, Afghanistan",
+        "time": 1791575549105,
+        "updated": 1793817766040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u2tp",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u2tp&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "6000u2tp",
+        "ids": ",us6000u2tp,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 21,
+        "dmin": 2.577,
+        "rms": 0.74,
+        "gap": 112,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 26 km SSE of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.9305,
+          36.6415,
+          195.999
+        ]
+      },
+      "id": "us6000u2tp"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "53 km E of Farkh\u0101r, Afghanistan",
+        "time": 1791545944182,
+        "updated": 1793572367040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u15g",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u15g&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000u15g",
+        "ids": ",us6000u15g,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 42,
+        "dmin": 2.233,
+        "rms": 0.95,
+        "gap": 78,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 53 km E of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.4399,
+          36.4822,
+          203.923
+        ]
+      },
+      "id": "us6000u15g"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "65 km NNE of Mawlaik, Burma (Myanmar)",
+        "time": 1791343761517,
+        "updated": 1792733031040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0p3",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u0p3&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000u0p3",
+        "ids": ",us6000u0p3,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 40,
+        "dmin": 2.995,
+        "rms": 0.39,
+        "gap": 127,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 65 km NNE of Mawlaik, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.6187,
+          24.2023,
+          112.054
+        ]
+      },
+      "id": "us6000u0p3"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5,
+        "place": "32 km NW of B\u0101geshwar, India",
+        "time": 1791305592828,
+        "updated": 1794408929040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0hz",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u0hz&format=geojson",
+        "felt": 50,
+        "cdi": 4.6,
+        "mmi": 5.32,
+        "alert": "green",
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 408,
+        "net": "us",
+        "code": "6000u0hz",
+        "ids": ",us6000u0hz,",
+        "sources": ",us,",
+        "types": ",dyfi,ground-failure,impact-text,losspager,origin,phase-data,shakemap,",
+        "nst": 152,
+        "dmin": 6.439,
+        "rms": 0.54,
+        "gap": 29,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.0 - 32 km NW of B\u0101geshwar, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.5747,
+          30.0758,
+          19.552
+        ]
+      },
+      "id": "us6000u0hz"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "27 km SSE of Tezpur, India",
+        "time": 1791240821945,
+        "updated": 1793234073057,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzth",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzth&format=geojson",
+        "felt": 3,
+        "cdi": 3.4,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 327,
+        "net": "us",
+        "code": "6000tzth",
+        "ids": ",us6000tzth,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 62,
+        "dmin": 5.494,
+        "rms": 0.72,
+        "gap": 58,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 27 km SSE of Tezpur, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          92.868,
+          26.3936,
+          10
+        ]
+      },
+      "id": "us6000tzth"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "17 km WNW of Ashk\u0101sham, Afghanistan",
+        "time": 1791236313937,
+        "updated": 1792032770040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzsr",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzsr&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000tzsr",
+        "ids": ",us6000tzsr,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 25,
+        "dmin": 1.834,
+        "rms": 0.68,
+        "gap": 136,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 17 km WNW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.3424,
+          36.7167,
+          203.74
+        ]
+      },
+      "id": "us6000tzsr"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "46 km S of Jurm, Afghanistan",
+        "time": 1791212870368,
+        "updated": 1792254867040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzp4",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzp4&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "6000tzp4",
+        "ids": ",us6000tzp4,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 35,
+        "dmin": 2.313,
+        "rms": 0.87,
+        "gap": 85,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 46 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.7553,
+          36.4517,
+          197.197
+        ]
+      },
+      "id": "us6000tzp4"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "218 km NNW of Rikaze, China",
+        "time": 1791211052493,
+        "updated": 1792006138040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzp0",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzp0&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000tzp0",
+        "ids": ",us6000tzp0,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 63,
+        "dmin": 11.536,
+        "rms": 0.56,
+        "gap": 105,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 218 km NNW of Rikaze, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.3328,
+          31.158,
+          10
+        ]
+      },
+      "id": "us6000tzp0"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5,
+        "place": "28 km SE of Jurm, Afghanistan",
+        "time": 1791145644306,
+        "updated": 1792318226080,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzkn",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzkn&format=geojson",
+        "felt": 1,
+        "cdi": 2,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 385,
+        "net": "us",
+        "code": "6000tzkn",
+        "ids": ",us6000tzkn,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 110,
+        "dmin": 1.994,
+        "rms": 0.79,
+        "gap": 43,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 5.0 - 28 km SE of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.0507,
+          36.6745,
+          235.582
+        ]
+      },
+      "id": "us6000tzkn"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "125 km WNW of Chauk, Burma (Myanmar)",
+        "time": 1791093307280,
+        "updated": 1792141227040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzh0",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzh0&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000tzh0",
+        "ids": ",us6000tzh0,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 55,
+        "dmin": 1.107,
+        "rms": 0.83,
+        "gap": 91,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 125 km WNW of Chauk, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.7574,
+          21.4444,
+          59.617
+        ]
+      },
+      "id": "us6000tzh0"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.8,
+        "place": "85 km NE of Sittwe, Burma (Myanmar)",
+        "time": 1791051170143,
+        "updated": 1792316395040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzdp",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzdp&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 354,
+        "net": "us",
+        "code": "6000tzdp",
+        "ids": ",us6000tzdp,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 92,
+        "dmin": 1.432,
+        "rms": 0.62,
+        "gap": 52,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.8 - 85 km NE of Sittwe, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.4931,
+          20.6723,
+          64.364
+        ]
+      },
+      "id": "us6000tzdp"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "12 km E of Parbhani, India",
+        "time": 1791000810585,
+        "updated": 1792622791777,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzax",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tzax&format=geojson",
+        "felt": 3,
+        "cdi": 3.4,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 260,
+        "net": "us",
+        "code": "6000tzax",
+        "ids": ",us6000tzax,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 27,
+        "dmin": 12.497,
+        "rms": 0.9,
+        "gap": 119,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 12 km E of Parbhani, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          76.8919,
+          19.2815,
+          9.973
+        ]
+      },
+      "id": "us6000tzax"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "58 km S of Mawlaik, Burma (Myanmar)",
+        "time": 1790960133845,
+        "updated": 1792247718040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tz6z",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tz6z&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000tz6z",
+        "ids": ",us6000tz6z,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 44,
+        "dmin": 1.953,
+        "rms": 0.48,
+        "gap": 68,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 58 km S of Mawlaik, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.4239,
+          23.1139,
+          106.733
+        ]
+      },
+      "id": "us6000tz6z"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "250 km N of Bamboo Flat, India",
+        "time": 1790902353122,
+        "updated": 1792458689040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u16d",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000u16d&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000u16d",
+        "ids": ",us6000u16d,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 23,
+        "dmin": 5.993,
+        "rms": 0.86,
+        "gap": 102,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 250 km N of Bamboo Flat, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          92.9585,
+          13.9562,
+          10
+        ]
+      },
+      "id": "us6000u16d"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "37 km WSW of Ashk\u0101sham, Afghanistan",
+        "time": 1790870527411,
+        "updated": 1792183577040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tyvs",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tyvs&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "6000tyvs",
+        "ids": ",us6000tyvs,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 24,
+        "dmin": 2.078,
+        "rms": 1.27,
+        "gap": 93,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 37 km WSW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.1714,
+          36.5143,
+          101.024
+        ]
+      },
+      "id": "us6000tyvs"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5,
+        "place": "4 km SE of Baghl\u0101n, Afghanistan",
+        "time": 1790818160875,
+        "updated": 1792629564864,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tyny",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tyny&format=geojson",
+        "felt": 3,
+        "cdi": 2.7,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 385,
+        "net": "us",
+        "code": "6000tyny",
+        "ids": ",us6000tyny,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 201,
+        "dmin": 1.621,
+        "rms": 0.93,
+        "gap": 24,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 5.0 - 4 km SE of Baghl\u0101n, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          68.7436,
+          36.1078,
+          55.091
+        ]
+      },
+      "id": "us6000tyny"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "12 km WNW of Ashk\u0101sham, Afghanistan",
+        "time": 1790753942601,
+        "updated": 1792495709040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tyil",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tyil&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000tyil",
+        "ids": ",us6000tyil,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 22,
+        "dmin": 1.813,
+        "rms": 0.99,
+        "gap": 99,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 12 km WNW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.4039,
+          36.7141,
+          174.54
+        ]
+      },
+      "id": "us6000tyil"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "52 km NNW of Barishal, Pakistan",
+        "time": 1790521253288,
+        "updated": 1793474471040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000txz9",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000txz9&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000txz9",
+        "ids": ",us6000txz9,",
+        "sources": ",us,",
+        "types": ",moment-tensor,origin,phase-data,",
+        "nst": 58,
+        "dmin": 2.214,
+        "rms": 0.71,
+        "gap": 49,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 52 km NNW of Barishal, Pakistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          74.4727,
+          36.7592,
+          43.188
+        ]
+      },
+      "id": "us6000txz9"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "71 km E of Thang, India",
+        "time": 1790337201294,
+        "updated": 1792442547040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000txk0",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000txk0&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000txk0",
+        "ids": ",us6000txk0,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 47,
+        "dmin": 3.761,
+        "rms": 0.89,
+        "gap": 79,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 71 km E of Thang, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5734,
+          34.8522,
+          10
+        ]
+      },
+      "id": "us6000txk0"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "51 km NNW of Khand\u016bd, Afghanistan",
+        "time": 1790314550055,
+        "updated": 1792563358040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000txiw",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000txiw&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000txiw",
+        "ids": ",us6000txiw,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 32,
+        "dmin": 0.941,
+        "rms": 0.44,
+        "gap": 65,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 51 km NNW of Khand\u016bd, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.1754,
+          37.4026,
+          213.539
+        ]
+      },
+      "id": "us6000txiw"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "36 km SW of Monywa, Burma (Myanmar)",
+        "time": 1790302436627,
+        "updated": 1791955395040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tz30",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tz30&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000tz30",
+        "ids": ",us6000tz30,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 15,
+        "dmin": 0.636,
+        "rms": 0.55,
+        "gap": 127,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 36 km SW of Monywa, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.9216,
+          21.8451,
+          123.846
+        ]
+      },
+      "id": "us6000tz30"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "33 km SE of Khorugh, Tajikistan",
+        "time": 1790142371180,
+        "updated": 1791967268040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tx16",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tx16&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000tx16",
+        "ids": ",us6000tx16,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 96,
+        "dmin": 1.212,
+        "rms": 1.08,
+        "gap": 58,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 33 km SE of Khorugh, Tajikistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.7652,
+          37.2415,
+          145.116
+        ]
+      },
+      "id": "us6000tx16"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4,
+        "place": "144 km SSW of Zangguy, China",
+        "time": 1790142199108,
+        "updated": 1791968316040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tx17",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tx17&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 246,
+        "net": "us",
+        "code": "6000tx17",
+        "ids": ",us6000tx17,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 25,
+        "dmin": 4.611,
+        "rms": 0.95,
+        "gap": 186,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.0 - 144 km SSW of Zangguy, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.9945,
+          36.1426,
+          10
+        ]
+      },
+      "id": "us6000tx17"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "38 km S of Jurm, Afghanistan",
+        "time": 1790076582204,
+        "updated": 1792044710040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tj55",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tj55&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tj55",
+        "ids": ",us7000tj55,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 100,
+        "dmin": 2.213,
+        "rms": 0.84,
+        "gap": 58,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 38 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.8521,
+          36.5187,
+          197.899
+        ]
+      },
+      "id": "us7000tj55"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "36 km S of Jurm, Afghanistan",
+        "time": 1790035634641,
+        "updated": 1792014474040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tj20",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tj20&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000tj20",
+        "ids": ",us7000tj20,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 34,
+        "dmin": 2.222,
+        "rms": 0.51,
+        "gap": 70,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 36 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.7955,
+          36.5415,
+          192.704
+        ]
+      },
+      "id": "us7000tj20"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "9 km S of Mongar, Bhutan",
+        "time": 1789978229968,
+        "updated": 1792093013040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000txlw",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000txlw&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "6000txlw",
+        "ids": ",us6000txlw,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 31,
+        "dmin": 6.828,
+        "rms": 0.45,
+        "gap": 157,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 9 km S of Mongar, Bhutan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.2555,
+          27.1876,
+          10
+        ]
+      },
+      "id": "us6000txlw"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "298 km NW of Qamdo, China",
+        "time": 1789875572208,
+        "updated": 1791071875040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tinj",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tinj&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tinj",
+        "ids": ",us7000tinj,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 21,
+        "dmin": 7.283,
+        "rms": 1.07,
+        "gap": 135,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 298 km NW of Qamdo, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          95.4277,
+          33.3717,
+          10
+        ]
+      },
+      "id": "us7000tinj"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "269 km NNW of D\u00eaq\u00ean, China",
+        "time": 1789820394779,
+        "updated": 1790834761040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tijf",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tijf&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000tijf",
+        "ids": ",us7000tijf,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 51,
+        "dmin": 12.636,
+        "rms": 0.79,
+        "gap": 134,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 269 km NNW of D\u00eaq\u00ean, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          89.2208,
+          32.0205,
+          10
+        ]
+      },
+      "id": "us7000tijf"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.8,
+        "place": "8 km WSW of Mongar, Bhutan",
+        "time": 1789813877203,
+        "updated": 1790773329324,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tiiz",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tiiz&format=geojson",
+        "felt": 13,
+        "cdi": 3.8,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 359,
+        "net": "us",
+        "code": "7000tiiz",
+        "ids": ",us7000tiiz,",
+        "sources": ",us,",
+        "types": ",dyfi,origin,phase-data,",
+        "nst": 63,
+        "dmin": 6.912,
+        "rms": 0.52,
+        "gap": 93,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.8 - 8 km WSW of Mongar, Bhutan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.1652,
+          27.2385,
+          10
+        ]
+      },
+      "id": "us7000tiiz"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "34 km S of Jurm, Afghanistan",
+        "time": 1789733258308,
+        "updated": 1791821220040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ti97",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ti97&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000ti97",
+        "ids": ",us7000ti97,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 41,
+        "dmin": 2.182,
+        "rms": 0.99,
+        "gap": 76,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 34 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.8587,
+          36.5527,
+          186.613
+        ]
+      },
+      "id": "us7000ti97"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "40 km S of Khorugh, Tajikistan",
+        "time": 1789694942062,
+        "updated": 1791347402040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ti74",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ti74&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000ti74",
+        "ids": ",us7000ti74,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 47,
+        "dmin": 1.413,
+        "rms": 0.69,
+        "gap": 100,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 40 km S of Khorugh, Tajikistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.5093,
+          37.128,
+          110.372
+        ]
+      },
+      "id": "us7000ti74"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4,
+        "place": "57 km NW of Jumla, Nepal",
+        "time": 1789512191450,
+        "updated": 1791417303040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tiz3",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tiz3&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 246,
+        "net": "us",
+        "code": "7000tiz3",
+        "ids": ",us7000tiz3,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 18,
+        "dmin": 8.27,
+        "rms": 0.48,
+        "gap": 117,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.0 - 57 km NW of Jumla, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.7592,
+          29.6348,
+          10
+        ]
+      },
+      "id": "us7000tiz3"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "55 km WNW of Jumla, Nepal",
+        "time": 1789502771362,
+        "updated": 1790701227040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tiyx",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tiyx&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tiyx",
+        "ids": ",us7000tiyx,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 18,
+        "dmin": 8.283,
+        "rms": 0.87,
+        "gap": 175,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 55 km WNW of Jumla, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.6398,
+          29.4419,
+          10
+        ]
+      },
+      "id": "us7000tiyx"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 3.9,
+        "place": "55 km W of Zangguy, China",
+        "time": 1789419996054,
+        "updated": 1792018486040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tice",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tice&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 234,
+        "net": "us",
+        "code": "7000tice",
+        "ids": ",us7000tice,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 13,
+        "dmin": 4.44,
+        "rms": 0.77,
+        "gap": 111,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 3.9 - 55 km W of Zangguy, China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          78.1509,
+          37.3719,
+          10
+        ]
+      },
+      "id": "us7000tice"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "35 km ESE of Farkh\u0101r, Afghanistan",
+        "time": 1789415294687,
+        "updated": 1789749365040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000thgc",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000thgc&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000thgc",
+        "ids": ",us7000thgc,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 59,
+        "dmin": 2.138,
+        "rms": 0.64,
+        "gap": 67,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 35 km ESE of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.2314,
+          36.4612,
+          217.496
+        ]
+      },
+      "id": "us7000thgc"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "173 km W of Pyay, Burma (Myanmar)",
+        "time": 1789300849109,
+        "updated": 1791296190040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tia1",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tia1&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tia1",
+        "ids": ",us7000tia1,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 35,
+        "dmin": 2.892,
+        "rms": 0.59,
+        "gap": 66,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 173 km W of Pyay, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.5969,
+          18.58,
+          10
+        ]
+      },
+      "id": "us7000tia1"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "157 km SSE of Port Blair, India",
+        "time": 1789185549231,
+        "updated": 1790826425040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000ti3u",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000ti3u&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000ti3u",
+        "ids": ",us7000ti3u,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 17,
+        "dmin": 6.548,
+        "rms": 0.69,
+        "gap": 89,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 157 km SSE of Port Blair, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          93.1932,
+          10.3114,
+          68.633
+        ]
+      },
+      "id": "us7000ti3u"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "34 km WNW of Sarupathar, India",
+        "time": 1789149380857,
+        "updated": 1790265850040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tgq0",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tgq0&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tgq0",
+        "ids": ",us7000tgq0,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 41,
+        "dmin": 5.312,
+        "rms": 0.61,
+        "gap": 111,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 34 km WNW of Sarupathar, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          96.4986,
+          26.3399,
+          124.164
+        ]
+      },
+      "id": "us7000tgq0"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "62 km NNW of Barishal, Pakistan",
+        "time": 1789066631977,
+        "updated": 1790268650040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000thvx",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000thvx&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000thvx",
+        "ids": ",us7000thvx,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 21,
+        "dmin": 2.107,
+        "rms": 0.97,
+        "gap": 97,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 62 km NNW of Barishal, Pakistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          74.3388,
+          36.8038,
+          61.034
+        ]
+      },
+      "id": "us7000thvx"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "36 km SSW of Ashk\u0101sham, Afghanistan",
+        "time": 1788976967467,
+        "updated": 1790969015040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tg4b",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tg4b&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tg4b",
+        "ids": ",us7000tg4b,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 76,
+        "dmin": 2.12,
+        "rms": 0.63,
+        "gap": 59,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 36 km SSW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.4373,
+          36.3609,
+          112.97
+        ]
+      },
+      "id": "us7000tg4b"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "31 km WSW of Ashk\u0101sham, Afghanistan",
+        "time": 1788908516265,
+        "updated": 1791322690040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000thmv",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000thmv&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000thmv",
+        "ids": ",us7000thmv,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 12,
+        "dmin": 2.029,
+        "rms": 0.82,
+        "gap": 138,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 31 km WSW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.2255,
+          36.5452,
+          120.427
+        ]
+      },
+      "id": "us7000thmv"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "Arabian Sea",
+        "time": 1788886738167,
+        "updated": 1790883966040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000thmn",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000thmn&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000thmn",
+        "ids": ",us7000thmn,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 38,
+        "dmin": 3.4,
+        "rms": 0.68,
+        "gap": 58,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - Arabian Sea"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          69.7877,
+          9.3393,
+          10
+        ]
+      },
+      "id": "us7000thmn"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.9,
+        "place": "90 km NNE of Chitre, Nepal",
+        "time": 1788883714747,
+        "updated": 1791646489040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tfur",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tfur&format=geojson",
+        "felt": 14,
+        "cdi": 4.5,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 376,
+        "net": "us",
+        "code": "7000tfur",
+        "ids": ",us7000tfur,",
+        "sources": ",us,",
+        "types": ",dyfi,impact-text,origin,phase-data,",
+        "nst": 104,
+        "dmin": 10.163,
+        "rms": 0.77,
+        "gap": 53,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.9 - 90 km NNE of Chitre, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          83.9776,
+          29.2042,
+          10
+        ]
+      },
+      "id": "us7000tfur"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4,
+        "place": "16 km S of Jurm, Afghanistan",
+        "time": 1788857153764,
+        "updated": 1790606766040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tfsw",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tfsw&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 246,
+        "net": "us",
+        "code": "7000tfsw",
+        "ids": ",us7000tfsw,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 35,
+        "dmin": 2.08,
+        "rms": 1.08,
+        "gap": 103,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.0 - 16 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.8066,
+          36.7146,
+          256.562
+        ]
+      },
+      "id": "us7000tfsw"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 3.6,
+        "place": "77 km N of P\u0101r\u016bn, Afghanistan",
+        "time": 1788739584092,
+        "updated": 1791326082040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tesb",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tesb&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 199,
+        "net": "us",
+        "code": "7000tesb",
+        "ids": ",us7000tesb,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 10,
+        "dmin": 2.108,
+        "rms": 0.89,
+        "gap": 109,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 3.6 - 77 km N of P\u0101r\u016bn, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.8202,
+          36.1143,
+          121.473
+        ]
+      },
+      "id": "us7000tesb"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "46 km E of Khorugh, Tajikistan",
+        "time": 1788637873826,
+        "updated": 1789219178040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tekr",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tekr&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000tekr",
+        "ids": ",us7000tekr,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 37,
+        "dmin": 0.954,
+        "rms": 0.51,
+        "gap": 108,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 46 km E of Khorugh, Tajikistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.0665,
+          37.4171,
+          191.788
+        ]
+      },
+      "id": "us7000tekr"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "37 km ESE of Farkh\u0101r, Afghanistan",
+        "time": 1788472726393,
+        "updated": 1790035715040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000te5t",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000te5t&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000te5t",
+        "ids": ",us7000te5t,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 44,
+        "dmin": 2.161,
+        "rms": 0.93,
+        "gap": 82,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 37 km ESE of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.2578,
+          36.4762,
+          215.223
+        ]
+      },
+      "id": "us7000te5t"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.1,
+        "place": "119 km NE of Josh\u012bmath, India",
+        "time": 1788423396404,
+        "updated": 1789288199040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tdv4",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tdv4&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 400,
+        "net": "us",
+        "code": "7000tdv4",
+        "ids": ",us7000tdv4,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 70,
+        "dmin": 6.389,
+        "rms": 0.53,
+        "gap": 97,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 5.1 - 119 km NE of Josh\u012bmath, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.3486,
+          31.3933,
+          10
+        ]
+      },
+      "id": "us7000tdv4"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "20 km WNW of \u1e28uk\u016bmat\u012b Azrah, Afghanistan",
+        "time": 1788313641062,
+        "updated": 1795044283040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tdi2",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tdi2&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tdi2",
+        "ids": ",us7000tdi2,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 28,
+        "dmin": 0.362,
+        "rms": 0.81,
+        "gap": 178,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 20 km WNW of \u1e28uk\u016bmat\u012b Azrah, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          69.4432,
+          34.2571,
+          10
+        ]
+      },
+      "id": "us7000tdi2"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "33 km E of Farkh\u0101r, Afghanistan",
+        "time": 1788288667025,
+        "updated": 1795044283040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tdf1",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tdf1&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tdf1",
+        "ids": ",us7000tdf1,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 72,
+        "dmin": 2.186,
+        "rms": 0.77,
+        "gap": 45,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 33 km E of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.2239,
+          36.5168,
+          212.943
+        ]
+      },
+      "id": "us7000tdf1"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "25 km NNE of Jal\u0101l\u0101b\u0101d, Afghanistan",
+        "time": 1788213699126,
+        "updated": 1795044281040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000td7u",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000td7u&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000td7u",
+        "ids": ",us7000td7u,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 27,
+        "dmin": 1.201,
+        "rms": 0.66,
+        "gap": 152,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 25 km NNE of Jal\u0101l\u0101b\u0101d, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.5836,
+          34.6296,
+          49.258
+        ]
+      },
+      "id": "us7000td7u"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "167 km NW of Sabang, Indonesia",
+        "time": 1788211935624,
+        "updated": 1795044288040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000texq",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000texq&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000texq",
+        "ids": ",us7000texq,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 12,
+        "dmin": 5.596,
+        "rms": 0.56,
+        "gap": 153,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 167 km NW of Sabang, Indonesia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.209,
+          6.9225,
+          56.475
+        ]
+      },
+      "id": "us7000texq"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "33 km WSW of Ashk\u0101sham, Afghanistan",
+        "time": 1788205016097,
+        "updated": 1795044281040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000td68",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000td68&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000td68",
+        "ids": ",us7000td68,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 33,
+        "dmin": 2.036,
+        "rms": 0.62,
+        "gap": 93,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 33 km WSW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.1942,
+          36.5523,
+          101.686
+        ]
+      },
+      "id": "us7000td68"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "40 km S of Ashk\u0101sham, Afghanistan",
+        "time": 1788062818273,
+        "updated": 1795044279040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tcwe",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tcwe&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000tcwe",
+        "ids": ",us7000tcwe,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 34,
+        "dmin": 2.149,
+        "rms": 0.93,
+        "gap": 86,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 40 km S of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.4476,
+          36.3258,
+          112.849
+        ]
+      },
+      "id": "us7000tcwe"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.3,
+        "place": "36 km ESE of Farkh\u0101r, Afghanistan",
+        "time": 1788033221223,
+        "updated": 1795044279040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tcus",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tcus&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 284,
+        "net": "us",
+        "code": "7000tcus",
+        "ids": ",us7000tcus,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 40,
+        "dmin": 2.16,
+        "rms": 0.67,
+        "gap": 67,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.3 - 36 km ESE of Farkh\u0101r, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.2474,
+          36.4796,
+          201.316
+        ]
+      },
+      "id": "us7000tcus"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "33 km S of Jurm, Afghanistan",
+        "time": 1787999939941,
+        "updated": 1795044278040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tctg",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tctg&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tctg",
+        "ids": ",us7000tctg,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 31,
+        "dmin": 2.491,
+        "rms": 0.59,
+        "gap": 107,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 33 km S of Jurm, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.8802,
+          36.5634,
+          210.646
+        ]
+      },
+      "id": "us7000tctg"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.9,
+        "place": "western Xizang",
+        "time": 1787841948196,
+        "updated": 1795044275040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tc9m",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tc9m&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 369,
+        "net": "us",
+        "code": "7000tc9m",
+        "ids": ",us7000tc9m,",
+        "sources": ",us,",
+        "types": ",moment-tensor,origin,phase-data,",
+        "nst": 83,
+        "dmin": 11.387,
+        "rms": 0.71,
+        "gap": 83,
+        "magType": "mww",
+        "type": "earthquake",
+        "title": "M 4.9 - western Xizang"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          86.8913,
+          33.2557,
+          10
+        ]
+      },
+      "id": "us7000tc9m"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "62 km NW of Kod\u0101ri\u0307\u0304, Nepal",
+        "time": 1787724035000,
+        "updated": 1793722141040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tc90",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tc90&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "7000tc90",
+        "ids": ",us7000tc90,",
+        "sources": ",us,",
+        "types": ",general-header,impact-text,origin,phase-data,",
+        "nst": 0,
+        "dmin": null,
+        "rms": 1.3,
+        "gap": null,
+        "magType": "ms_vx",
+        "type": "landslide",
+        "title": "M 4.2 Landslide - 62 km NW of Kod\u0101ri\u0307\u0304, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          85.4798,
+          28.3281,
+          0
+        ]
+      },
+      "id": "us7000tc90"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 5.2,
+        "place": "55 km NW of Kod\u0101ri\u0307\u0304, Nepal",
+        "time": 1787712730000,
+        "updated": 1793722141040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tbwb",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tbwb&format=geojson",
+        "felt": 2,
+        "cdi": 2,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 601,
+        "net": "us",
+        "code": "7000tbwb",
+        "ids": ",us7000tbwb,",
+        "sources": ",us,",
+        "types": ",dyfi,general-header,general-text,impact-text,origin,phase-data,significance,",
+        "nst": 0,
+        "dmin": null,
+        "rms": 3.9,
+        "gap": null,
+        "magType": "ms_vx",
+        "type": "landslide",
+        "title": "M 5.2 Landslide - 55 km NW of Kod\u0101ri\u0307\u0304, Nepal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          85.515,
+          28.271,
+          0
+        ]
+      },
+      "id": "us7000tbwb"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.5,
+        "place": "24 km SW of Ashk\u0101sham, Afghanistan",
+        "time": 1787711050107,
+        "updated": 1793722152040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tbw6",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tbw6&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 312,
+        "net": "us",
+        "code": "7000tbw6",
+        "ids": ",us7000tbw6,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 72,
+        "dmin": 2.002,
+        "rms": 0.74,
+        "gap": 69,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.5 - 24 km SW of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.3353,
+          36.5296,
+          99.361
+        ]
+      },
+      "id": "us7000tbw6"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.1,
+        "place": "18 km ESE of Sar\u0101han, India",
+        "time": 1787703407697,
+        "updated": 1793722152040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tbvm",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tbvm&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 259,
+        "net": "us",
+        "code": "7000tbvm",
+        "ids": ",us7000tbvm,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 18,
+        "dmin": 4.546,
+        "rms": 0.54,
+        "gap": 176,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.1 - 18 km ESE of Sar\u0101han, India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.9654,
+          31.4235,
+          10
+        ]
+      },
+      "id": "us7000tbvm"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "56 km NNW of Barishal, Pakistan",
+        "time": 1787695224056,
+        "updated": 1793722152040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tbv0",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tbv0&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tbv0",
+        "ids": ",us7000tbv0,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 60,
+        "dmin": 2.169,
+        "rms": 0.62,
+        "gap": 53,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 56 km NNW of Barishal, Pakistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          74.4202,
+          36.7808,
+          50.029
+        ]
+      },
+      "id": "us7000tbv0"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "11 km E of Jal\u0101l\u0101b\u0101d, Afghanistan",
+        "time": 1787620725001,
+        "updated": 1793722150040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tna9",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tna9&format=geojson",
+        "felt": 1,
+        "cdi": 5.2,
+        "mmi": 5.675,
+        "alert": "yellow",
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 651,
+        "net": "us",
+        "code": "6000tna9",
+        "ids": ",us6000tna9,",
+        "sources": ",us,",
+        "types": ",dyfi,ground-failure,impact-text,losspager,moment-tensor,origin,phase-data,shakemap,",
+        "nst": 140,
+        "dmin": 1.193,
+        "rms": 0.88,
+        "gap": 80,
+        "magType": "mwr",
+        "type": "earthquake",
+        "title": "M 4.4 - 11 km E of Jal\u0101l\u0101b\u0101d, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          70.5743,
+          34.418,
+          10
+        ]
+      },
+      "id": "us6000tna9"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "52 km NNW of Barishal, Pakistan",
+        "time": 1787479481932,
+        "updated": 1793722148040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tmy3",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tmy3&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000tmy3",
+        "ids": ",us6000tmy3,",
+        "sources": ",us,",
+        "types": ",moment-tensor,origin,phase-data,",
+        "nst": 85,
+        "dmin": 2.212,
+        "rms": 0.64,
+        "gap": 54,
+        "magType": "mwr",
+        "type": "earthquake",
+        "title": "M 4.6 - 52 km NNW of Barishal, Pakistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          74.4572,
+          36.7503,
+          40.181
+        ]
+      },
+      "id": "us6000tmy3"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.6,
+        "place": "38 km ENE of Tharyarwady, Burma (Myanmar)",
+        "time": 1787456696575,
+        "updated": 1793722148040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tmwk",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tmwk&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 326,
+        "net": "us",
+        "code": "6000tmwk",
+        "ids": ",us6000tmwk,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 28,
+        "dmin": 2.31,
+        "rms": 0.94,
+        "gap": 96,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.6 - 38 km ENE of Tharyarwady, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          96.1264,
+          17.7899,
+          10
+        ]
+      },
+      "id": "us6000tmwk"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "13 km W of Ashk\u0101sham, Afghanistan",
+        "time": 1787436883570,
+        "updated": 1793722147040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tmuw",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tmuw&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "6000tmuw",
+        "ids": ",us6000tmuw,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 56,
+        "dmin": 2.794,
+        "rms": 1.06,
+        "gap": 67,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 13 km W of Ashk\u0101sham, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.381,
+          36.6989,
+          178.594
+        ]
+      },
+      "id": "us6000tmuw"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "16 km SE of Ishqoshim, Tajikistan",
+        "time": 1787409644066,
+        "updated": 1793722156040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tcd2",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tcd2&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tcd2",
+        "ids": ",us7000tcd2,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 17,
+        "dmin": 1.811,
+        "rms": 0.49,
+        "gap": 117,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 16 km SE of Ishqoshim, Tajikistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          71.7247,
+          36.6031,
+          125.788
+        ]
+      },
+      "id": "us7000tcd2"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.2,
+        "place": "28 km S of Tag\u0101b, Afghanistan",
+        "time": 1787349287636,
+        "updated": 1793722146040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tmnw",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000tmnw&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 271,
+        "net": "us",
+        "code": "6000tmnw",
+        "ids": ",us6000tmnw,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 24,
+        "dmin": 0.448,
+        "rms": 0.98,
+        "gap": 152,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.2 - 28 km S of Tag\u0101b, Afghanistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          69.6674,
+          34.6012,
+          10
+        ]
+      },
+      "id": "us6000tmnw"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 4.4,
+        "place": "67 km S of Mawlaik, Burma (Myanmar)",
+        "time": 1787307165591,
+        "updated": 1793722155040,
+        "tz": null,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000tcas",
+        "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000tcas&format=geojson",
+        "felt": null,
+        "cdi": null,
+        "mmi": null,
+        "alert": null,
+        "status": "reviewed",
+        "tsunami": 0,
+        "sig": 298,
+        "net": "us",
+        "code": "7000tcas",
+        "ids": ",us7000tcas,",
+        "sources": ",us,",
+        "types": ",origin,phase-data,",
+        "nst": 45,
+        "dmin": 1.892,
+        "rms": 0.65,
+        "gap": 116,
+        "magType": "mb",
+        "type": "earthquake",
+        "title": "M 4.4 - 67 km S of Mawlaik, Burma (Myanmar)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.3593,
+          23.0343,
+          93.56
+        ]
+      },
+      "id": "us7000tcas"
+    }
+  ],
+  "bbox": [
+    68.3878,
+    6.9225,
+    0,
+    96.4986,
+    37.4777,
+    256.562
+  ]
+}
