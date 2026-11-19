@@ -14,8 +14,6 @@ import PrepositionPanel from './components/PrepositionPanel';
 import UnitRegisterModal from './components/UnitRegisterModal';
 import IncidentIntakeModal from './components/IncidentIntakeModal';
 import BlockedRoadModal from './components/BlockedRoadModal';
-import SourceStatusBar from './components/SourceStatusBar';
-import AlertsBanner from './components/AlertsBanner';
 import CapFeedPage from './components/CapFeedPage';
 import HazardDetailPanel from './components/HazardDetailPanel';
 import { useLanguage } from './i18n.jsx';
@@ -25,7 +23,7 @@ import {
   fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
-  refreshOperationsPlan, logoutOfficer, fetchDataSources, fetchCapAlerts, fetchReplay,
+  refreshOperationsPlan, logoutOfficer, fetchCapAlerts, fetchReplay,
   fetchUnifiedHazards
 } from './api';
 
@@ -51,7 +49,6 @@ export default function App() {
   const [blockedRoads, setBlockedRoads] = useState([]);
   const [prepositionSuggestions, setPrepositionSuggestions] = useState([]);
   const [operationsPlan, setOperationsPlan] = useState(null);
-  const [dataSources, setDataSources] = useState([]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [capAlerts, setCapAlerts] = useState(null);
 
@@ -115,13 +112,11 @@ export default function App() {
           setRiskZonesError(err.message || 'Replay failed');
           setReplayBanner('REPLAY — historical data, not live');
         }
-        fetchDataSources().then(setDataSources).catch(err => console.error(err));
         return;
       }
 
       setReplayBanner('');
-      // Source status / CAP should not wait on weather or zone scoring.
-      fetchDataSources().then(setDataSources).catch(err => console.error(err));
+      // CAP alerts can load without waiting on weather or zone scoring.
       fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
 
       const loadZones = async () => {
@@ -175,22 +170,6 @@ export default function App() {
       setLoadingRisk(false);
     }
   }, [replayMode, replayDate]);
-
-  const handleRefreshSources = async () => {
-    setSourcesLoading(true);
-    try {
-      const [sources, alerts] = await Promise.all([
-        fetchDataSources(),
-        fetchCapAlerts(true).catch(() => fetchCapAlerts()),
-      ]);
-      setDataSources(sources);
-      setCapAlerts(alerts);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSourcesLoading(false);
-    }
-  };
 
   const handleRefreshCapFeed = async () => {
     setSourcesLoading(true);
@@ -488,26 +467,11 @@ export default function App() {
           </div>
         </div>
       </header>
-      <SourceStatusBar sources={dataSources} onRefresh={handleRefreshSources} loading={sourcesLoading} />
       {replayMode && (
         <div className="shrink-0 border-b border-[#F59E0B] bg-[#FFFBEB] px-4 py-2 text-[13px] font-semibold tracking-wide text-[#92400E]">
           {replayBanner || 'REPLAY — historical data, not live'} · {replayDate}
         </div>
       )}
-      <button
-        type="button"
-        onClick={() => setView('cap')}
-        className="flex w-full items-center justify-between gap-3 border-b border-[#E2E8F0] bg-white px-4 py-2 text-left hover:bg-[#F8FAFC]"
-      >
-        <span className="flex min-w-0 items-center gap-2 text-[12px] text-[#334155]">
-          <Radio className="h-3.5 w-3.5 shrink-0 text-[#4338CA]" strokeWidth={1.6} />
-          <b className="shrink-0 text-[#0F172A]">CAP Feed</b>
-          <span className="truncate">
-            {capAlerts ? `${(capAlerts.alerts || []).filter(alert => !alert.expired).length} verified active · ${(capAlerts.unmatched || []).length} unverified · ${(capAlerts.source?.status || 'unknown').toUpperCase()}` : 'Loading alert status…'}
-          </span>
-        </span>
-        <span className="shrink-0 text-[12px] font-medium text-[#4338CA]">Open feed →</span>
-      </button>
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Nav Rail: Collapses to icon rail below 1024px */}
