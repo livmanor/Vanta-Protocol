@@ -26,6 +26,10 @@ ALLOWED_CONTENT_TYPES = {
     "image/png": ".png",
     "image/webp": ".webp",
 }
+# Fixed demo/local citizen credentials (always seeded on startup).
+BOOTSTRAP_CITIZEN_USERNAME = "citizen123"
+BOOTSTRAP_CITIZEN_PASSWORD = "citizen"
+BOOTSTRAP_CITIZEN_DISPLAY_NAME = "Citizen Reporter"
 
 
 def _now() -> datetime:
@@ -89,6 +93,34 @@ async def ensure_citizen_tables(db: aiosqlite.Connection) -> None:
 def ensure_upload_dir() -> Path:
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     return UPLOAD_DIR
+
+
+async def ensure_bootstrap_citizen() -> None:
+    """Ensure the constant citizen123 / citizen account exists and matches those credentials."""
+    username = BOOTSTRAP_CITIZEN_USERNAME
+    password = BOOTSTRAP_CITIZEN_PASSWORD
+    display = BOOTSTRAP_CITIZEN_DISPLAY_NAME
+    async with aiosqlite.connect(DB_PATH) as db:
+        await ensure_citizen_tables(db)
+        async with db.execute("SELECT id FROM citizens WHERE username = ?", (username,)) as cur:
+            existing = await cur.fetchone()
+        if existing:
+            await db.execute(
+                "UPDATE citizens SET password_hash = ?, display_name = ? WHERE username = ?",
+                (hash_password(password), display, username),
+            )
+            await db.commit()
+            return
+        citizen_id = f"citizen-{uuid.uuid4().hex[:10]}"
+        await db.execute(
+            """
+            INSERT INTO citizens (id, username, display_name, password_hash, created_at, last_login_at)
+            VALUES (?, ?, ?, ?, ?, NULL)
+            """,
+            (citizen_id, username, display, hash_password(password), _iso()),
+        )
+        await db.commit()
+        logger.info("Bootstrap citizen account created for username %s", username)
 
 
 async def register_citizen(username: str, password: str, display_name: str = "") -> dict[str, Any]:

@@ -18,9 +18,9 @@ const PHASES = [
 export default function CitizenPortal({ onExit }) {
   const [citizen, setCitizen] = useState(null);
   const [mode, setMode] = useState('login'); // login | register
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('citizen123');
+  const [password, setPassword] = useState('citizen');
+  const [displayName, setDisplayName] = useState('Citizen Reporter');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('during');
@@ -185,7 +185,8 @@ export default function CitizenPortal({ onExit }) {
                 {mode === 'register' ? 'Create citizen account' : 'Citizen sign-in'}
               </h1>
               <p className="text-[13px] text-[#64748B]">
-                Username and password only. Reports stay unverified until a watch officer reviews them.
+                Demo login: <span className="font-medium text-[#0F172A]">citizen123</span> /{' '}
+                <span className="font-medium text-[#0F172A]">citizen</span>. Reports stay unverified until a watch officer reviews them.
               </p>
               {mode === 'register' && (
                 <label className="text-[12px] font-medium text-[#475569]">
