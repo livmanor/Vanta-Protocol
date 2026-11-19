@@ -25,9 +25,68 @@ class DataFreshness(BaseModel):
     missing_fields: List[str] = Field(default_factory=list)
 
 
+class RecommendedAction(BaseModel):
+    """Suggested officer response action. Requires officer approval before execution."""
+    id: str
+    hazard_id: str
+    action_type: str                      # e.g., "patrol_preposition", "shelter_standby", "traffic_diversion", "public_advisory", "sos_gate_alert"
+    description: str
+    priority: Literal["low", "medium", "high", "critical"] = "medium"
+    status: Literal["suggested", "approved", "rejected"] = "suggested"
+    suggested_at: str
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+
+
+class HazardItem(BaseModel):
+    """Discrete hazard observation or prediction on the map."""
+    id: str
+    hazard_id: str                        # "earthquake", "cyclone", "wildfire", "urban_flood", "heat"
+    name: str
+    geometry: Dict[str, Any]              # GeoJSON Point, LineString, or Polygon
+    is_observed: bool                     # True for observed event, False for predicted risk screen
+    severity_level: Optional[int] = Field(default=None, ge=1, le=5)
+    severity_label: Optional[str] = None  # e.g. "M4.2 Light", "VIIRS High Confidence", "Category 3"
+    event_time: str                       # ISO-8601 UTC
+    forecast_window_h: int = 0            # 0 for observed events; >0 for predictions
+    method: Literal["rule_based", "ml", "observed"] = "observed"
+    model_version: str = "none"
+    probability: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    contributing_factors: List[ContributingFactor] = Field(default_factory=list)
+    data_freshness: List[DataFreshness] = Field(default_factory=list)
+    sources: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    summary: str
+    recommended_actions: List[RecommendedAction] = Field(default_factory=list)
+
+
+class HazardModuleStatus(BaseModel):
+    """Status metadata for each hazard module in the engine."""
+    hazard_id: str
+    name: str
+    tier: Literal["A", "B"]
+    status: Literal["implemented", "not_implemented", "missing_credentials", "failed"]
+    data_source: str
+    message: str                          # Tier B: explicit "not implemented: missing X"
+    last_updated: Optional[str] = None
+    items_count: int = 0
+
+
+class UnifiedHazardResponse(BaseModel):
+    """Unified engine response. Explicitly returns per-hazard outputs WITHOUT a combined total score."""
+    timestamp: str
+    hazards: Dict[str, HazardModuleStatus]
+    features: List[HazardItem]
+    total_risk_score: None = None         # ALWAYS None. Summing distinct hazard risks is unscientific.
+    disclaimer: str = (
+        "Per-hazard assessments and observations. Independent risk categories; no combined total risk "
+        "score is computed. Risk colors do not imply a confirmed disaster without officer verification."
+    )
+
+
 class PredictionResult(BaseModel):
     """Unified hazard prediction. See method/probability rules above."""
-    hazard: Literal["urban_flood", "cyclone_wind", "heat"]
+    hazard: str                           # "urban_flood", "cyclone_wind", "heat", etc.
     location_id: str
     location_name: str
     lat: float
@@ -36,7 +95,7 @@ class PredictionResult(BaseModel):
     forecast_window_h: int                # hours covered (usually 24)
     category: Optional[int] = Field(default=None, ge=1, le=5)
     probability: Optional[float] = Field(default=None, ge=0.0, le=1.0)
-    method: Literal["rule_based", "ml"] = "rule_based"
+    method: Literal["rule_based", "ml", "observed"] = "rule_based"
     model_version: str = "none"
     contributing_factors: List[ContributingFactor] = Field(default_factory=list)
     data_freshness: List[DataFreshness] = Field(default_factory=list)

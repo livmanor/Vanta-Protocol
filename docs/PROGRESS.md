@@ -120,9 +120,84 @@ All 42 previously passing tests continue to pass. No regressions.
 
 ---
 
+## Session 3 — 2026-11-19 (Unified Multi-Hazard Engine, Tier A & B Modules, Provenance & UI)
+
+### Done
+
+**Multi-Hazard Interface & Engine (`backend/services/hazards/`)**
+- Created abstract `BaseHazardModule` contract (`base.py`) requiring `hazard_id`, `name`, `tier`, `data_source`, `get_status()`, and `assess(bbox)`.
+- Created `UnifiedHazardEngine` (`engine.py`) returning per-hazard results (`hazards` and `features`).
+- **STRICT CONTRACT:** `total_risk_score` is **strictly `None`**. Summing distinct hazards is scientifically invalid and life-safety hazardous.
+- Implemented `Tier A` modules with real public datasets:
+  - `EarthquakeHazardModule` (`tier_a/earthquake.py`): USGS ComCat API. Real seismicity monitoring & historical catalog only; **NO prediction**. `is_observed=True`, `forecast_window_h=0`, `method="observed"`, `probability=None`.
+  - `CycloneHazardModule` (`tier_a/cyclone.py`): NOAA NCEI IBTrACS North Indian Ocean storm tracks. Monitoring and exposure buffer only; wind is strictly excluded from stormwater flood calculations.
+  - `WildfireHazardModule` (`tier_a/wildfire.py`): NASA FIRMS VIIRS 375m & MODIS 1km active fire thermal anomalies. Reads `MAP_KEY` / `NASA_FIRMS_MAP_KEY`; reports `missing_credentials` gracefully when unset without fabricating live fire points.
+- Implemented `Tier B` modules (`tier_b/unimplemented.py`) returning `not_implemented: missing X`:
+  - `flood_extension`: Missing 2D hydraulic/hydrodynamic routing model (SWMM/HEC-RAS) and urban storm drain cross-section network data.
+  - `landslide`: Missing geotechnical shear strength, depth-to-bedrock maps, and real-time piezometric soil pore-pressure sensor feeds.
+  - `drought`: Missing multi-month satellite SMAP/GRACE soil moisture anomalies, SPEI meteorological indices, and reservoir storage telemetry.
+  - `heatwave`: Missing wet-bulb globe temperature (WBGT) micro-sensor network, high-res urban heat island canopy models, and epidemiological mortality response curves.
+  - `tsunami`: Missing deep-ocean DART tsunameter real-time telemetry and coastal bathymetric run-up inundation modeling.
+  - `lightning`: Missing ground-based lightning detection network (LDN/LINET VHF/VLF sensor array) and total lightning pulse telemetry.
+  - `volcano`: Missing volcanic ash dispersion modeling and seismic tremor array (no active or Holocene volcanoes in Telangana / Deccan Traps).
+
+**Officer Approval Workflow (`backend/services/hazards/actions_store.py`)**
+- Response mitigation recommendations start in the `suggested` state.
+- Officers approve or reject suggestions via `POST /api/hazards/actions/{action_id}/approve` and `POST /api/hazards/actions/{action_id}/reject`.
+
+**Dataset Scripts & Provenance Log (`scripts/fetch_hazard_data.py`)**
+- Added standalone CLI supporting India bbox (`6.5,68.0,37.5,98.0`) and date filters.
+- Reads `MAP_KEY` / `NASA_FIRMS_MAP_KEY` from environment.
+- Automatically writes full provenance to `docs/DATASET_CATALOG.md`.
+- Command run:
+  ```
+  python scripts/fetch_hazard_data.py --hazard all
+  ```
+  Output: Ingested 170 USGS earthquakes, 3 IBTrACS storms, 3 FIRMS thermal detections. Updated `docs/DATASET_CATALOG.md`.
+
+**Frontend Tactical Multi-Hazard UI**
+- Created `frontend/src/components/HazardDetailPanel.jsx`:
+  - Hazard layer toggle filters with distinct colors (Earthquake Amber `#D97706`, Cyclone Purple `#9333EA`, Wildfire Crimson `#DC2626`, Urban Flood Blue `#2563EB`).
+  - Observed vs Predicted distinction badges (`[OBSERVED EVENT]` vs `[PREDICTED RISK SCREEN]`).
+  - Prediction/event timestamp, forecast window, method badge, model version, data freshness, contributing factors, sources, warnings.
+  - Suggested response actions with **Approve Action** and **Reject** buttons for officers.
+  - Tier B drawer detailing explicit sensor deficits for all 7 unimplemented hazards.
+- Extended `frontend/src/components/Map.jsx`:
+  - Renders amber seismic shockwave rings, dashed purple cyclone tracks with eye markers, and red thermal anomaly glow circles.
+- Updated `frontend/src/App.jsx`:
+  - Added `Hazards` tab with badge count.
+  - Wired `fetchUnifiedHazards` on dashboard load.
+- Frontend build verified:
+  ```
+  cmd /c npm run build
+  ```
+  Output: built in 2.21s, 0 errors.
+
+**Documentation Suite Created**
+- `docs/DATASET_CATALOG.md` ✅ (Full provenance log)
+- `docs/API_DOCUMENTATION.md` ✅ (OpenAPI specs for hazards and action approvals)
+- `docs/DATA_PIPELINE.md` ✅ (Ingestion architecture, rate limits, caching, fallbacks)
+- `docs/MODEL_TRAINING_GUIDE.md` ✅ (Training requirements, 0 negatives audit, gating)
+- `docs/KNOWN_LIMITATIONS.md` ✅ (No total score rationale, earthquake unpredictability, sensor deficits)
+- `docs/VANTA_IMPLEMENTATION_REPORT.md` ✅ (Technical implementation and audit report)
+- `README.md` updated with Version 2.0 multi-hazard documentation.
+
+**P2 Config Fixes**
+- `AUTH_REQUIRED` defaulted to `True` in `backend/config.py`.
+- Pydantic V2 `SettingsConfigDict` migration completed (deprecation warning resolved).
+
+**Tests Verified (`tests/test_hazard_engine.py` — 8 new tests)**
+Command run:
+```
+python -m pytest tests/ -v --tb=short
+```
+Real output: **60 passed, 0 failed in 44.82s** (52 existing + 8 new).
+
+### Blocked
+- Nothing blocked.
+
+---
+
 ## Next Steps
-1. Fix `AUTH_REQUIRED` default (`True`) in `backend/config.py:57` — P2.
-2. Pydantic V2 `ConfigDict` migration in `backend/config.py:90` — P2.
-3. Verify Groq model ID — P2.
-4. Add verified negatives to labels if proceeding with ML model.
-5. Push `vanta-upgrade` to remote.
+1. Push `vanta-upgrade` branch to remote.
+2. Start backend and frontend background tasks.

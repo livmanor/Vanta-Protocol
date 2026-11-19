@@ -29,7 +29,11 @@ export default function Map({
   onOpenWindy,
   pinnedLocation,
   onPinLocation,
-  onLogIncidentAtPin
+  onLogIncidentAtPin,
+  hazards = [],
+  activeHazardFilters = {},
+  selectedHazard = null,
+  onSelectHazard = () => {},
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -641,6 +645,135 @@ useEffect(() => {
   layersRef.current.zones = zoneLayer;
   zoneLayer.bringToFront();
 }, [riskZones, selectedZone, onSelectZone]);
+
+// Update Unified Multi-Hazard Layer (Earthquake, Cyclone, Wildfire, etc.)
+useEffect(() => {
+  const map = mapInstanceRef.current;
+  if (!map) return;
+
+  if (layersRef.current.hazards) {
+    map.removeLayer(layersRef.current.hazards);
+    layersRef.current.hazards = null;
+  }
+
+  if (!hazards || hazards.length === 0) return;
+
+  const hazardGroup = L.featureGroup();
+
+  hazards.forEach((item) => {
+    if (activeHazardFilters[item.hazard_id] === false) return;
+
+    const isSelected = selectedHazard && selectedHazard.id === item.id;
+    const geom = item.geometry;
+    if (!geom || !geom.coordinates) return;
+
+    if (item.hazard_id === 'earthquake') {
+      const [lon, lat] = geom.coordinates;
+      const magFactor = item.severity_level || 2;
+      const radius = Math.max(8, magFactor * 3.5);
+
+      const circle = L.circleMarker([lat, lon], {
+        radius: isSelected ? radius + 4 : radius,
+        fillColor: '#D97706',
+        color: isSelected ? '#451A03' : '#92400E',
+        weight: isSelected ? 3.5 : 2,
+        opacity: 1,
+        fillOpacity: 0.85,
+      });
+
+      const shockwave = L.circle([lat, lon], {
+        radius: (magFactor * 15000),
+        color: '#D97706',
+        weight: 1.5,
+        opacity: 0.45,
+        fillColor: '#FEF3C7',
+        fillOpacity: 0.08,
+        dashArray: '4, 6',
+      });
+
+      circle.on('click', () => onSelectHazard(item));
+      circle.bindTooltip(`
+        <div class="font-sans text-xs p-1">
+          <div class="text-[10px] font-bold text-emerald-700 uppercase">[OBSERVED SEISMIC EVENT]</div>
+          <div class="font-bold text-slate-900">${item.name}</div>
+          <div class="text-amber-700 font-semibold mt-0.5">${item.severity_label || ''}</div>
+          <div class="text-[11px] text-slate-500">Method: ${item.method} · USGS ComCat</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Click for details & response actions</div>
+        </div>
+      `, { sticky: true });
+
+      hazardGroup.addLayer(shockwave);
+      hazardGroup.addLayer(circle);
+    } else if (item.hazard_id === 'cyclone') {
+      if (geom.type === 'LineString') {
+        const lineCoords = geom.coordinates.map(([lon, lat]) => [lat, lon]);
+        const track = L.polyline(lineCoords, {
+          color: isSelected ? '#581C87' : '#9333EA',
+          weight: isSelected ? 5 : 3.5,
+          opacity: 0.9,
+          dashArray: '6, 6',
+        });
+        track.on('click', () => onSelectHazard(item));
+        track.bindTooltip(`
+          <div class="font-sans text-xs p-1">
+            <div class="text-[10px] font-bold text-purple-700 uppercase">[OBSERVED CYCLONE TRACK]</div>
+            <div class="font-bold text-slate-900">${item.name}</div>
+            <div class="text-slate-600">${item.summary}</div>
+          </div>
+        `, { sticky: true });
+        hazardGroup.addLayer(track);
+      } else if (geom.type === 'Point') {
+        const [lon, lat] = geom.coordinates;
+        const eyeMarker = L.circleMarker([lat, lon], {
+          radius: isSelected ? 12 : 9,
+          fillColor: '#9333EA',
+          color: '#ffffff',
+          weight: 2.5,
+          opacity: 1,
+          fillOpacity: 0.9,
+        });
+        eyeMarker.on('click', () => onSelectHazard(item));
+        hazardGroup.addLayer(eyeMarker);
+      }
+    } else if (item.hazard_id === 'wildfire') {
+      const [lon, lat] = geom.coordinates;
+      const fireMarker = L.circleMarker([lat, lon], {
+        radius: isSelected ? 12 : 8,
+        fillColor: '#DC2626',
+        color: isSelected ? '#450A0A' : '#7F1D1D',
+        weight: isSelected ? 3 : 1.5,
+        opacity: 1,
+        fillOpacity: 0.88,
+      });
+
+      const aura = L.circle([lat, lon], {
+        radius: 2500,
+        color: '#DC2626',
+        weight: 1,
+        opacity: 0.3,
+        fillColor: '#FEE2E2',
+        fillOpacity: 0.1,
+      });
+
+      fireMarker.on('click', () => onSelectHazard(item));
+      fireMarker.bindTooltip(`
+        <div class="font-sans text-xs p-1">
+          <div class="text-[10px] font-bold text-red-700 uppercase">[OBSERVED THERMAL ANOMALY]</div>
+          <div class="font-bold text-slate-900">${item.name}</div>
+          <div class="text-red-700 font-semibold mt-0.5">${item.severity_label || ''}</div>
+          <div class="text-[11px] text-slate-500">Method: ${item.method} · NASA FIRMS</div>
+        </div>
+      `, { sticky: true });
+
+      hazardGroup.addLayer(aura);
+      hazardGroup.addLayer(fireMarker);
+    }
+  });
+
+  hazardGroup.addTo(map);
+  layersRef.current.hazards = hazardGroup;
+  hazardGroup.bringToFront();
+}, [hazards, activeHazardFilters, selectedHazard, onSelectHazard]);
 
 // Update Evacuation Route & Shelter Pin
 useEffect(() => {

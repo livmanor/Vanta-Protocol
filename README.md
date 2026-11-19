@@ -1,8 +1,87 @@
-# Vanta Protocol — Version 1.0 (CipherCop 2026)
+# Vanta Protocol — Version 2.0 (CipherCop 2026)
 
-Real-time disaster-response planning tool for police control rooms, built for the **CipherCop 2026 AI Disaster Response track**.
+Real-time multi-hazard disaster-response planning tool for police control rooms, built for the **CipherCop 2026 AI Disaster Response track**.
 
-This is the watch officer's decision loop, not a weather map. Live rain on **~64 monitored HTP waterlogging points** across GHMC divisions (Khairatabad, Golconda, Charminar, and others — Major/Minor from the live HTP page) and a 120-cell GHMC grid decides whether an evacuation window opens. Those 64 points collapse to **5 unique Open-Meteo ~0.1° weather cells** (see `docs/backtest_report.md`). A verified OpenStreetMap shelter and an OSRM corridor are attached only when one exists. The officer approves the calendar entry and any SMS. Nothing is dispatched automatically.
+This is the watch officer's decision loop, not a generic weather map. Vanta Protocol integrates an independent multi-hazard engine covering seismic, cyclonic, thermal, and urban stormwater hazards without unscientific composite risk scores. Live rain on **~64 monitored HTP waterlogging points** across GHMC divisions and a configurable 120-cell GHMC grid decides whether an evacuation window opens. A verified OpenStreetMap shelter and an OSRM corridor are attached only when one exists. Suggested patrol prepositioning and response mitigation actions require explicit officer approval before dispatch.
+
+---
+
+## Technical Documentation Suite
+
+- [`docs/VANTA_IMPLEMENTATION_REPORT.md`](docs/VANTA_IMPLEMENTATION_REPORT.md): Comprehensive implementation and audit report (what was broken/fixed, files changed, models trained [0 trained due to 0 negatives], tests executed with results).
+- [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md): OpenAPI specification for the Unified Hazard Engine, Tier A & B modules, and officer action approvals.
+- [`docs/DATASET_CATALOG.md`](docs/DATASET_CATALOG.md): Complete data provenance log (source organizations, URLs, licenses, download dates, bounding boxes, records count).
+- [`docs/DATA_PIPELINE.md`](docs/DATA_PIPELINE.md): Ingestion architecture, bounding boxes, rate-limiting semaphores, caching TTLs, and offline fallbacks.
+- [`docs/MODEL_TRAINING_GUIDE.md`](docs/MODEL_TRAINING_GUIDE.md): Label validation gate, negative candidate generation, and reproducible training pipeline.
+- [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md): Technical limitations, scientific unpredictability of earthquakes, sensor deficit analysis for Tier B hazards.
+- [`docs/PROGRESS.md`](docs/PROGRESS.md): Live project progress log and command output record.
+
+---
+
+## Unified Multi-Hazard Engine Architecture
+
+### Strict Principle: No Combined "Total Risk" Score
+Vanta Protocol **never produces a combined total risk score**. Earthquakes, cyclones, wildfires, and floods operate on incompatible physical scales and casualty dynamics. Summing or averaging them is unscientific and operationally hazardous. `total_risk_score` is strictly `null`.
+
+### Tier A Modules (Real Public Telemetry)
+1. **Earthquake Seismicity & Monitoring:**
+   - Real-time USGS ComCat catalog for the India bounding box ($6.5^\circ\text{N} - 37.5^\circ\text{N}, 68.0^\circ\text{E} - 98.0^\circ\text{E}$).
+   - Seismicity and monitoring **only, NO prediction**. `is_observed: true`, `forecast_window_h: 0`, `method: "observed"`.
+2. **Cyclone Track & Wind Exposure:**
+   - NOAA NCEI IBTrACS v04r01 North Indian Ocean best tracks.
+   - Storm track monitoring, central pressure, gale radii, and distance exposure buffers. Wind is strictly excluded from stormwater flood calculations.
+3. **Wildfire & Thermal Anomaly Detection:**
+   - NASA FIRMS VIIRS 375m & MODIS 1km active fire detections.
+   - Reads `MAP_KEY` or `NASA_FIRMS_MAP_KEY` from environment. Gracefully displays `missing_credentials` status if unset without fabricating live fire points.
+4. **Urban Flood & Waterlogging:**
+   - 64 geocoded Hyderabad Traffic Police (HTP) dip coordinates with per-cell Open-Meteo precipitation and IMD heavy rainfall thresholds (+0.5/+1.0/+1.5).
+
+### Tier B Modules (Interface & Docs Only — Explicit Sensor Deficits)
+Each Tier B module implements `BaseHazardModule` and explicitly returns `not_implemented: missing X`:
+- `flood_extension`: Missing 2D hydraulic/hydrodynamic routing model (SWMM/HEC-RAS) and urban storm drain cross-section network data.
+- `landslide`: Missing geotechnical shear strength, depth-to-bedrock maps, and real-time piezometric soil pore-pressure sensor feeds.
+- `drought`: Missing multi-month satellite SMAP/GRACE soil moisture anomalies, SPEI meteorological indices, and reservoir storage telemetry.
+- `heatwave`: Missing wet-bulb globe temperature (WBGT) micro-sensor network, high-res urban heat island canopy models, and epidemiological mortality response curves.
+- `tsunami`: Missing deep-ocean DART tsunameter real-time telemetry and coastal bathymetric run-up inundation modeling.
+- `lightning`: Missing ground-based lightning detection network (LDN/LINET VHF/VLF sensor array) and total lightning pulse telemetry.
+- `volcano`: Missing volcanic ash dispersion modeling and seismic tremor array (no active or Holocene volcanoes in Telangana / Deccan Traps).
+
+---
+
+## Officer Approval & Response Recommendations
+
+All mitigation recommendations (infrastructure inspections, chainsaw squad prepositioning, dewatering pump dispatches, fire tender dispatches) start in the `suggested` state. Officers review and authorize each action via the Tactical Map detail panel or the API:
+- `POST /api/hazards/actions/{action_id}/approve`
+- `POST /api/hazards/actions/{action_id}/reject`
+
+---
+
+## Quickstart & Run Instructions
+
+### 1. Ingest External Datasets
+```powershell
+Set-Location d:\Hackathons\Hackathons\Vanta-Protocol\venda
+python scripts/fetch_hazard_data.py --hazard all
+```
+
+### 2. Run Test Suite (60 Tests)
+```powershell
+python -m pytest tests/ -v --tb=short
+```
+
+### 3. Start Backend API Server
+```powershell
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### 4. Start Frontend Tactical Console
+```powershell
+Set-Location frontend
+cmd /c npm run dev -- --port 5173
+```
+- Open `http://localhost:5173`.
+- Sign in: **Username:** `admin` | **Password:** `123`.
+- Navigate to **Tactical Map** $\rightarrow$ **Hazards** tab to toggle hazard layers and inspect live observations.
 
 ---
 
