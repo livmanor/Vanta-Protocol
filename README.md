@@ -1,69 +1,137 @@
-# Vanta Protocol
+<div align="center">
 
-**CipherCop 2026 — AI Disaster Response track (v2)**
+# VANTA PROTOCOL
 
-A watch-officer control room for **Hyderabad multi-hazard response** (urban flood / waterlogging first, plus independent earthquake, cyclone, and wildfire monitoring).  
-It is a **decision loop**, not a weather toy: live feeds screen risk, the system drafts options, and a human officer approves anything that matters (calendar windows, hazard actions, SMS, dispatch).
+### A live decision room for Hyderabad’s multi-hazard response
 
-Nothing is auto-dispatched. Missing data stays blank — never invented.  
-**No combined “total risk” score** — hazards stay on separate physical scales (`total_risk_score` is always `null`).
+**See the signal. Understand the situation. Let a watch officer decide.**
 
----
+*CipherCop 2026 · AI Disaster Response track*
 
-## Table of contents
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/UI-React-61DAFB?logo=react&logoColor=20232A)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Frontend-Vite-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![City](https://img.shields.io/badge/Pilot-Greater%20Hyderabad-4F46E5)](#hyderabad-first)
+[![Decisions](https://img.shields.io/badge/Dispatch-Human%20approved-00875A)](#built-for-human-decisions)
 
-1. [What you get](#what-you-get)
-2. [How to run (absolute beginner)](#how-to-run-absolute-beginner)
-3. [Sign in](#sign-in)
-4. [Multi-hazard engine](#multi-hazard-engine)
-5. [Architecture (current build)](#architecture-current-build)
-6. [Live data sources](#live-data-sources)
-7. [Control-room tabs](#control-room-tabs)
-8. [What the software will / will not do](#what-the-software-will--will-not-do)
-9. [Optional: SMS, labels, offline scripts](#optional-sms-labels-offline-scripts)
-10. [Useful URLs](#useful-urls)
-11. [Project layout](#project-layout)
-12. [Deeper technical docs](#deeper-technical-docs)
+[Explore the product](#the-control-room) · [Run it locally](#run-vanta-locally) · [Architecture](#how-the-pieces-fit)
+
+</div>
 
 ---
 
-## What you get
+> **Vanta is a decision-support system, not an automatic dispatcher.** It brings live hazard signals, citizen reports, and operational context into one control room. Recommendations remain explainable and an officer approves actions that matter.
 
-| Piece | Role |
-|---|---|
-| **Backend** (FastAPI, port `8000`) | Weather, CAP, HTP flood screening, unified hazards API, routing, AI agents; SQLite for officer data |
-| **Frontend** (React + Vite, port `5173`) | Control room: Alerts → Map (incl. Hazards) → Radar → AI Briefing |
-| **Officer login** | Local username/password in SQLite (no Google / Auth0) |
-| **Human gate** | Evacuation calendar, hazard action approvals, and SOS SMS need an officer |
+## At a glance
 
-**Hyderabad focus:** ~64 HTP waterlogging points across GHMC, a 120-cell city grid, Greater Hyderabad CAP districts, plus India-box earthquake / NIO cyclone / FIRMS fire layers.
+| **One city, multiple signals** | **One clear decision loop** | **One human in control** |
+|:--|:--|:--|
+| Urban waterlogging screening, official alerts, earthquake observations, cyclone tracks, and wildfire detections. | Monitor → assess → prepare → review. Evidence and freshness stay visible. | No automatic dispatch, SMS, or calendar action. Hazards are never collapsed into a misleading total-risk number. |
 
----
+## The control room
 
-## How to run (absolute beginner)
+Vanta brings the operations view and citizen reporting flow together. Select a screen to see it larger.
 
-You need **two programs** installed on your PC:
+<details open>
+<summary><strong>01 · Official alert feed</strong> — CAP messages, district matching, and feed health</summary>
 
-| Tool | Why | Check it works |
-|---|---|---|
-| **Python 3.10+** | Runs the API server | `python --version` |
-| **Node.js 18+** (includes `npm`) | Runs the website | `node --version` and `npm --version` |
+![Vanta CAP alert feed for Greater Hyderabad](docs/screenshots/cap-feed.png)
 
-Also: a code editor and **two terminal windows** (one for backend, one for frontend).
+</details>
 
-### Step 0 — Open the project folder
+<details>
+<summary><strong>02 · Tactical map</strong> — independent hazard layers, hotspots, and incident context</summary>
 
-```powershell
-cd "C:\Users\YOUR_NAME\Desktop\Vanta Protocol"
+![Vanta tactical map with hazard layers and incident detail](docs/screenshots/tactical-map.png)
+
+</details>
+
+<details>
+<summary><strong>03 · Atmospheric radar</strong> — radar and weather overlays for Hyderabad and the region</summary>
+
+![Vanta radar with rain and thunder overlay](docs/screenshots/radar.png)
+
+</details>
+
+<details>
+<summary><strong>04 · AI briefing</strong> — run Predict, Prepare, and Respond when an officer asks</summary>
+
+![Vanta AI briefing incident command form](docs/screenshots/ai-briefing.png)
+
+</details>
+
+<details>
+<summary><strong>05 · Citizen reporting</strong> — submit a field photo and area for officer review</summary>
+
+![Vanta citizen report submission form](docs/screenshots/citizen-submit.png)
+
+</details>
+
+<details>
+<summary><strong>06 · Officer review</strong> — inspect a report, then accept it as an incident or reject it</summary>
+
+![Vanta watch officer reviewing a citizen flood photo](docs/screenshots/officer-review.png)
+
+</details>
+
+<details>
+<summary><strong>07 · Report status</strong> — citizens can see whether a report is pending or accepted</summary>
+
+![Vanta citizen reports and review status](docs/screenshots/citizen-reports.png)
+
+</details>
+
+## The response loop
+
+```mermaid
+flowchart LR
+    A[Live feeds and citizen reports] --> B[Screen and match evidence]
+    B --> C[Map, alerts, and briefing]
+    C --> D[Officer reviews recommendation]
+    D -->|Approve| E[Operational action]
+    D -->|Reject or defer| F[No action is dispatched]
 ```
 
-(Use your real path.)
+### Built for human decisions
 
-### Step 1 — Create a Python virtual environment (once)
+- **Independent hazard scales.** Flood, earthquake, cyclone, and wildfire observations remain separate. `total_risk_score` is always `null`.
+- **Evidence before action.** Suggestions include context and source status; AI agents run only on explicit request and provider configuration.
+- **No fabricated activity.** Incidents and units come from real input. Missing or stale feeds stay visibly missing or stale.
+- **Officer approval gates actions.** No automatic dispatch, SMS, evacuation calendar write, or hazard-action approval.
+- **Replay is read-only.** Historical replay is labelled and does not write to live operations.
 
-A **venv** is a private Python folder so project packages do not mess up your system Python.
+## Hyderabad first
 
-**Windows (PowerShell):**
+The pilot focuses on Greater Hyderabad and GHMC. It combines roughly 64 HTP waterlogging points, a 120-cell city grid, district-matched CAP alerts, and independent regional hazard feeds. Counts and coverage depend on source availability; the UI reports source health and does not treat a missing feed as a clear area.
+
+| Signal | Source | What Vanta shows |
+|:--|:--|:--|
+| Rain and forecast | [Open-Meteo](https://open-meteo.com/) | Current and forecast precipitation, batched by unique grid cells |
+| River context | Open-Meteo Flood / GloFAS | Basin discharge context |
+| Official alerts | SACHET + IMD CAP | Messages matched to Greater Hyderabad districts |
+| Waterlogging | HTP | GHMC points and a SQLite snapshot |
+| Earthquakes | [USGS ComCat](https://earthquake.usgs.gov/fdsnws/event/1/) | Observed seismic events; no prediction |
+| Cyclones | NOAA IBTrACS | North Indian Ocean track context |
+| Wildfire | NASA FIRMS | Active fire detections; requires a map key |
+| Terrain and routing | Open-Elevation, Overpass, OSRM | Elevation context, mapped locations, and routes |
+| AI briefing | Groq + Gemini | Consented Predict, Prepare, and Respond assistance |
+| SMS | Twilio or MSG91 | Officer-approved; test mode logs only |
+
+> **Hazard coverage is deliberately honest.** Tier A modules use public observations or live sources. Tier B modules without suitable sensors report `not_implemented` or missing data instead of inventing a reading. See [known limitations](docs/KNOWN_LIMITATIONS.md).
+
+## Run Vanta locally
+
+<details open>
+<summary><strong>Prerequisites and first-time setup</strong></summary>
+
+- Python 3.10 or later
+- Node.js 18 or later (includes npm)
+- Two terminal windows
+
+### 1. Create the Python environment
+
+**Windows PowerShell**
 
 ```powershell
 python -m venv venv
@@ -72,7 +140,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**macOS / Linux:**
+**macOS / Linux**
 
 ```bash
 python3 -m venv venv
@@ -81,46 +149,32 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-If PowerShell blocks activation, run once:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-
-Then try `Activate.ps1` again.
-
-### Step 2 — Create your `.env` file (once)
-
-Secrets live in `.env` at the **project root**. Never commit that file.
+### 2. Configure the environment
 
 ```powershell
 copy .env.example .env
 ```
 
-macOS / Linux: `cp .env.example .env`
-
-Open `.env` and set at least:
+On macOS or Linux, use `cp .env.example .env`. Set local officer login values in `.env` and choose a private password:
 
 ```env
 AUTH_REQUIRED=true
 BOOTSTRAP_OFFICER_USERNAME=watch.officer
-BOOTSTRAP_OFFICER_PASSWORD=change-me-now
+BOOTSTRAP_OFFICER_PASSWORD=choose-a-private-password
 BOOTSTRAP_OFFICER_DISPLAY_NAME=Watch Officer
 ```
 
-**Change the password.** Do not use shared demo passwords from old docs.
-
-Optional keys:
+Optional integrations:
 
 ```env
-GROQ_API_KEY=              # Predict agent
-GEMINI_API_KEY=            # Prepare + Respond agents
-MAP_KEY=                   # or NASA_FIRMS_MAP_KEY — live wildfire layer
+GROQ_API_KEY=       # Predict agent
+GEMINI_API_KEY=     # Prepare and Respond agents
+MAP_KEY=            # NASA FIRMS wildfire layer
 ```
 
-Weather, elevation, OSM, OSRM, USGS earthquakes, and packaged IBTrACS samples work **without** paid keys. Without a FIRMS map key, wildfire status is honest `missing_credentials` (no fake fires).
+Secrets belong in `.env`, which is ignored by Git. Weather, elevation, OSM, OSRM, USGS, and packaged IBTrACS samples can run without paid keys. FIRMS stays `missing_credentials` until a key is set.
 
-### Step 3 — Install frontend packages (once)
+### 3. Install frontend packages
 
 ```powershell
 cd frontend
@@ -128,337 +182,160 @@ npm install
 cd ..
 ```
 
-### Step 4 — (Optional) Refresh hazard datasets
+### 4. Start the API
 
-Packaged sample JSON under `data/` is enough to boot. To refresh from public feeds:
-
-```powershell
-.\venv\Scripts\python.exe scripts/fetch_hazard_data.py --hazard all
-```
-
-### Step 5 — Start the backend (terminal 1)
-
-Stay in the project root. Activate the venv if it is not already active.
-
-**Windows:**
+From the project root, in terminal one:
 
 ```powershell
-.\venv\Scripts\Activate.ps1
 .\venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-**macOS / Linux:**
+### 5. Start the web app
 
-```bash
-source venv/bin/activate
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
-```
-
-Leave this window open. You should see something like `Uvicorn running on http://127.0.0.1:8000`.
-
-Quick check: [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health) → `"status":"online"`.
-
-### Step 6 — Start the frontend (terminal 2)
+In terminal two:
 
 ```powershell
 cd frontend
 npm run dev
 ```
 
-Open **[http://127.0.0.1:5173](http://127.0.0.1:5173)**.
+Open **[http://127.0.0.1:5173](http://127.0.0.1:5173)** and sign in with the bootstrap credentials from `.env`.
 
-### Step 7 — Sign in and enter the control room
+| Local endpoint | Purpose |
+|:--|:--|
+| [127.0.0.1:5173](http://127.0.0.1:5173) | Control room |
+| [127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health) | API health |
+| [127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) | Interactive API docs |
 
-1. Landing page → sign in with the **bootstrap username / password from your `.env`**
-2. Enter the control room
-3. Source status and CAP alerts load early; weather uses **batched unique ~0.1° cells**
-4. On **Tactical Map → Hazards**, toggle earthquake / cyclone / wildfire / flood layers and approve or reject suggested actions
+</details>
 
-### Stuck?
-
-| Symptom | Likely fix |
-|---|---|
-| `python` not found | Install Python 3.10+ and tick “Add to PATH” |
-| `npm` not found | Install Node.js LTS |
-| Port 8000 already in use | Stop the other process on 8000, or change uvicorn `--port` |
-| UI says unauthorized / blank APIs | Sign in again; confirm bootstrap password in `.env`; restart backend |
-| Agents say setup required | Add `GROQ_API_KEY` / `GEMINI_API_KEY` and restart backend |
-| Wildfire missing credentials | Set `MAP_KEY` or `NASA_FIRMS_MAP_KEY` in `.env` |
-| HTP / weather failed | Internet required; status bar shows `failed` / `stale` honestly |
-
-### Tests (optional)
+<details>
+<summary><strong>Optional: refresh packaged hazard datasets</strong></summary>
 
 ```powershell
-.\venv\Scripts\python.exe -m pytest tests
+.\venv\Scripts\python.exe scripts/fetch_hazard_data.py --hazard all
 ```
 
----
+Packaged samples under `data/` are sufficient to boot the application. Refreshing connects to public feeds.
 
-## Sign in
+</details>
 
-Control-room APIs use **local officer accounts** in SQLite (bcrypt passwords, opaque session token via cookie or `Authorization: Bearer`).
+<details>
+<summary><strong>Optional: enable live SMS</strong></summary>
 
-1. Set `AUTH_REQUIRED=true` and bootstrap fields in `.env`
-2. Restart backend — the bootstrap user is created **once** if missing
-3. Sign in from the landing page
+SMS test mode is enabled by default and logs messages only. To send real messages, configure Twilio or MSG91, set `SMS_TEST_MODE=false`, and restart the backend. India deployments also need an approved DLT template. Treat provider setup and live sending as an operational decision.
 
-Public even when auth is on: `GET /api/health`, `POST /api/sos/status`.  
-Everything else under `/api` needs a session when `AUTH_REQUIRED=true`.
+</details>
 
----
+### Common setup fixes
 
-## Multi-hazard engine
+| Symptom | Check |
+|:--|:--|
+| `python` is not found | Install Python 3.10+ and add it to PATH. |
+| `npm` is not found | Install Node.js 18+ and reopen the terminal. |
+| Port 8000 is busy | Stop the other process or choose another Uvicorn port. |
+| API says unauthorized | Sign in again and check the bootstrap values in `.env`. |
+| AI agents need setup | Configure the relevant Groq or Gemini key, then restart the API. |
+| Wildfire data is unavailable | Configure `MAP_KEY` or `NASA_FIRMS_MAP_KEY`; otherwise `missing_credentials` is expected. |
+| A feed is stale or failed | Check connectivity and the source status shown in the app. No data is substituted. |
 
-Hazards are **independent modules**. They are never summed into one score.
+## Sign-in and local data
 
-### Tier A — real public telemetry
+Control-room accounts are stored locally in SQLite. Passwords use bcrypt and sessions use an opaque token in a cookie or `Authorization: Bearer` header. Set `AUTH_REQUIRED=true` and the bootstrap values in `.env`; the bootstrap officer is created once if missing. Health and SOS status remain public when authentication is enabled; other `/api` routes require a session.
 
-| Module | Source | Notes |
-|---|---|---|
-| **Earthquake** | USGS ComCat (India bbox) | Observed seismicity only — **no prediction** |
-| **Cyclone** | NOAA IBTrACS NIO tracks | Track / pressure / gale radii; wind not mixed into flood score |
-| **Wildfire** | NASA FIRMS VIIRS/MODIS | Needs map key; otherwise `missing_credentials` |
-| **Urban flood** | HTP points + Open-Meteo | Screening levels 1–5 via `risk_engine` |
+The live weather path batches unique roughly 0.1° cells, so the HTP points share upstream requests where possible. CAP XML fetches run concurrently (semaphore 6) before results are written to SQLite. Source status and alerts start before heavier dashboard requests.
 
-### Tier B — interface + explicit sensor deficits
+## Offline data tools
 
-Modules such as landslide, drought, tsunami, lightning, volcano, etc. implement the shared interface and return `not_implemented: missing …` instead of inventing numbers. Details: [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md).
-
-### Officer hazard actions
-
-Suggested mitigations start as `suggested`. Officers approve or reject:
-
-- `POST /api/hazards/actions/{action_id}/approve`
-- `POST /api/hazards/actions/{action_id}/reject`
-
----
-
-## Architecture (current build)
-
-Merged through **`origin/main` multi-hazard upgrade** + **`search` feed-speed / README work**.
-
-### System diagram
+| Path / command | Purpose |
+|:--|:--|
+| `data/labels/hyderabad_events.csv` | Human-verified labels only |
+| `docs/LABELING_GUIDE.md` | Labeling process |
+| `docs/MODEL_TRAINING_GUIDE.md` | Training and evaluation gates |
+| `python scripts/validate_labels.py` | Validate label data |
+| `python scripts/train_model.py` | Event-day evaluation; LOEO requires both classes |
+| `python scripts/backtest_thresholds.py` | Backtest trigger frequency; writes `docs/backtest_report.md` |
+## How the pieces fit
 
 ```mermaid
 flowchart TB
-  subgraph Officer["Watch officer"]
-    UI["React control room<br/>Alerts · Map/Hazards · Radar · AI Briefing"]
-  end
-
-  subgraph FE["Frontend :5173"]
-    App["App.jsx<br/>early /api/sources + /api/alerts"]
-    API["api.js session client"]
-  end
-
-  subgraph BE["FastAPI :8000"]
-    Auth["Auth middleware"]
-    RRisk["risk / risk-grid / weather"]
-    RHaz["hazards router"]
-    RCap["alerts · sources"]
-    ROps["operations · incidents · units · routes"]
-    RAgents["agents · predict history"]
-    RReplay["replay"]
-    RiskEng["risk_engine flood screening"]
-    HazEng["Unified hazard engine<br/>Tier A/B modules"]
-    WeatherBatch["weather · unique ~0.1° batches"]
-    CapPoll["cap_alerts · parallel XML"]
-    HTP["htp_waterlogging + snapshot"]
-  end
-
-  subgraph Ext["External / packaged feeds"]
-    OM["Open-Meteo"]
-    USGS["USGS ComCat"]
-    IB["IBTrACS JSON"]
-    FIRMS["NASA FIRMS"]
-    SACHET["SACHET + IMD CAP"]
-    HTPHTML["HTP HTML"]
-    OSM["Overpass + OSRM"]
-    LLM["Groq + Gemini"]
-  end
-
-  DB[(SQLite)]
-
-  Officer --> UI --> App --> API --> Auth
-  Auth --> RRisk & RHaz & RCap & ROps & RAgents & RReplay
-  RRisk --> RiskEng & WeatherBatch & HTP
-  RHaz --> HazEng
-  HazEng --> USGS & IB & FIRMS & RiskEng
-  WeatherBatch --> OM
-  CapPoll --> SACHET
-  HTP --> HTPHTML & DB
-  ROps --> OSM & DB
-  RAgents --> LLM
+    Officer[Watch officer] --> UI[React + Vite control room]
+    Citizen[Citizen reporter] --> UI
+    UI --> API[FastAPI API and local auth]
+    API --> Ops[Alerts, incidents, units, routes]
+    API --> Flood[Flood screening and city grid]
+    API --> Hazards[Independent hazard modules]
+    API --> Briefing[On-demand AI briefing]
+    Ops --> DB[(SQLite officer data)]
+    Flood --> Weather[Open-Meteo and HTP]
+    Hazards --> Public[USGS, IBTrACS, FIRMS]
+    Ops --> MapData[OSM, Overpass, OSRM]
+    Briefing --> Models[Groq and Gemini]
 ```
 
-### Request path (live mode)
+**Typical live startup:** authenticate → load source status and CAP early → fetch risk zones, batched weather, grid, units and incidents, hazard modules, and operations context → present evidence and explainable options → wait for an officer decision.
 
-1. Officer signs in → session token  
-2. UI starts **source status + CAP** immediately  
-3. In parallel: HTP risk zones, batched weather, city grid, units/incidents, **unified hazards**, operations plan  
-4. Flood risk engine screens hotspots; hazard modules emit independent features + suggested actions  
-5. Watch / heavy lines → draft evacuation window → **officer approves**  
-6. AI Briefing runs only on explicit start + provider consent  
+**Replay mode:** choose an IST date to view historical rainfall context and a draft plan. Replay is marked historical and does not write to incidents, units, SMS, or the calendar.
 
-### Replay mode
+## Control-room guide
 
-Toggle **Replay**, pick an IST date → archive rain scores HTP + grid and drafts a plan.  
-Banner: `REPLAY — historical data, not live`. No writes to incidents, units, SMS, or calendar.
+| Area | What it is for |
+|:--|:--|
+| **Alerts** | CAP / SACHET messages matched to Greater Hyderabad |
+| **Tactical Map** | HTP hotspots, city grid, incidents, units, corridors, and independent hazard layers |
+| **Radar** | Radar, rain, wind, cloud, temperature, and pressure overlays |
+| **AI Briefing** | On-demand Predict (Groq), Prepare, and Respond (Gemini) workflow |
+| **Citizen reports** | Photo and area intake, followed by watch-officer review |
 
-### Performance notes
+## API quick links
 
-| Area | Behavior |
-|---|---|
-| Weather | ~64 HTP points → ~5 unique Open-Meteo ~0.1° cells, batched |
-| CAP | XML bodies concurrent (semaphore 6), then SQLite write |
-| UI | Source bar / alerts start before the heavy `Promise.all` |
+With the backend running, these local endpoints expose the main feeds:
 
----
+- [`/api/health`](http://127.0.0.1:8000/api/health) · [`/api/sources`](http://127.0.0.1:8000/api/sources)
+- [`/api/alerts`](http://127.0.0.1:8000/api/alerts) · [`/api/hazards`](http://127.0.0.1:8000/api/hazards)
+- [`/api/hazards/modules`](http://127.0.0.1:8000/api/hazards/modules) · [`/api/risk-zones`](http://127.0.0.1:8000/api/risk-zones)
+- [`/api/risk-grid`](http://127.0.0.1:8000/api/risk-grid) · [`/api/weather`](http://127.0.0.1:8000/api/weather)
+- Replay example: `http://127.0.0.1:8000/api/replay?date=2024-09-01`
 
-## Live data sources
+Control-room endpoints require a session when `AUTH_REQUIRED=true`. Health and SOS status are public.
 
-Feeds are real (or packaged public extracts). Status bar: `live` / `partial` / `stale` / `failed` / `missing_credentials`.
+## Data and model boundaries
 
-| Domain | Source | Used for |
-|---|---|---|
-| Rainfall & weather | Open-Meteo Forecast | Current / today / 48h precip (IST) |
-| River discharge | Open-Meteo GloFAS | Basin overflow context |
-| Elevation | Open-Elevation | Terrain context |
-| Shelters / routing | Overpass + OSRM | Corridors clear of officer blocks |
-| Official alerts | SACHET + IMD CAP | Greater Hyderabad LGD match |
-| Waterlogging points | HTP HTML | ~64 GHMC points + SQLite snapshot |
-| Earthquakes | USGS ComCat | Observed events (India bbox) |
-| Cyclones | IBTrACS (packaged / refreshed) | NIO track exposure |
-| Wildfires | NASA FIRMS | Active fire detections (key required) |
-| City grid | Open-Meteo batched | 120 GHMC cells |
-| Predict / Prepare / Respond | Groq / Gemini | Consented AI briefing |
-| SMS | Twilio or MSG91 | Officer-approved; test mode default |
+- Flood levels 1–5 are heuristic screening outputs from the `risk_engine`; they are not a calibrated production ML model.
+- Earthquake observations are not earthquake predictions.
+- Text-only CAP area matches without an LGD district code remain unverified and do not raise the operations floor.
+- Estimates, risk levels, and triage rankings are model outputs, not confirmed facts. Review their source and explanation.
+- Current label status: **32 sourced positives / 5 events / 0 verified negatives**. There is no fitted binary classifier; evaluation is event-day only.
+- Missing rainfall does not become zero rainfall or nominal risk. Empty units and incidents stay empty until entered from real inputs.
 
----
+See the [data policy](agent_rules.md), [known limitations](docs/KNOWN_LIMITATIONS.md), and [model report](docs/model_report.md).
 
-## Control-room tabs
+## Project map
 
-| Tab | Purpose |
-|---|---|
-| **Alerts** | CAP / SACHET for Greater Hyderabad |
-| **Tactical Map** | HTP hotspots, grid, incidents, units, corridors, **Hazards** sub-panel |
-| **Radar** | External radar / windy-style view |
-| **AI Briefing** | Predict (Groq) · Prepare · Respond (Gemini) |
-
----
-
-## What the software will / will not do
-
-**Will**
-
-- Screen flood risk with explainable heuristics  
-- Show independent Tier A hazard observations  
-- Draft evacuation windows, corridors, and hazard actions for officer review  
-- Keep empty incidents/units until an officer enters them  
-- Show honest empty / failed / stale / missing-credentials states  
-
-**Will not**
-
-- Invent weather, fires, quakes, incidents, units, or ETAs  
-- Predict earthquakes  
-- Auto-dispatch or auto-send SMS  
-- Produce a single combined multi-hazard risk number  
-- Claim a calibrated flood ML model in production (offline eval only; see `docs/model_report.md`)  
-
-**Data policy:** [`agent_rules.md`](./agent_rules.md).
-
----
-
-## Optional: SMS, labels, offline scripts
-
-### Going live with SMS
-
-`SMS_TEST_MODE=true` by default → logged only. Set `SMS_TEST_MODE=false`, configure Twilio or MSG91 in `.env`, restart. India needs a DLT template (see `.env.example`).
-
-### Waterlogging labels (offline)
-
-| Path | Role |
-|---|---|
-| `data/labels/hyderabad_events.csv` | Human-verified labels only |
-| `docs/LABELING_GUIDE.md` / `docs/MODEL_TRAINING_GUIDE.md` | How to label / train gates |
-| `python scripts/validate_labels.py` | Gate check |
-| `python scripts/train_model.py` | Event-day eval (or LOEO with both classes) |
-| `docs/model_report.md` | Latest eval write-up |
-
-Current status: **32 sourced positives / 5 events / 0 verified negatives** → no binary classifier fit; **event-day evaluation** only. Live flood score stays rule-based.
-
-### Trigger-frequency backtest
-
-```powershell
-.\venv\Scripts\python.exe scripts/backtest_thresholds.py
+```text
+backend/          FastAPI app, auth, data clients, services, hazard modules, routers
+frontend/         React + Vite application and control-room components
+data/             Packaged public extracts, HTP seeds, and labels
+scripts/           Dataset refresh, validation, training, and backtest utilities
+tests/             Automated test suite
+ docs/             API, pipeline, implementation, limitations, and model notes
 ```
 
-Writes `docs/backtest_report.md` (64 points → 5 unique weather cells).
+## Further reading
+
+- [Implementation report](docs/VANTA_IMPLEMENTATION_REPORT.md)
+- [API documentation](docs/API_DOCUMENTATION.md)
+- [Dataset catalog](docs/DATASET_CATALOG.md) · [Data pipeline](docs/DATA_PIPELINE.md)
+- [Known limitations](docs/KNOWN_LIMITATIONS.md)
+- [Model training guide](docs/MODEL_TRAINING_GUIDE.md) · [Latest model report](docs/model_report.md)
+- [Labeling guide](docs/LABELING_GUIDE.md) · [Backtest report](docs/backtest_report.md)
+- [Progress notes](docs/PROGRESS.md)
 
 ---
 
-## Useful URLs
+<div align="center">
 
-| URL | What |
-|---|---|
-| http://127.0.0.1:5173 | Control-room UI |
-| http://127.0.0.1:8000/api/health | Backend alive? |
-| http://127.0.0.1:8000/docs | Interactive API docs |
-| http://127.0.0.1:8000/api/sources | Feed health |
-| http://127.0.0.1:8000/api/risk-zones | HTP points |
-| http://127.0.0.1:8000/api/risk-grid | City grid |
-| http://127.0.0.1:8000/api/weather | Per-zone weather (batched) |
-| http://127.0.0.1:8000/api/alerts | CAP alerts |
-| http://127.0.0.1:8000/api/hazards | Unified hazard features |
-| http://127.0.0.1:8000/api/hazards/modules | Module status |
-| http://127.0.0.1:8000/api/replay?date=2024-09-01 | Historical day |
+**Vanta Protocol · Hyderabad multi-hazard response**<br>
+*Evidence-led. Human-approved. Honest about uncertainty.*
 
----
-
-## Project layout
-
-```
-Vanta Protocol/
-├── .env.example
-├── requirements.txt
-├── agent_rules.md
-├── data/                      # labels, IBTrACS/FIRMS/quake samples, HTP seeds
-├── docs/                      # audits, catalogs, model + backtest reports
-├── scripts/                   # validate_labels, train_model, fetch_hazard_data, …
-├── tests/
-├── backend/
-│   ├── main.py
-│   ├── auth/
-│   ├── agents/
-│   ├── data_sources/
-│   ├── services/
-│   │   ├── risk_engine.py
-│   │   ├── hazards/           # unified engine + Tier A/B modules
-│   │   └── …
-│   └── routers/               # incl. hazards.py
-└── frontend/src/
-    ├── App.jsx
-    ├── api.js
-    └── components/            # Map, HazardDetailPanel, alerts, agents, …
-```
-
----
-
-## Deeper technical docs
-
-- [`docs/VANTA_IMPLEMENTATION_REPORT.md`](docs/VANTA_IMPLEMENTATION_REPORT.md)  
-- [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md)  
-- [`docs/DATASET_CATALOG.md`](docs/DATASET_CATALOG.md)  
-- [`docs/DATA_PIPELINE.md`](docs/DATA_PIPELINE.md)  
-- [`docs/MODEL_TRAINING_GUIDE.md`](docs/MODEL_TRAINING_GUIDE.md)  
-- [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md)  
-- [`docs/PROGRESS.md`](docs/PROGRESS.md)  
-- [`docs/backtest_report.md`](docs/backtest_report.md) · [`docs/model_report.md`](docs/model_report.md)  
-
----
-
-## Roadmap (not mixed into one score)
-
-- Independent Windy cross-check for wind / precip  
-- CAP can raise the **operations calendar** floor; it still does not change the numeric flood map score  
-- Tier B modules stay explicit deficits until real sensors exist  
-- Flood threshold tuning only after verified **negative** labels exist
+</div>
