@@ -536,3 +536,13 @@ export async function reviewCitizenReport(reportId, decision, createIncident = t
 export function citizenReportPhotoUrl(reportId) {
   return `${API_BASE}/citizen-reports/${encodeURIComponent(reportId)}/photo`;
 }
+
+export async function fetchRainPrediction() {
+  const res = await apiFetch('/predict/rain');
+  if (res.status === 503) {
+    // Model not trained yet — not an error.
+    return null;
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch rain prediction`);
+  return res.json();
+}

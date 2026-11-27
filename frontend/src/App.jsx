@@ -25,7 +25,8 @@ import {
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
   refreshOperationsPlan, logoutOfficer, fetchCapAlerts, fetchReplay,
-  fetchUnifiedHazards, fetchCitizenReports, reviewCitizenReport
+  fetchUnifiedHazards, fetchCitizenReports, reviewCitizenReport,
+  fetchRainPrediction
 } from './api';
 
 const NAV = [
@@ -52,6 +53,7 @@ export default function App() {
   const [operationsPlan, setOperationsPlan] = useState(null);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [capAlerts, setCapAlerts] = useState(null);
+  const [rainPrediction, setRainPrediction] = useState(null);
   const [portal, setPortal] = useState('landing'); // landing | citizen | officer
   const [citizenReports, setCitizenReports] = useState([]);
   const [selectedCitizenReport, setSelectedCitizenReport] = useState(null);
@@ -122,6 +124,8 @@ export default function App() {
       setReplayBanner('');
       // CAP alerts can load without waiting on weather or zone scoring.
       fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
+      // ML rain prediction (cached 1 h server-side; 503 → null = not trained).
+      fetchRainPrediction().then(setRainPrediction).catch(err => console.error(err));
 
       const loadZones = async () => {
         try {
@@ -325,8 +329,8 @@ export default function App() {
   const allWeatherLive = riskZones.length > 0 && riskZones.every(zone => zone.explanation?.weather_status === 'live');
   const alertTone = maxRisk === null ? { dot: '#D97706', label: 'Data unavailable' } :
     maxRisk >= 4 ? { dot: '#DC2626', label: 'Critical' } :
-    maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
-    { dot: '#16A34A', label: 'Nominal' };
+      maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
+        { dot: '#16A34A', label: 'Nominal' };
 
   const pendingApprovals = prepositionSuggestions.length;
   const aiEngineOnline = Boolean(agentStatus?.configured || agentStatus?.groq_configured);
@@ -435,11 +439,10 @@ export default function App() {
                 key={code}
                 onClick={() => setLanguage(code)}
                 aria-pressed={language === code}
-                className={`h-7 px-2.5 rounded-[4px] text-[14px] font-medium transition ${
-                  language === code
+                className={`h-7 px-2.5 rounded-[4px] text-[14px] font-medium transition ${language === code
                     ? 'bg-white text-[#0F172A] shadow-xs font-semibold'
                     : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -518,11 +521,10 @@ export default function App() {
                 key={id}
                 onClick={() => setView(id)}
                 title={label}
-                className={`relative h-[36px] rounded-[6px] px-3 flex items-center gap-3 transition text-left ${
-                  view === id
+                className={`relative h-[36px] rounded-[6px] px-3 flex items-center gap-3 transition text-left ${view === id
                     ? 'bg-[#EEF2FF] text-[#4338CA] font-medium'
                     : 'text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
-                }`}
+                  }`}
               >
                 {view === id && (
                   <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-[#4338CA]" />
@@ -627,11 +629,10 @@ export default function App() {
                   <button
                     key={id}
                     onClick={() => setActiveTab(id)}
-                    className={`relative py-3 font-medium transition flex items-center gap-1.5 shrink-0 ${
-                      activeTab === id
+                    className={`relative py-3 font-medium transition flex items-center gap-1.5 shrink-0 ${activeTab === id
                         ? 'text-[#4338CA] font-semibold'
                         : 'text-[#64748B] hover:text-[#0F172A]'
-                    }`}
+                      }`}
                   >
                     <span>{label}</span>
                     {badge > 0 && (
@@ -686,9 +687,8 @@ export default function App() {
                         <button
                           key={z.id}
                           onClick={() => setSelectedZone(z)}
-                          className={`w-full min-h-[40px] py-2 px-1 text-left flex items-center justify-between transition hover:bg-[#F8FAFC] ${
-                            selectedZone?.id === z.id ? 'bg-[#EEF2FF]/60' : ''
-                          }`}
+                          className={`w-full min-h-[40px] py-2 px-1 text-left flex items-center justify-between transition hover:bg-[#F8FAFC] ${selectedZone?.id === z.id ? 'bg-[#EEF2FF]/60' : ''
+                            }`}
                         >
                           <div className="min-w-0 pr-2">
                             <div className="text-[14px] font-medium text-[#0F172A] truncate">{z.name}</div>
@@ -739,9 +739,8 @@ export default function App() {
                               key={report.id}
                               type="button"
                               onClick={() => setSelectedCitizenReport(report)}
-                              className={`text-left rounded-[6px] border px-2.5 py-2 ${
-                                selectedCitizenReport?.id === report.id ? 'border-[#EA580C] bg-white' : 'border-[#FDBA74] bg-white/70'
-                              }`}
+                              className={`text-left rounded-[6px] border px-2.5 py-2 ${selectedCitizenReport?.id === report.id ? 'border-[#EA580C] bg-white' : 'border-[#FDBA74] bg-white/70'
+                                }`}
                             >
                               <div className="flex items-center justify-between gap-2 text-[11px]">
                                 <span className="font-semibold uppercase text-[#9A3412]">{report.phase}</span>
@@ -959,6 +958,41 @@ export default function App() {
                         <span>·</span>
                         <span>{maxRisk === null ? alertTone.label : `${alertTone.label} risk`} · {riskZonesError && riskZones.length === 0 ? 'Hotspot data unavailable' : `${riskZones.length} hotspots monitored`}</span>
                       </div>
+
+                      {/* ML Rainfall Forecast Banner */}
+                      {rainPrediction ? (
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          {/* Our ML model */}
+                          <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1.5 text-[12px]">
+                            <span className="w-2 h-2 rounded-full bg-[#3B82F6] shrink-0" />
+                            <span className="font-semibold text-[#1E40AF]">ML forecast</span>
+                            <span className="text-[#1D4ED8]">for {rainPrediction.for_date}:</span>
+                            <span className="font-semibold text-[#1E40AF]">{rainPrediction.rain_next_mm} mm</span>
+                            <span className="text-[#1D4ED8]">·</span>
+                            <span className="font-semibold text-[#1E40AF]">{(rainPrediction.p_heavy * 100).toFixed(0)}% heavy-rain chance</span>
+                            {rainPrediction.p_heavy >= 0.5 && (
+                              <span className="ml-1 px-1.5 py-0.5 bg-[#DBEAFE] text-[#1D4ED8] rounded-[4px] font-semibold text-[11px]">HIGH</span>
+                            )}
+                          </div>
+                          {/* Open-Meteo native forecast */}
+                          <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 text-[12px]">
+                            <span className="w-2 h-2 rounded-full bg-[#10B981] shrink-0" />
+                            <span className="font-semibold text-[#065F46]">Open-Meteo forecast</span>
+                            <span className="text-[#047857]">for {rainPrediction.for_date}:</span>
+                            <span className="font-semibold text-[#065F46]">{rainPrediction.open_meteo_rain_mm} mm</span>
+                            <span className="text-[#047857]">·</span>
+                            <span className="font-semibold text-[#065F46]">{rainPrediction.open_meteo_precip_prob_pct}% precip. prob.</span>
+                          </div>
+                          <div className="text-[11px] text-[#94A3B8] self-center">
+                            model v{rainPrediction.version}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 inline-flex items-center gap-2 rounded-[6px] border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1.5 text-[12px] text-[#64748B]">
+                          <span className="w-2 h-2 rounded-full bg-[#CBD5E1] shrink-0" />
+                          ML model not trained yet — run <code className="px-1 bg-[#F1F5F9] rounded text-[11px]">scripts/train_rainfall_forecaster.py</code> to enable live forecasts
+                        </div>
+                      )}
                     </div>
 
                     {/* Underline Tab Bar (Clean, no redundant Tactical Map) */}
