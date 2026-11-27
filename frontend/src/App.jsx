@@ -23,17 +23,26 @@ import {
   fetchIncidents, fetchIncidentTriage, reportIncident, updateIncidentStatus, deleteIncident,
   fetchPrepositionSuggestions,
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
-  reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent,
+  reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent, runAllAgents,
   refreshOperationsPlan, logoutOfficer, fetchCapAlerts, fetchReplay,
   fetchUnifiedHazards, fetchCitizenReports, reviewCitizenReport
 } from './api';
 
-const NAV = [
-  { id: 'cap', label: 'Alerts', Icon: Radio },
-  { id: 'map', label: 'Tactical Map', Icon: MapIcon },
-  { id: 'windy', label: 'Radar', Icon: Wind },
-  { id: 'agents', label: 'AI Briefing', Icon: Bot },
+const VIEW_NAV = [
+  { id: 'cap', labelKey: 'alerts', Icon: Radio },
+  { id: 'windy', labelKey: 'windy', Icon: Wind },
 ];
+const ACTION_NAV = [
+  { id: 'agents', labelKey: 'agents', Icon: Bot },
+  { id: 'map', labelKey: 'tacticalMap', Icon: MapIcon },
+];
+
+const HIGH_SEVERITY = new Set(['severe', 'extreme']);
+const isDemoMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+
+function isHighSeverityAlert(alert) {
+  return HIGH_SEVERITY.has(String(alert?.severity || '').trim().toLowerCase());
+}
 
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
@@ -43,7 +52,9 @@ export default function App() {
   const [agentStatus, setAgentStatus] = useState(null);
   const [agentResults, setAgentResults] = useState({});
   const [agentErrors, setAgentErrors] = useState({});
-  const [loadingAgent, setLoadingAgent] = useState(null);
+  const [loadingAgents, setLoadingAgents] = useState({});
+  const [mode, setMode] = useState(null); // null | 'view' | 'action'
+  const [alertBanner, setAlertBanner] = useState(null);
   const [units, setUnits] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [triageById, setTriageById] = useState({});
@@ -87,6 +98,12 @@ export default function App() {
   const [replayBanner, setReplayBanner] = useState('');
 
   const newMenuRef = useRef(null);
+  const seenAlertIdsRef = useRef(null);
+  const modalOpenRef = useRef(false);
+
+  useEffect(() => {
+    modalOpenRef.current = isUnitModalOpen || isIncidentModalOpen || isRoadModalOpen;
+  }, [isUnitModalOpen, isIncidentModalOpen, isRoadModalOpen]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -97,6 +114,36 @@ export default function App() {
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectMode = useCallback((nextMode) => {
+    setMode(nextMode);
+    setView(nextMode === 'action' ? 'agents' : 'cap');
+  }, []);
+
+  const processIncomingAlerts = useCallback((payload, { force = false } = {}) => {
+    const list = [
+      ...(Array.isArray(payload?.alerts) ? payload.alerts : []),
+      ...(Array.isArray(payload?.unmatched) ? payload.unmatched : []),
+    ];
+    const ids = new Set(list.map((a) => a?.identifier).filter(Boolean));
+    if (seenAlertIdsRef.current === null && !force) {
+      seenAlertIdsRef.current = ids;
+      return;
+    }
+    const prev = seenAlertIdsRef.current || new Set();
+    const newcomers = list.filter((a) => a?.identifier && !prev.has(a.identifier));
+    seenAlertIdsRef.current = new Set([...prev, ...ids]);
+    if (!newcomers.length) return;
+
+    const headline = newcomers[0].headline || newcomers[0].event || 'CAP alert';
+    const high = newcomers.some(isHighSeverityAlert);
+    setAlertBanner({ headline, high });
+
+    if (high && !modalOpenRef.current) {
+      setMode('action');
+      setView('agents');
+    }
   }, []);
 
   const loadData = useCallback(async () => {
@@ -121,7 +168,12 @@ export default function App() {
 
       setReplayBanner('');
       // CAP alerts can load without waiting on weather or zone scoring.
-      fetchCapAlerts().then(setCapAlerts).catch(err => console.error(err));
+      fetchCapAlerts()
+        .then((alerts) => {
+          setCapAlerts(alerts);
+          processIncomingAlerts(alerts);
+        })
+        .catch(err => console.error(err));
 
       const loadZones = async () => {
         try {
@@ -175,17 +227,20 @@ export default function App() {
     } finally {
       setLoadingRisk(false);
     }
-  }, [replayMode, replayDate]);
+  }, [replayMode, replayDate, processIncomingAlerts]);
 
   const handleRefreshCapFeed = async () => {
     setSourcesLoading(true);
     try {
       const alerts = await fetchCapAlerts(true);
       setCapAlerts(alerts);
+      processIncomingAlerts(alerts);
     } catch (err) {
       console.error(err);
       try {
-        setCapAlerts(await fetchCapAlerts());
+        const alerts = await fetchCapAlerts();
+        setCapAlerts(alerts);
+        processIncomingAlerts(alerts);
       } catch (inner) {
         console.error(inner);
       }
@@ -194,8 +249,26 @@ export default function App() {
     }
   };
 
+  const handleSimulateAlert = () => {
+    const fake = {
+      identifier: `demo-${Date.now()}`,
+      severity: 'Extreme',
+      headline: 'DEMO: Extreme flood warning — Greater Hyderabad',
+      event: 'Flood',
+      match: 'matched',
+      colour: 'red',
+      matched_district_codes: ['GHMC'],
+    };
+    const next = {
+      ...(capAlerts && typeof capAlerts === 'object' ? capAlerts : {}),
+      alerts: [fake, ...(Array.isArray(capAlerts?.alerts) ? capAlerts.alerts : [])],
+    };
+    setCapAlerts(next);
+    processIncomingAlerts({ alerts: [fake] }, { force: true });
+  };
+
   const handleRunAgent = async (agentId, confirmGoogleProcessing, runLanguage, inputs = {}) => {
-    setLoadingAgent(agentId);
+    setLoadingAgents(previous => ({ ...previous, [agentId]: true }));
     setAgentErrors(previous => ({ ...previous, [agentId]: '' }));
     try {
       const result = await runAgent(agentId, confirmGoogleProcessing, runLanguage || language, inputs);
@@ -206,7 +279,49 @@ export default function App() {
       setAgentErrors(previous => ({ ...previous, [agentId]: msg }));
       return null;
     } finally {
-      setLoadingAgent(null);
+      setLoadingAgents(previous => ({ ...previous, [agentId]: false }));
+    }
+  };
+
+  const handleRunAllAgents = async ({ confirmGoogleProcessing, confirmGroqProcessing, runLanguage, inputs = {} }) => {
+    const ids = ['predict', 'prepare', 'respond'];
+    setLoadingAgents(Object.fromEntries(ids.map((id) => [id, true])));
+    setAgentErrors((previous) => {
+      const next = { ...previous };
+      ids.forEach((id) => { next[id] = ''; });
+      return next;
+    });
+    try {
+      await runAllAgents({
+        confirmGoogleProcessing,
+        confirmGroqProcessing,
+        language: runLanguage || language,
+        inputs,
+        onPartial: (agentId, result, errorMessage) => {
+          if (result) {
+            setAgentResults((previous) => ({ ...previous, [agentId]: result }));
+            setAgentErrors((previous) => ({ ...previous, [agentId]: '' }));
+          } else if (errorMessage) {
+            setAgentErrors((previous) => ({ ...previous, [agentId]: errorMessage }));
+          }
+          setLoadingAgents((previous) => ({ ...previous, [agentId]: false }));
+        },
+      });
+    } catch (err) {
+      const msg = err.message || 'Agent workflow failed';
+      setAgentErrors((previous) => {
+        const next = { ...previous };
+        ids.forEach((id) => {
+          if (loadingAgents[id] !== false && !next[id]) next[id] = msg;
+        });
+        return next;
+      });
+    } finally {
+      setLoadingAgents((previous) => {
+        const next = { ...previous };
+        ids.forEach((id) => { next[id] = false; });
+        return next;
+      });
     }
   };
 
@@ -340,6 +455,9 @@ export default function App() {
     setOfficer(null);
     setEntered(false);
     setPortal('landing');
+    setMode(null);
+    setAlertBanner(null);
+    seenAlertIdsRef.current = null;
   };
 
   const handleReviewCitizenReport = async (reportId, decision) => {
@@ -377,6 +495,68 @@ export default function App() {
     );
   }
 
+  if (mode === null) {
+    return (
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F8FAFC] text-[#0F172A]">
+        <header className="flex items-center justify-between px-6 h-[56px] border-b border-[#E2E8F0] bg-white shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-[6px] bg-[#4338CA] flex items-center justify-center text-white">
+              <Siren className="w-4 h-4 text-white" strokeWidth={1.5} />
+            </div>
+            <div>
+              <div className="font-semibold text-[14px] text-[#0F172A] leading-tight">Vanta Protocol</div>
+              <div className="vp-mono text-[12px] text-[#475569] leading-tight">{t('area')}</div>
+            </div>
+          </div>
+          {officer && (
+            <button
+              onClick={handleLogout}
+              className="h-[32px] px-2.5 rounded-[6px] border border-[#E2E8F0] text-[12px] hover:bg-[#F8FAFC]"
+            >
+              Sign out
+            </button>
+          )}
+        </header>
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="w-full max-w-3xl">
+            <h1 className="text-[22px] font-semibold text-[#0F172A] tracking-tight text-center mb-2">
+              {t('modeSelectTitle')}
+            </h1>
+            <p className="text-[14px] text-[#64748B] text-center mb-8">
+              {officer?.display_name || officer?.username || 'Officer'} · switch modes anytime from the header
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => selectMode('view')}
+                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#4338CA] hover:bg-[#EEF2FF]/40 transition"
+              >
+                <div className="flex items-center gap-2 text-[#4338CA] mb-3">
+                  <Radio className="w-5 h-5" strokeWidth={1.5} />
+                  <span className="text-[16px] font-semibold">{t('modeView')}</span>
+                </div>
+                <p className="text-[14px] text-[#475569]">{t('modeViewDesc')}</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => selectMode('action')}
+                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#4338CA] hover:bg-[#EEF2FF]/40 transition"
+              >
+                <div className="flex items-center gap-2 text-[#4338CA] mb-3">
+                  <Bot className="w-5 h-5" strokeWidth={1.5} />
+                  <span className="text-[16px] font-semibold">{t('modeAction')}</span>
+                </div>
+                <p className="text-[14px] text-[#475569]">{t('modeActionDesc')}</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const modeNav = mode === 'action' ? ACTION_NAV : VIEW_NAV;
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F8FAFC] text-[#0F172A]">
       {/* ── Top Bar: Strict 56px height, vertically centered, 16px gaps ── */}
@@ -392,6 +572,45 @@ export default function App() {
               <div className="vp-mono text-[12px] text-[#475569] leading-tight whitespace-nowrap">{t('area')}</div>
             </div>
           </div>
+
+          <div className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]" role="group" aria-label="Officer mode">
+            <button
+              type="button"
+              onClick={() => selectMode('view')}
+              className={`h-7 px-3 rounded-[4px] text-[13px] font-medium transition ${
+                mode === 'view' ? 'bg-white text-[#0F172A] shadow-xs font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
+              }`}
+            >
+              {t('modeView')}
+            </button>
+            <button
+              type="button"
+              onClick={() => selectMode('action')}
+              className={`h-7 px-3 rounded-[4px] text-[13px] font-medium transition ${
+                mode === 'action' ? 'bg-white text-[#0F172A] shadow-xs font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
+              }`}
+            >
+              {t('modeAction')}
+            </button>
+          </div>
+          {mode === 'action' && (
+            <button
+              type="button"
+              onClick={() => selectMode('view')}
+              className="hidden sm:inline-flex h-[32px] px-2.5 rounded-[6px] border border-[#E2E8F0] text-[12px] text-[#475569] hover:bg-[#F8FAFC]"
+            >
+              {t('modeBackToView')}
+            </button>
+          )}
+          {isDemoMode && (
+            <button
+              type="button"
+              onClick={handleSimulateAlert}
+              className="hidden md:inline-flex h-[32px] px-2.5 rounded-[6px] border border-[#FDE68A] bg-[#FFFBEB] text-[12px] font-medium text-[#92400E] hover:bg-[#FEF3C7]"
+            >
+              {t('simulateAlert')}
+            </button>
+          )}
         </div>
 
         {/* Right side controls */}
@@ -505,15 +724,37 @@ export default function App() {
           {replayBanner || 'REPLAY — historical data, not live'} · {replayDate}
         </div>
       )}
+      {alertBanner && (
+        <div className="shrink-0 border-b border-[#FCA5A5] bg-[#FEF2F2] px-4 py-2 flex flex-wrap items-center gap-3 text-[13px] text-[#991B1B]">
+          <span className="font-semibold">{t('newAlertBanner')}:</span>
+          <span className="flex-1 min-w-0 truncate">{alertBanner.headline}</span>
+          <button
+            type="button"
+            onClick={() => { selectMode('action'); setAlertBanner(null); }}
+            className="h-[28px] px-2.5 rounded-[6px] bg-[#DC2626] text-white text-[12px] font-medium hover:bg-[#B91C1C]"
+          >
+            {t('goToAction')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAlertBanner(null)}
+            className="h-[28px] px-2.5 rounded-[6px] border border-[#FECACA] text-[12px] hover:bg-white"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {/* ── Main Layout: Sidebar + Viewport ── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Nav Rail: Collapses to icon rail below 1024px */}
         <nav className="w-14 lg:w-48 flex flex-col justify-between py-4 border-r border-[#E2E8F0] shrink-0 z-[600] bg-white">
           <div className="flex flex-col gap-1 px-2">
             <div className="px-2 pb-2 text-[12px] font-medium text-[#64748B] hidden lg:block">
-              Navigation
+              {mode === 'action' ? t('modeAction') : t('modeView')}
             </div>
-            {NAV.map(({ id, label, Icon }) => (
+            {modeNav.map(({ id, labelKey, Icon }) => {
+              const label = t(labelKey);
+              return (
               <button
                 key={id}
                 onClick={() => setView(id)}
@@ -533,9 +774,10 @@ export default function App() {
                 />
                 <span className="text-[14px] hidden lg:inline">{label}</span>
               </button>
-            ))}
+              );
+            })}
 
-            {pendingApprovals > 0 && (
+            {mode === 'action' && pendingApprovals > 0 && (
               <button
                 onClick={() => { setView('map'); setActiveTab('preposition'); }}
                 title={`${pendingApprovals} approvals pending`}
@@ -554,12 +796,12 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 relative overflow-hidden bg-[#F8FAFC]">
-          {/* MAP VIEW */}
+          {/* MAP VIEW — Action mode only */}
           <div
             className="absolute inset-0 flex"
             style={{
-              visibility: view === 'map' ? 'visible' : 'hidden',
-              pointerEvents: view === 'map' ? 'auto' : 'none'
+              visibility: mode === 'action' && view === 'map' ? 'visible' : 'hidden',
+              pointerEvents: mode === 'action' && view === 'map' ? 'auto' : 'none'
             }}
           >
             <div className="flex-1 h-full relative">
@@ -572,7 +814,7 @@ export default function App() {
                 incidents={incidents}
                 blockedRoads={blockedRoads}
                 prepositionSuggestions={prepositionSuggestions}
-                onOpenWindy={() => setView('windy')}
+                onOpenWindy={() => { setMode('view'); setView('windy'); }}
                 pinnedLocation={pinnedLocation}
                 onPinLocation={setPinnedLocation}
                 onLogIncidentAtPin={(coords) => {
@@ -931,8 +1173,8 @@ export default function App() {
             </aside>
           </div>
 
-          {/* AI BRIEFING WORKBENCH VIEW */}
-          {view === 'agents' && (
+          {/* AI BRIEFING WORKBENCH VIEW — Action mode */}
+          {mode === 'action' && view === 'agents' && (
             <div className="absolute inset-0 z-[450] overflow-y-auto bg-[#F8FAFC]">
               <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-8 pb-16 flex flex-col gap-8">
                 {/* ONE SLIM PAGE HEADER BAND */}
@@ -998,8 +1240,9 @@ export default function App() {
                   status={agentStatus}
                   results={agentResults}
                   errors={agentErrors}
-                  loadingAgent={loadingAgent}
+                  loadingAgents={loadingAgents}
                   onRun={handleRunAgent}
+                  onRunAll={handleRunAllAgents}
                   onReviewPreparation={() => { setView('map'); setActiveTab('preposition'); }}
                   riskZones={riskZones}
                   operationsPlan={operationsPlan}
@@ -1009,8 +1252,8 @@ export default function App() {
             </div>
           )}
 
-          {/* RADAR / ATMOSPHERIC OVERLAYS VIEW */}
-          {view === 'windy' && (
+          {/* RADAR / ATMOSPHERIC OVERLAYS VIEW — View mode */}
+          {mode === 'view' && view === 'windy' && (
             <div className="absolute inset-0 z-[450] flex flex-col bg-[#F8FAFC]">
               <div className="shrink-0 border-b border-[#E2E8F0] bg-white px-4 py-2 text-[12px] text-[#64748B]">
                 Cross-check only. Not an input to the risk score.
@@ -1021,7 +1264,7 @@ export default function App() {
             </div>
           )}
 
-          {view === 'cap' && (
+          {mode === 'view' && view === 'cap' && (
             <CapFeedPage
               alertsPayload={capAlerts}
               onRefresh={handleRefreshCapFeed}

@@ -193,6 +193,103 @@ export async function runAgent(agentId, confirmGoogleProcessing, language = 'en'
   return payload;
 }
 
+/**
+ * Run Predict, Prepare, and Respond concurrently.
+ * Prefers SSE so each card can update as its agent finishes; falls back to POST /run-all.
+ * onPartial(agentId, result|null, errorMessage|null) is called per agent.
+ */
+export async function runAllAgents({
+  confirmGoogleProcessing = false,
+  confirmGroqProcessing = false,
+  language = 'en',
+  inputs = {},
+  onPartial,
+} = {}) {
+  const params = new URLSearchParams({
+    confirm_google_processing: String(Boolean(confirmGoogleProcessing)),
+    confirm_groq_processing: String(Boolean(confirmGroqProcessing)),
+    language,
+  });
+  if (inputs.officer_query) params.set('officer_query', inputs.officer_query);
+  if (inputs.area_query) params.set('area_query', inputs.area_query);
+  if (inputs.event_start) params.set('event_start', inputs.event_start);
+  if (inputs.event_end) params.set('event_end', inputs.event_end);
+
+  const headers = {};
+  const token = getStoredToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let usedStream = false;
+  try {
+    const streamRes = await fetch(`${API_BASE}/agents/run-all/stream?${params}`, {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+    });
+    if (streamRes.ok && streamRes.body) {
+      usedStream = true;
+      const reader = streamRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const aggregate = { predict: null, prepare: null, respond: null, errors: {} };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() || '';
+        for (const chunk of chunks) {
+          const line = chunk.split('\n').find((l) => l.startsWith('data: '));
+          if (!line) continue;
+          let event;
+          try {
+            event = JSON.parse(line.slice(6));
+          } catch {
+            continue;
+          }
+          if (!event?.agent || event.agent === 'done') continue;
+          if (event.ok) {
+            aggregate[event.agent] = event.result;
+            onPartial?.(event.agent, event.result, null);
+          } else {
+            const msg = event.error?.detail || 'Agent workflow failed';
+            aggregate.errors[event.agent] = event.error || { detail: msg };
+            onPartial?.(event.agent, null, msg);
+          }
+        }
+      }
+      return aggregate;
+    }
+  } catch {
+    usedStream = false;
+  }
+
+  if (!usedStream) {
+    const res = await apiFetch('/agents/run-all', {
+      method: 'POST',
+      body: JSON.stringify({
+        confirm_google_processing: confirmGoogleProcessing,
+        confirm_groq_processing: confirmGroqProcessing,
+        language,
+        officer_query: inputs.officer_query || null,
+        area_query: inputs.area_query || null,
+        event_start: inputs.event_start || null,
+        event_end: inputs.event_end || null,
+      }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.detail || `HTTP ${res.status}: Agent workflow failed`);
+    for (const id of ['predict', 'prepare', 'respond']) {
+      if (payload[id]) onPartial?.(id, payload[id], null);
+      else if (payload.errors?.[id]) {
+        onPartial?.(id, null, payload.errors[id].detail || 'Agent workflow failed');
+      }
+    }
+    return payload;
+  }
+  return { predict: null, prepare: null, respond: null, errors: {} };
+}
+
 export async function fetchUnits() {
   const res = await apiFetch('/units');
   if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch units`);
