@@ -1,12 +1,140 @@
 {
-  "model_mae_mm": 1.9211,
+  "model_mae_mm": 1.9283,
   "persistence_mae_mm": 2.7896,
   "climatology_mae_mm": 2.5926,
-  "model_pr_auc": 0.1389,
+  "model_heavy_mae_mm": 19.3829,
+  "climatology_heavy_mae_mm": 18.914,
+  "model_pr_auc": 0.1419,
   "climatology_pr_auc": 0.0595,
-  "model_brier": 0.0351,
+  "model_brier": 0.0354,
   "climatology_brier": 0.0368,
-  "model_roc_auc": 0.8376,
+  "model_roc_auc": 0.841,
+  "bootstrap_ci_95": {
+    "n_resamples": 1000,
+    "valid_resamples": 1000,
+    "pr_auc_ci95": [
+      0.0781,
+      0.2408
+    ],
+    "roc_auc_ci95": [
+      0.7763,
+      0.9075
+    ]
+  },
+  "threshold_table": [
+    {
+      "threshold": 0.05,
+      "precision": 0.1389,
+      "recall": 0.5263,
+      "f1": 0.2198,
+      "warnings_issued": 144,
+      "tp": 20,
+      "fp": 124,
+      "fn": 18
+    },
+    {
+      "threshold": 0.1,
+      "precision": 0.1379,
+      "recall": 0.3158,
+      "f1": 0.192,
+      "warnings_issued": 87,
+      "tp": 12,
+      "fp": 75,
+      "fn": 26
+    },
+    {
+      "threshold": 0.2,
+      "precision": 0.1707,
+      "recall": 0.1842,
+      "f1": 0.1772,
+      "warnings_issued": 41,
+      "tp": 7,
+      "fp": 34,
+      "fn": 31
+    },
+    {
+      "threshold": 0.3,
+      "precision": 0.1364,
+      "recall": 0.0789,
+      "f1": 0.1,
+      "warnings_issued": 22,
+      "tp": 3,
+      "fp": 19,
+      "fn": 35
+    },
+    {
+      "threshold": 0.5,
+      "precision": 0.1667,
+      "recall": 0.0263,
+      "f1": 0.0455,
+      "warnings_issued": 6,
+      "tp": 1,
+      "fp": 5,
+      "fn": 37
+    }
+  ],
+  "expanding_cv_5fold": {
+    "n_splits": 5,
+    "folds": [
+      {
+        "fold": 1,
+        "train_end": "2017-01-22",
+        "test_start": "2017-01-23",
+        "test_end": "2019-01-10",
+        "test_heavy_days": 21,
+        "mae_mm": 1.838,
+        "pr_auc": 0.1643,
+        "roc_auc": 0.8328
+      },
+      {
+        "fold": 2,
+        "train_end": "2019-01-10",
+        "test_start": "2019-01-11",
+        "test_end": "2020-12-28",
+        "test_heavy_days": 29,
+        "mae_mm": 2.2347,
+        "pr_auc": 0.2095,
+        "roc_auc": 0.8666
+      },
+      {
+        "fold": 3,
+        "train_end": "2020-12-28",
+        "test_start": "2020-12-29",
+        "test_end": "2022-12-16",
+        "test_heavy_days": 26,
+        "mae_mm": 2.0102,
+        "pr_auc": 0.1487,
+        "roc_auc": 0.7967
+      },
+      {
+        "fold": 4,
+        "train_end": "2022-12-16",
+        "test_start": "2022-12-17",
+        "test_end": "2024-12-03",
+        "test_heavy_days": 45,
+        "mae_mm": 2.6039,
+        "pr_auc": 0.3124,
+        "roc_auc": 0.8595
+      },
+      {
+        "fold": 5,
+        "train_end": "2024-12-03",
+        "test_start": "2024-12-04",
+        "test_end": "2026-11-21",
+        "test_heavy_days": 15,
+        "mae_mm": 1.4239,
+        "pr_auc": 0.1263,
+        "roc_auc": 0.8558
+      }
+    ],
+    "mae_mean": 2.0221,
+    "mae_std": 0.3938,
+    "pr_auc_mean": 0.1922,
+    "pr_auc_std": 0.066,
+    "roc_auc_mean": 0.8423,
+    "roc_auc_std": 0.0254
+  },
+  "passes_gate": true,
   "test_start": "2024-01-01",
   "train_heavy_days": 127,
   "train_not_heavy_days": 3130,
@@ -15,7 +143,11 @@
   "heavy_mm": 15.6,
   "train_rows": 3257,
   "test_rows": 1056,
-  "data_source": "https://archive-api.open-meteo.com/v1/archive",
-  "actual_data_start": "2015-01-01",
-  "actual_data_end": "2026-11-22"
+  "data_source": "archive",
+  "data_source_url": "https://archive-api.open-meteo.com/v1/archive",
+  "data_start": "2015-01-01",
+  "data_end": "2026-11-22",
+  "refit_on_all_data": true,
+  "test_metrics_source": "pre_2024_model_only",
+  "refit_rows": 4313
 }

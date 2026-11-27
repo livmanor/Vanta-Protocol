@@ -87,8 +87,12 @@ export default function App() {
   const [replayMode, setReplayMode] = useState(false);
   const [replayDate, setReplayDate] = useState('2024-09-01');
   const [replayBanner, setReplayBanner] = useState('');
+  const [replayPlaying, setReplayPlaying] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const newMenuRef = useRef(null);
+  const replayAbortRef = useRef(null);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -105,8 +109,11 @@ export default function App() {
     setLoadingRisk(true);
     try {
       if (replayMode) {
+        if (replayAbortRef.current) replayAbortRef.current.abort();
+        const controller = new AbortController();
+        replayAbortRef.current = controller;
         try {
-          const replay = await fetchReplay(replayDate);
+          const replay = await fetchReplay(replayDate, controller.signal);
           setReplayBanner(replay.banner || 'REPLAY — historical data, not live');
           setRiskZones(Array.isArray(replay.zones) ? replay.zones : []);
           setRiskZonesError('');
@@ -114,6 +121,7 @@ export default function App() {
           setZoneWeather([]);
           setPrepositionSuggestions([]);
         } catch (err) {
+          if (err.name === 'AbortError') return;
           console.error(err);
           setRiskZonesError(err.message || 'Replay failed');
           setReplayBanner('REPLAY — historical data, not live');
@@ -176,6 +184,7 @@ export default function App() {
         setPrepositionSuggestions([]);
       }
       refreshOperationsPlan().then(setOperationsPlan).catch(err => console.error(err));
+      setLastUpdated(new Date());
     } finally {
       setLoadingRisk(false);
     }
@@ -217,9 +226,51 @@ export default function App() {
   useEffect(() => {
     if (!entered) return undefined;
     loadData();
-    const interval = setInterval(loadData, 45000);
-    return () => clearInterval(interval);
-  }, [entered, loadData]);
+    if (replayMode) return undefined;
+
+    let intervalId = null;
+    const startPolling = () => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(() => {
+        if (!document.hidden) loadData();
+      }, 300000); // 5-minute polling in Live mode
+    };
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      } else {
+        loadData();
+        startPolling();
+      }
+    };
+    if (!document.hidden) startPolling();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [entered, replayMode, loadData]);
+
+  // Replay Play/Pause: step 1 day every 3 seconds
+  useEffect(() => {
+    if (!replayMode || !replayPlaying) return undefined;
+    const timer = setInterval(() => {
+      setReplayDate((prev) => {
+        const next = new Date(`${prev}T00:00:00Z`);
+        next.setUTCDate(next.getUTCDate() + 1);
+        const nextStr = next.toISOString().slice(0, 10);
+        if (nextStr > yesterdayStr) {
+          setReplayPlaying(false);
+          return prev;
+        }
+        return nextStr;
+      });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [replayMode, replayPlaying, yesterdayStr]);
 
   const handleRegisterUnit = async (unitData) => {
     await registerUnit(unitData);
@@ -411,22 +462,50 @@ export default function App() {
               </button>
             </div>
           )}
-          <div className="hidden md:flex items-center gap-2 rounded-[6px] border border-[#E2E8F0] px-2 h-[36px] bg-[#F8FAFC]">
-            <label className="flex items-center gap-1.5 text-[12px] text-[#334155]">
-              <input
-                type="checkbox"
-                checked={replayMode}
-                onChange={(event) => setReplayMode(event.target.checked)}
-              />
-              Replay
-            </label>
-            <input
-              type="date"
-              value={replayDate}
-              onChange={(event) => setReplayDate(event.target.value)}
-              disabled={!replayMode}
-              className="h-[28px] rounded-[4px] border border-[#E2E8F0] bg-white px-1.5 text-[12px] text-[#0F172A] disabled:opacity-50"
-            />
+          <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]">
+              <button
+                type="button"
+                onClick={() => { setReplayPlaying(false); setReplayMode(false); }}
+                aria-pressed={!replayMode}
+                className={`h-7 px-2.5 rounded-[4px] text-[12px] font-medium transition ${
+                  !replayMode ? 'bg-white text-[#0F172A] shadow-xs font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+              >
+                Live
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplayMode(true)}
+                aria-pressed={replayMode}
+                className={`h-7 px-2.5 rounded-[4px] text-[12px] font-medium transition ${
+                  replayMode ? 'bg-white text-[#92400E] shadow-xs font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+              >
+                Replay
+              </button>
+            </div>
+            {replayMode && (
+              <>
+                <input
+                  type="date"
+                  value={replayDate}
+                  max={yesterdayStr}
+                  onChange={(event) => {
+                    setReplayPlaying(false);
+                    setReplayDate(event.target.value);
+                  }}
+                  className="h-[32px] rounded-[6px] border border-[#E2E8F0] bg-white px-2 text-[12px] text-[#0F172A]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setReplayPlaying((prev) => !prev)}
+                  className="h-[32px] px-2.5 rounded-[6px] border border-[#E2E8F0] bg-white text-[12px] font-medium text-[#0F172A] hover:bg-[#F8FAFC]"
+                >
+                  {replayPlaying ? 'Pause' : 'Play'}
+                </button>
+              </>
+            )}
           </div>
 
           {/* Language Switch: Segmented control 14px */}
@@ -503,9 +582,23 @@ export default function App() {
           </div>
         </div>
       </header>
-      {replayMode && (
-        <div className="shrink-0 border-b border-[#F59E0B] bg-[#FFFBEB] px-4 py-2 text-[13px] font-semibold tracking-wide text-[#92400E]">
-          {replayBanner || 'REPLAY — historical data, not live'} · {replayDate}
+      {replayMode ? (
+        <div className="shrink-0 border-b border-[#F59E0B] bg-[#FFFBEB] px-4 py-1.5 flex items-center justify-between text-[12px] font-semibold tracking-wide text-[#92400E]">
+          <span>{replayBanner || 'REPLAY — historical data, not live'} · {replayDate}</span>
+          <button
+            type="button"
+            onClick={() => { setReplayPlaying(false); setReplayMode(false); }}
+            className="px-2.5 py-1 rounded-[4px] bg-white border border-[#F59E0B] text-[#92400E] hover:bg-[#FEF3C7] text-[12px] font-medium"
+          >
+            Back to Live
+          </button>
+        </div>
+      ) : (
+        <div className="shrink-0 border-b border-[#E2E8F0] bg-[#F8FAFC] px-4 py-1 text-[11px] font-medium text-[#475569] flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+          <span>
+            LIVE, updated {lastUpdated ? lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '—'}
+          </span>
         </div>
       )}
       {/* ── Main Layout: Sidebar + Viewport ── */}
@@ -983,8 +1076,8 @@ export default function App() {
                             <span className="text-[#047857]">·</span>
                             <span className="font-semibold text-[#065F46]">{rainPrediction.open_meteo_precip_prob_pct}% precip. prob.</span>
                           </div>
-                          <div className="text-[11px] text-[#94A3B8] self-center">
-                            model v{rainPrediction.version}
+                          <div className="w-full text-[11px] text-[#64748B]">
+                            ML model v{rainPrediction.version}, trained {rainPrediction.trained_at ? new Date(rainPrediction.trained_at).toISOString().slice(0, 10) : rainPrediction.version}, 2024+ test ROC-AUC {rainPrediction.test_roc_auc != null ? Number(rainPrediction.test_roc_auc).toFixed(3) : '—'}
                           </div>
                         </div>
                       ) : (

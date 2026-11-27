@@ -314,8 +314,8 @@ export async function refreshOperationsPlan() {
   return payload;
 }
 
-export async function fetchReplay(date) {
-  const res = await apiFetch(`/replay?date=${encodeURIComponent(date)}`);
+export async function fetchReplay(date, signal = undefined) {
+  const res = await apiFetch(`/replay?date=${encodeURIComponent(date)}`, signal ? { signal } : {});
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail = payload.detail;

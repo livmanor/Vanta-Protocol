@@ -1,4 +1,4 @@
-"""GET /api/predict/rain — live ML rainfall next-day forecast."""
+"""GET /api/predict/rain and /api/predict/rain/scorecard."""
 from __future__ import annotations
 
 import logging
@@ -6,6 +6,7 @@ import logging
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from backend.db import get_rain_forecast_scorecard
 from backend.services.ml_model import predict_live
 
 router = APIRouter(prefix="/api", tags=["Predict"])
@@ -16,8 +17,7 @@ logger = logging.getLogger("vanta.predict_rain")
 async def rain_prediction():
     """Return next-day rainfall prediction from the trained ML model.
 
-    Cached for ~1 hour.  Returns 503 (not an error — just not trained) when
-    the model bundle does not exist so the UI can fall back gracefully.
+    Cached for ~1 hour. Returns 503 when the model bundle does not exist.
     """
     result = await predict_live()
     if result is None:
@@ -29,3 +29,9 @@ async def rain_prediction():
             },
         )
     return {**result, "trained": True}
+
+
+@router.get("/predict/rain/scorecard")
+async def rain_prediction_scorecard():
+    """Return logged prediction counts and MAE comparison (no winner before 30 days)."""
+    return await get_rain_forecast_scorecard()

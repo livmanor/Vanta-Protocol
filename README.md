@@ -306,7 +306,47 @@ Control-room endpoints require a session when `AUTH_REQUIRED=true`. Health and S
 - Text-only CAP area matches without an LGD district code remain unverified and do not raise the operations floor.
 - Estimates, risk levels, and triage rankings are model outputs, not confirmed facts. Review their source and explanation.
 - Current label status: **32 sourced positives / 5 events / 0 verified negatives**. There is no fitted binary flood classifier; evaluation is event-day only.
-- **Next-day rainfall forecaster (separate from flood classification):** `scripts/train_rainfall_forecaster.py` trains a `GradientBoostingRegressor` (log1p mm) and `GradientBoostingClassifier` (heavy rain ≥ 15.6 mm) on Open-Meteo ERA5 archive data for Hyderabad (2015-01-01 to 2026-11-22, 4,313 feature rows; train < 2024-01-01, test ≥ 2024-01-01). It predicts next-day rainfall and heavy-rain probability only—**not** urban flooding—and is saved to `models/rainfall/model.joblib` only when it beats persistence and day-of-year climatology baselines (test MAE `1.921 mm` vs `2.790 mm` persistence / `2.593 mm` climatology; PR-AUC `0.1389` vs `0.0595` climatology; Brier `0.0351` vs `0.0368`; ROC-AUC `0.8376`). Limitations: trained on ERA5 reanalysis rather than live forecast-API history, so train/serve source differences apply; urban cloudbursts at sub-daily/micro-scale remain hard to predict from daily grid totals. Retrain with `python scripts/train_rainfall_forecaster.py`.
+- **Next-day rainfall forecaster (separate from flood classification):** `scripts/train_rainfall_forecaster.py` trains a `GradientBoostingRegressor` (log1p mm) and `GradientBoostingClassifier` (heavy rain ≥ 15.6 mm) on Open-Meteo ERA5 archive data for Hyderabad (lat 17.385, lon 78.4867), covering 2015-01-01 to 2026-11-22 (4,313 feature rows after lag engineering; train < 2024-01-01, test ≥ 2024-01-01 with 38 heavy-rain days). It predicts **next-day rainfall and heavy-rain probability only — not urban flooding.** The model is saved to `models/rainfall/model.joblib` only when it beats *both* persistence and day-of-year climatology MAE **and** climatology PR-AUC on the held-out test set.
+
+  **Test metrics vs. baselines (pre-2024 model evaluated on 2024+ test set):**
+
+  | Metric | Model | Persistence | Climatology |
+  |:--|:--|:--|:--|
+  | MAE (all days) | **1.921 mm** | 2.790 mm | 2.593 mm |
+  | MAE (heavy days only, ≥15.6 mm) | 19.325 mm | — | 18.914 mm |
+  | PR-AUC (heavy rain) | **0.1389** (95% CI: 0.079–0.230) | — | 0.0595 |
+  | Brier score | **0.0351** | — | 0.0368 |
+  | ROC-AUC | **0.8376** (95% CI: 0.774–0.906) | — | — |
+
+  **5-fold expanding-window CV (full history):** MAE 2.020 ± 0.386 mm, PR-AUC 0.186 ± 0.067, ROC-AUC 0.849 ± 0.021.
+
+  **Threshold table (test set, classifier):**
+
+  | Threshold | Precision | Recall | F1 | Warnings | TP | FP | Missed |
+  |:--|:--|:--|:--|:--|:--|:--|:--|
+  | 0.05 | 0.134 | 0.474 | 0.209 | 134 | 18 | 116 | 20 |
+  | 0.10 | 0.192 | 0.368 | 0.252 | 73 | 14 | 59 | 24 |
+  | 0.20 | 0.282 | 0.289 | 0.286 | 38 | 11 | 27 | 27 |
+  | 0.30 | 0.333 | 0.132 | 0.189 | 15 | 5 | 10 | 33 |
+  | 0.50 | 0.333 | 0.053 | 0.091 | 6 | 2 | 4 | 36 |
+
+  **Known limitations:**
+  - Trained on ERA5 reanalysis (`archive-api.open-meteo.com`); live inference fetches recent days from `api.open-meteo.com/v1/forecast` — minor train/serve source differences apply.
+  - `precipitation_probability_max` is NaN in archive (filled as 0 during training) but populated (~25%) in the live forecast API — a known feature mismatch; documented in `docs/MODEL_TRAINING_GUIDE.md`.
+  - Heavy-day MAE (19.3 mm) is marginally worse than climatology (18.9 mm) — the classifier catches events, the regressor under-estimates peak amounts.
+  - Daily grid totals cannot resolve sub-daily urban cloudbursts.
+  - The model is refit on all data before saving; reported metrics come from the pre-2024 split only (documented in `metrics.json`).
+
+  **Commands:**
+  ```bash
+  # Retrain
+  python scripts/train_rainfall_forecaster.py
+  # Evaluate without touching the saved model
+  python -m scripts.evaluate_rainfall
+  # Fill actuals and compute held-out MAE
+  python scripts/fill_actuals.py
+  ```
+  **API endpoints:** `GET /api/predict/rain` · `GET /api/predict/rain/scorecard` (requires ≥ 30 logged days).
 - Missing rainfall does not become zero rainfall or nominal risk. Empty units and incidents stay empty until entered from real inputs.
 
 See the [data policy](agent_rules.md), [known limitations](docs/KNOWN_LIMITATIONS.md), and [model report](docs/model_report.md).
