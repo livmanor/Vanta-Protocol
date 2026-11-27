@@ -83,3 +83,24 @@ python scripts/train_model.py --data data/hyderabad_events.csv --out models/floo
    - Expected Calibration Error (ECE)
    - Confusion Matrix
 4. **Model Gating:** The model is saved to `models/flood/` only if PR-AUC exceeds the rule-based baseline on the holdout fold.
+
+---
+
+## 6. Next-Day Rainfall Forecaster (Independent of Flood Classification)
+
+While the binary **flood** classifier remains gated on $\ge 10$ verified non-flood negatives, Vanta includes a separate **next-day rainfall forecaster** (`scripts/train_rainfall_forecaster.py`, served via `backend/services/ml_model.py` and `GET /api/predict/rain`).
+
+- **What it predicts:** Next-day daily precipitation (`rain_next_mm`, via `GradientBoostingRegressor` on `log1p(mm)`) and the probability of heavy rain $\ge 15.6\text{ mm/day}$ (`p_heavy`, via `GradientBoostingClassifier`). **It does NOT predict flooding or waterlogging.** Earthquakes also remain observation-only.
+- **Training data & period:** Real daily weather from Open-Meteo ERA5 archive (`https://archive-api.open-meteo.com/v1/archive`, fallback from `historical-forecast-api.open-meteo.com`) for Hyderabad (`17.385, 78.4867`), covering `2015-01-01` to `2026-11-22` (4,344 raw days; 4,313 rows after lag feature engineering).
+- **Time-based split:** Train on data before `2024-01-01` (3,257 days; 127 heavy days), test on `2024-01-01` onward (1,056 days; 38 heavy days). Lag features use `shift(1)` so no future data leaks.
+- **Test metrics vs. baselines:**
+  - **MAE:** `1.921 mm` (model) vs. `2.790 mm` (persistence) and `2.593 mm` (day-of-year climatology)
+  - **Heavy-rain PR-AUC:** `0.1389` (model) vs. `0.0595` (climatology)
+  - **Heavy-rain Brier score:** `0.0351` (model) vs. `0.0368` (climatology)
+  - **Heavy-rain ROC-AUC:** `0.8376`
+- **Limitations:** Trained on ERA5 reanalysis (`archive-api.open-meteo.com`) because `historical-forecast-api.open-meteo.com` rejected the full 2015–2026 range (HTTP 400), whereas live inference fetches recent days from `api.open-meteo.com/v1/forecast`—so minor train/serve source differences apply. Daily grid totals also under-detect localized short urban cloudbursts.
+- **Retrain command:**
+  ```bash
+  python scripts/train_rainfall_forecaster.py
+  ```
+  The bundle (`models/rainfall/model.joblib`) and `models/rainfall/metrics.json` are written only if the model beats both persistence and climatology MAE on the test set.

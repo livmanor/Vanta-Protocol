@@ -1,0 +1,21 @@
+{
+  "model_mae_mm": 1.9211,
+  "persistence_mae_mm": 2.7896,
+  "climatology_mae_mm": 2.5926,
+  "model_pr_auc": 0.1389,
+  "climatology_pr_auc": 0.0595,
+  "model_brier": 0.0351,
+  "climatology_brier": 0.0368,
+  "model_roc_auc": 0.8376,
+  "test_start": "2024-01-01",
+  "train_heavy_days": 127,
+  "train_not_heavy_days": 3130,
+  "test_heavy_days": 38,
+  "test_not_heavy_days": 1018,
+  "heavy_mm": 15.6,
+  "train_rows": 3257,
+  "test_rows": 1056,
+  "data_source": "https://archive-api.open-meteo.com/v1/archive",
+  "actual_data_start": "2015-01-01",
+  "actual_data_end": "2026-11-22"
+}

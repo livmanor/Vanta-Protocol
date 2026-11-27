@@ -305,7 +305,8 @@ Control-room endpoints require a session when `AUTH_REQUIRED=true`. Health and S
 - Earthquake observations are not earthquake predictions.
 - Text-only CAP area matches without an LGD district code remain unverified and do not raise the operations floor.
 - Estimates, risk levels, and triage rankings are model outputs, not confirmed facts. Review their source and explanation.
-- Current label status: **32 sourced positives / 5 events / 0 verified negatives**. There is no fitted binary classifier; evaluation is event-day only.
+- Current label status: **32 sourced positives / 5 events / 0 verified negatives**. There is no fitted binary flood classifier; evaluation is event-day only.
+- **Next-day rainfall forecaster (separate from flood classification):** `scripts/train_rainfall_forecaster.py` trains a `GradientBoostingRegressor` (log1p mm) and `GradientBoostingClassifier` (heavy rain ≥ 15.6 mm) on Open-Meteo ERA5 archive data for Hyderabad (2015-01-01 to 2026-11-22, 4,313 feature rows; train < 2024-01-01, test ≥ 2024-01-01). It predicts next-day rainfall and heavy-rain probability only—**not** urban flooding—and is saved to `models/rainfall/model.joblib` only when it beats persistence and day-of-year climatology baselines (test MAE `1.921 mm` vs `2.790 mm` persistence / `2.593 mm` climatology; PR-AUC `0.1389` vs `0.0595` climatology; Brier `0.0351` vs `0.0368`; ROC-AUC `0.8376`). Limitations: trained on ERA5 reanalysis rather than live forecast-API history, so train/serve source differences apply; urban cloudbursts at sub-daily/micro-scale remain hard to predict from daily grid totals. Retrain with `python scripts/train_rainfall_forecaster.py`.
 - Missing rainfall does not become zero rainfall or nominal risk. Empty units and incidents stay empty until entered from real inputs.
 
 See the [data policy](agent_rules.md), [known limitations](docs/KNOWN_LIMITATIONS.md), and [model report](docs/model_report.md).
