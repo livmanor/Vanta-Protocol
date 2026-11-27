@@ -1255,9 +1255,6 @@ export default function App() {
           {/* RADAR / ATMOSPHERIC OVERLAYS VIEW — View mode */}
           {mode === 'view' && view === 'windy' && (
             <div className="absolute inset-0 z-[450] flex flex-col bg-[#F8FAFC]">
-              <div className="shrink-0 border-b border-[#E2E8F0] bg-white px-4 py-2 text-[12px] text-[#64748B]">
-                Cross-check only. Not an input to the risk score.
-              </div>
               <div className="flex-1 min-h-0">
                 <WindyOverlay />
               </div>
