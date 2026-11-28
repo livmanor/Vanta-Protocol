@@ -93,6 +93,16 @@ async def init_db():
             zone_filter TEXT,
             points_json TEXT NOT NULL
         )""")
+        await db.execute("""CREATE TABLE IF NOT EXISTS rain_forecast_log (
+            for_date TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            ml_rain_mm REAL NOT NULL,
+            ml_p_heavy REAL NOT NULL,
+            open_meteo_rain_mm REAL NOT NULL,
+            open_meteo_precip_prob_pct REAL NOT NULL,
+            actual_rain_mm REAL,
+            actual_filled_at TEXT
+        )""")
         from backend.auth.sessions import ensure_auth_tables
         from backend.auth.citizens import ensure_citizen_tables, ensure_upload_dir
         from backend.data_sources.cap_alerts import ensure_cap_table
@@ -325,4 +335,77 @@ async def save_grid_elevations(rows: list) -> None:
             rows,
         )
         await db.commit()
+
+
+async def upsert_rain_forecast_log(
+    for_date: str,
+    ml_rain_mm: float,
+    ml_p_heavy: float,
+    open_meteo_rain_mm: float,
+    open_meteo_precip_prob_pct: float,
+) -> None:
+    """Insert or update a single day's forecast log entry (one row per for_date)."""
+    now_iso = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO rain_forecast_log (
+                for_date, created_at, ml_rain_mm, ml_p_heavy,
+                open_meteo_rain_mm, open_meteo_precip_prob_pct
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(for_date) DO UPDATE SET
+                created_at = excluded.created_at,
+                ml_rain_mm = excluded.ml_rain_mm,
+                ml_p_heavy = excluded.ml_p_heavy,
+                open_meteo_rain_mm = excluded.open_meteo_rain_mm,
+                open_meteo_precip_prob_pct = excluded.open_meteo_precip_prob_pct
+            """,
+            (for_date, now_iso, ml_rain_mm, ml_p_heavy, open_meteo_rain_mm, open_meteo_precip_prob_pct),
+        )
+        await db.commit()
+
+
+async def get_rain_forecast_scorecard() -> dict:
+    """Return logged forecast counts, MAE comparison, and winner (only if >= 30 days)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT for_date, ml_rain_mm, open_meteo_rain_mm, actual_rain_mm "
+            "FROM rain_forecast_log ORDER BY for_date ASC"
+        ) as cursor:
+            rows = await cursor.fetchall()
+
+    days_logged = len(rows)
+    filled = [r for r in rows if r["actual_rain_mm"] is not None]
+    days_with_actuals = len(filled)
+
+    mae_comparison = None
+    if days_with_actuals > 0:
+        ml_err = [abs(float(r["ml_rain_mm"]) - float(r["actual_rain_mm"])) for r in filled]
+        om_err = [abs(float(r["open_meteo_rain_mm"]) - float(r["actual_rain_mm"])) for r in filled]
+        pers_err = [
+            abs(float(filled[idx - 1]["actual_rain_mm"]) - float(filled[idx]["actual_rain_mm"]))
+            for idx in range(1, len(filled))
+        ]
+        mae_comparison = {
+            "ml_mae_mm": round(sum(ml_err) / len(ml_err), 4),
+            "open_meteo_mae_mm": round(sum(om_err) / len(om_err), 4),
+            "persistence_mae_mm": round(sum(pers_err) / len(pers_err), 4) if pers_err else None,
+        }
+
+    sufficient = days_logged >= 30 and days_with_actuals >= 30
+    winner = None
+    if sufficient and mae_comparison is not None:
+        ml_m = mae_comparison["ml_mae_mm"]
+        om_m = mae_comparison["open_meteo_mae_mm"]
+        winner = "ml" if ml_m < om_m else ("open_meteo" if om_m < ml_m else "tie")
+
+    return {
+        "days_logged": days_logged,
+        "days_with_actuals": days_with_actuals,
+        "mae_comparison": mae_comparison,
+        "winner": winner,
+        "note": None if sufficient else "insufficient data",
+    }
 

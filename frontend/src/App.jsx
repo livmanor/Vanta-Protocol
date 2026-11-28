@@ -25,7 +25,8 @@ import {
   approvePrepositioning, generateEvacuationRoute, fetchBlockedRoads,
   reportBlockedRoad, fetchZoneWeather, fetchAgentStatus, runAgent, runAllAgents,
   refreshOperationsPlan, logoutOfficer, fetchCapAlerts, fetchReplay,
-  fetchUnifiedHazards, fetchCitizenReports, reviewCitizenReport
+  fetchUnifiedHazards, fetchCitizenReports, reviewCitizenReport,
+  fetchRainPrediction
 } from './api';
 
 const VIEW_NAV = [
@@ -63,6 +64,7 @@ export default function App() {
   const [operationsPlan, setOperationsPlan] = useState(null);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [capAlerts, setCapAlerts] = useState(null);
+  const [rainPrediction, setRainPrediction] = useState(null);
   const [portal, setPortal] = useState('landing'); // landing | citizen | officer
   const [citizenReports, setCitizenReports] = useState([]);
   const [selectedCitizenReport, setSelectedCitizenReport] = useState(null);
@@ -96,8 +98,12 @@ export default function App() {
   const [replayMode, setReplayMode] = useState(false);
   const [replayDate, setReplayDate] = useState('2024-09-01');
   const [replayBanner, setReplayBanner] = useState('');
+  const [replayPlaying, setReplayPlaying] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const newMenuRef = useRef(null);
+  const replayAbortRef = useRef(null);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const seenAlertIdsRef = useRef(null);
   const modalOpenRef = useRef(false);
 
@@ -150,8 +156,11 @@ export default function App() {
     setLoadingRisk(true);
     try {
       if (replayMode) {
+        if (replayAbortRef.current) replayAbortRef.current.abort();
+        const controller = new AbortController();
+        replayAbortRef.current = controller;
         try {
-          const replay = await fetchReplay(replayDate);
+          const replay = await fetchReplay(replayDate, controller.signal);
           setReplayBanner(replay.banner || 'REPLAY — historical data, not live');
           setRiskZones(Array.isArray(replay.zones) ? replay.zones : []);
           setRiskZonesError('');
@@ -159,6 +168,7 @@ export default function App() {
           setZoneWeather([]);
           setPrepositionSuggestions([]);
         } catch (err) {
+          if (err.name === 'AbortError') return;
           console.error(err);
           setRiskZonesError(err.message || 'Replay failed');
           setReplayBanner('REPLAY — historical data, not live');
@@ -174,6 +184,8 @@ export default function App() {
           processIncomingAlerts(alerts);
         })
         .catch(err => console.error(err));
+      // ML rain prediction (cached 1 h server-side; 503 → null = not trained).
+      fetchRainPrediction().then(setRainPrediction).catch(err => console.error(err));
 
       const loadZones = async () => {
         try {
@@ -224,6 +236,7 @@ export default function App() {
         setPrepositionSuggestions([]);
       }
       refreshOperationsPlan().then(setOperationsPlan).catch(err => console.error(err));
+      setLastUpdated(new Date());
     } finally {
       setLoadingRisk(false);
     }
@@ -328,9 +341,51 @@ export default function App() {
   useEffect(() => {
     if (!entered) return undefined;
     loadData();
-    const interval = setInterval(loadData, 45000);
-    return () => clearInterval(interval);
-  }, [entered, loadData]);
+    if (replayMode) return undefined;
+
+    let intervalId = null;
+    const startPolling = () => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(() => {
+        if (!document.hidden) loadData();
+      }, 300000); // 5-minute polling in Live mode
+    };
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      } else {
+        loadData();
+        startPolling();
+      }
+    };
+    if (!document.hidden) startPolling();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [entered, replayMode, loadData]);
+
+  // Replay Play/Pause: step 1 day every 3 seconds
+  useEffect(() => {
+    if (!replayMode || !replayPlaying) return undefined;
+    const timer = setInterval(() => {
+      setReplayDate((prev) => {
+        const next = new Date(`${prev}T00:00:00Z`);
+        next.setUTCDate(next.getUTCDate() + 1);
+        const nextStr = next.toISOString().slice(0, 10);
+        if (nextStr > yesterdayStr) {
+          setReplayPlaying(false);
+          return prev;
+        }
+        return nextStr;
+      });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [replayMode, replayPlaying, yesterdayStr]);
 
   const handleRegisterUnit = async (unitData) => {
     await registerUnit(unitData);
@@ -440,8 +495,8 @@ export default function App() {
   const allWeatherLive = riskZones.length > 0 && riskZones.every(zone => zone.explanation?.weather_status === 'live');
   const alertTone = maxRisk === null ? { dot: '#D97706', label: 'Data unavailable' } :
     maxRisk >= 4 ? { dot: '#DC2626', label: 'Critical' } :
-    maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
-    { dot: '#16A34A', label: 'Nominal' };
+      maxRisk === 3 ? { dot: '#D97706', label: 'Elevated' } :
+        { dot: '#16A34A', label: 'Nominal' };
 
   const pendingApprovals = prepositionSuggestions.length;
   const aiEngineOnline = Boolean(agentStatus?.configured || agentStatus?.groq_configured);
@@ -626,22 +681,50 @@ export default function App() {
               </button>
             </div>
           )}
-          <div className="hidden md:flex items-center gap-2 rounded-[6px] border border-[#E2E8F0] px-2 h-[36px] bg-[#F8FAFC]">
-            <label className="flex items-center gap-1.5 text-[12px] text-[#334155]">
-              <input
-                type="checkbox"
-                checked={replayMode}
-                onChange={(event) => setReplayMode(event.target.checked)}
-              />
-              Replay
-            </label>
-            <input
-              type="date"
-              value={replayDate}
-              onChange={(event) => setReplayDate(event.target.value)}
-              disabled={!replayMode}
-              className="h-[28px] rounded-[4px] border border-[#E2E8F0] bg-white px-1.5 text-[12px] text-[#0F172A] disabled:opacity-50"
-            />
+          <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]">
+              <button
+                type="button"
+                onClick={() => { setReplayPlaying(false); setReplayMode(false); }}
+                aria-pressed={!replayMode}
+                className={`h-7 px-2.5 rounded-[4px] text-[12px] font-medium transition ${
+                  !replayMode ? 'bg-white text-[#0F172A] shadow-xs font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+              >
+                Live
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplayMode(true)}
+                aria-pressed={replayMode}
+                className={`h-7 px-2.5 rounded-[4px] text-[12px] font-medium transition ${
+                  replayMode ? 'bg-white text-[#92400E] shadow-xs font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+              >
+                Replay
+              </button>
+            </div>
+            {replayMode && (
+              <>
+                <input
+                  type="date"
+                  value={replayDate}
+                  max={yesterdayStr}
+                  onChange={(event) => {
+                    setReplayPlaying(false);
+                    setReplayDate(event.target.value);
+                  }}
+                  className="h-[32px] rounded-[6px] border border-[#E2E8F0] bg-white px-2 text-[12px] text-[#0F172A]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setReplayPlaying((prev) => !prev)}
+                  className="h-[32px] px-2.5 rounded-[6px] border border-[#E2E8F0] bg-white text-[12px] font-medium text-[#0F172A] hover:bg-[#F8FAFC]"
+                >
+                  {replayPlaying ? 'Pause' : 'Play'}
+                </button>
+              </>
+            )}
           </div>
 
           {/* Language Switch: Segmented control 14px */}
@@ -654,11 +737,10 @@ export default function App() {
                 key={code}
                 onClick={() => setLanguage(code)}
                 aria-pressed={language === code}
-                className={`h-7 px-2.5 rounded-[4px] text-[14px] font-medium transition ${
-                  language === code
+                className={`h-7 px-2.5 rounded-[4px] text-[14px] font-medium transition ${language === code
                     ? 'bg-white text-[#0F172A] shadow-xs font-semibold'
                     : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -719,9 +801,23 @@ export default function App() {
           </div>
         </div>
       </header>
-      {replayMode && (
-        <div className="shrink-0 border-b border-[#F59E0B] bg-[#FFFBEB] px-4 py-2 text-[13px] font-semibold tracking-wide text-[#92400E]">
-          {replayBanner || 'REPLAY — historical data, not live'} · {replayDate}
+      {replayMode ? (
+        <div className="shrink-0 border-b border-[#F59E0B] bg-[#FFFBEB] px-4 py-1.5 flex items-center justify-between text-[12px] font-semibold tracking-wide text-[#92400E]">
+          <span>{replayBanner || 'REPLAY — historical data, not live'} · {replayDate}</span>
+          <button
+            type="button"
+            onClick={() => { setReplayPlaying(false); setReplayMode(false); }}
+            className="px-2.5 py-1 rounded-[4px] bg-white border border-[#F59E0B] text-[#92400E] hover:bg-[#FEF3C7] text-[12px] font-medium"
+          >
+            Back to Live
+          </button>
+        </div>
+      ) : (
+        <div className="shrink-0 border-b border-[#E2E8F0] bg-[#F8FAFC] px-4 py-1 text-[11px] font-medium text-[#475569] flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+          <span>
+            LIVE, updated {lastUpdated ? lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '—'}
+          </span>
         </div>
       )}
       {alertBanner && (
@@ -759,11 +855,10 @@ export default function App() {
                 key={id}
                 onClick={() => setView(id)}
                 title={label}
-                className={`relative h-[36px] rounded-[6px] px-3 flex items-center gap-3 transition text-left ${
-                  view === id
+                className={`relative h-[36px] rounded-[6px] px-3 flex items-center gap-3 transition text-left ${view === id
                     ? 'bg-[#EEF2FF] text-[#4338CA] font-medium'
                     : 'text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
-                }`}
+                  }`}
               >
                 {view === id && (
                   <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-[#4338CA]" />
@@ -869,11 +964,10 @@ export default function App() {
                   <button
                     key={id}
                     onClick={() => setActiveTab(id)}
-                    className={`relative py-3 font-medium transition flex items-center gap-1.5 shrink-0 ${
-                      activeTab === id
+                    className={`relative py-3 font-medium transition flex items-center gap-1.5 shrink-0 ${activeTab === id
                         ? 'text-[#4338CA] font-semibold'
                         : 'text-[#64748B] hover:text-[#0F172A]'
-                    }`}
+                      }`}
                   >
                     <span>{label}</span>
                     {badge > 0 && (
@@ -928,9 +1022,8 @@ export default function App() {
                         <button
                           key={z.id}
                           onClick={() => setSelectedZone(z)}
-                          className={`w-full min-h-[40px] py-2 px-1 text-left flex items-center justify-between transition hover:bg-[#F8FAFC] ${
-                            selectedZone?.id === z.id ? 'bg-[#EEF2FF]/60' : ''
-                          }`}
+                          className={`w-full min-h-[40px] py-2 px-1 text-left flex items-center justify-between transition hover:bg-[#F8FAFC] ${selectedZone?.id === z.id ? 'bg-[#EEF2FF]/60' : ''
+                            }`}
                         >
                           <div className="min-w-0 pr-2">
                             <div className="text-[14px] font-medium text-[#0F172A] truncate">{z.name}</div>
@@ -981,9 +1074,8 @@ export default function App() {
                               key={report.id}
                               type="button"
                               onClick={() => setSelectedCitizenReport(report)}
-                              className={`text-left rounded-[6px] border px-2.5 py-2 ${
-                                selectedCitizenReport?.id === report.id ? 'border-[#EA580C] bg-white' : 'border-[#FDBA74] bg-white/70'
-                              }`}
+                              className={`text-left rounded-[6px] border px-2.5 py-2 ${selectedCitizenReport?.id === report.id ? 'border-[#EA580C] bg-white' : 'border-[#FDBA74] bg-white/70'
+                                }`}
                             >
                               <div className="flex items-center justify-between gap-2 text-[11px]">
                                 <span className="font-semibold uppercase text-[#9A3412]">{report.phase}</span>
@@ -1201,6 +1293,41 @@ export default function App() {
                         <span>·</span>
                         <span>{maxRisk === null ? alertTone.label : `${alertTone.label} risk`} · {riskZonesError && riskZones.length === 0 ? 'Hotspot data unavailable' : `${riskZones.length} hotspots monitored`}</span>
                       </div>
+
+                      {/* ML Rainfall Forecast Banner */}
+                      {rainPrediction ? (
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          {/* Our ML model */}
+                          <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1.5 text-[12px]">
+                            <span className="w-2 h-2 rounded-full bg-[#3B82F6] shrink-0" />
+                            <span className="font-semibold text-[#1E40AF]">ML forecast</span>
+                            <span className="text-[#1D4ED8]">for {rainPrediction.for_date}:</span>
+                            <span className="font-semibold text-[#1E40AF]">{rainPrediction.rain_next_mm} mm</span>
+                            <span className="text-[#1D4ED8]">·</span>
+                            <span className="font-semibold text-[#1E40AF]">{(rainPrediction.p_heavy * 100).toFixed(0)}% heavy-rain chance</span>
+                            {rainPrediction.p_heavy >= 0.5 && (
+                              <span className="ml-1 px-1.5 py-0.5 bg-[#DBEAFE] text-[#1D4ED8] rounded-[4px] font-semibold text-[11px]">HIGH</span>
+                            )}
+                          </div>
+                          {/* Open-Meteo native forecast */}
+                          <div className="inline-flex items-center gap-2 rounded-[6px] border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 text-[12px]">
+                            <span className="w-2 h-2 rounded-full bg-[#10B981] shrink-0" />
+                            <span className="font-semibold text-[#065F46]">Open-Meteo forecast</span>
+                            <span className="text-[#047857]">for {rainPrediction.for_date}:</span>
+                            <span className="font-semibold text-[#065F46]">{rainPrediction.open_meteo_rain_mm} mm</span>
+                            <span className="text-[#047857]">·</span>
+                            <span className="font-semibold text-[#065F46]">{rainPrediction.open_meteo_precip_prob_pct}% precip. prob.</span>
+                          </div>
+                          <div className="w-full text-[11px] text-[#64748B]">
+                            ML model v{rainPrediction.version}, trained {rainPrediction.trained_at ? new Date(rainPrediction.trained_at).toISOString().slice(0, 10) : rainPrediction.version}, 2024+ test ROC-AUC {rainPrediction.test_roc_auc != null ? Number(rainPrediction.test_roc_auc).toFixed(3) : '—'}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 inline-flex items-center gap-2 rounded-[6px] border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1.5 text-[12px] text-[#64748B]">
+                          <span className="w-2 h-2 rounded-full bg-[#CBD5E1] shrink-0" />
+                          ML model not trained yet — run <code className="px-1 bg-[#F1F5F9] rounded text-[11px]">scripts/train_rainfall_forecaster.py</code> to enable live forecasts
+                        </div>
+                      )}
                     </div>
 
                     {/* Underline Tab Bar (Clean, no redundant Tactical Map) */}

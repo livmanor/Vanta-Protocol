@@ -411,8 +411,8 @@ export async function refreshOperationsPlan() {
   return payload;
 }
 
-export async function fetchReplay(date) {
-  const res = await apiFetch(`/replay?date=${encodeURIComponent(date)}`);
+export async function fetchReplay(date, signal = undefined) {
+  const res = await apiFetch(`/replay?date=${encodeURIComponent(date)}`, signal ? { signal } : {});
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail = payload.detail;
@@ -632,4 +632,14 @@ export async function reviewCitizenReport(reportId, decision, createIncident = t
 
 export function citizenReportPhotoUrl(reportId) {
   return `${API_BASE}/citizen-reports/${encodeURIComponent(reportId)}/photo`;
+}
+
+export async function fetchRainPrediction() {
+  const res = await apiFetch('/predict/rain');
+  if (res.status === 503) {
+    // Model not trained yet — not an error.
+    return null;
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch rain prediction`);
+  return res.json();
 }
