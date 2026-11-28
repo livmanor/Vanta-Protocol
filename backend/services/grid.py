@@ -459,6 +459,12 @@ async def compute_risk_grid(as_of: Optional[date] = None) -> RiskGridResponse:
         lat_step, lon_step = grid_steps()
         res_km = spacing_km()
 
+        # ML advisory applies to live scoring only; replay stays historical.
+        ml_p_heavy = None
+        if as_of is None:
+            from backend.services.risk_engine import get_ml_p_heavy
+            ml_p_heavy = await get_ml_p_heavy()
+
         scored: List[RiskGridCell] = []
         for cell in cells:
             elevation = elevations.get(cell["id"])
@@ -481,6 +487,7 @@ async def compute_risk_grid(as_of: Optional[date] = None) -> RiskGridResponse:
                 low_lying=low_lying,
                 temperature_max_c=reading.get("temperature_max_c"),
                 apparent_temperature_max_c=reading.get("apparent_temperature_max_c"),
+                ml_p_heavy=ml_p_heavy,
             )
             status = reading["status"]
             if status == "live" and elevation is None:

@@ -222,7 +222,7 @@ async def officer_review_citizen_report(
         updated = await review_report(
             report_id,
             decision=body.decision,
-            officer_id=body.officer_id or officer.officer_id,
+            officer_id=officer.officer_id,
             linked_incident_id=linked_incident_id,
         )
     except KeyError as exc:
@@ -236,6 +236,6 @@ async def officer_review_citizen_report(
             "linked_incident_id": linked_incident_id,
             "citizen_id": report["citizen_id"],
         },
-        officer_id=body.officer_id or officer.officer_id,
+        officer_id=officer.officer_id,
     )
     return updated
