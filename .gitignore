@@ -19,5 +19,6 @@ coverage/
 data/labels/cache/
 data/citizen_uploads/
 frontend/public/demo-media/
+frontend/public/demo-media/.highlight-*.mp4
 demo/
 ultrademo-workspace/

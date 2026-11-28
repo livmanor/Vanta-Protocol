@@ -7,37 +7,49 @@ import { fetchAuthConfig, fetchCurrentOfficer, loginOfficer } from '../api';
 import VantaMark from './VantaMark';
 import Radar from './Radar.jsx';
 
+const DEMO_SRC = '/demo-media/Vanta-Protocol-UltraDemo.mp4';
+
+/* Short highlight beats only (~3–4s each) — never streams the full demo. */
 const DEMO_SLIDES = [
   {
     id: 'signin',
     label: 'Sign-in',
     caption: 'Officer credentials open the control room — no guest access to live operations.',
-    src: null,
-    placeholder: 'sign-in',
+    start: 8,
+    end: 11.5,
+    poster: null,
   },
   {
     id: 'alerts',
     label: 'Alerts',
     caption: 'CAP messages matched to Greater Hyderabad, with feed health visible.',
-    src: '/docs-gallery/cap-feed.png',
+    start: 38,
+    end: 41.5,
+    poster: '/docs-gallery/cap-feed.png',
   },
   {
     id: 'radar',
     label: 'Radar',
     caption: 'Atmospheric radar overlays for cross-check — never folded into a total risk score.',
-    src: '/docs-gallery/radar.png',
+    start: 74,
+    end: 77.5,
+    poster: '/docs-gallery/radar.png',
   },
   {
     id: 'agents',
     label: 'Agents',
     caption: 'Predict, Prepare, and Respond run on demand from the same operational context.',
-    src: '/docs-gallery/ai-briefing.png',
+    start: 114,
+    end: 117.5,
+    poster: '/docs-gallery/ai-briefing.png',
   },
   {
     id: 'map',
     label: 'Map',
     caption: 'Tactical map with independent hazard layers, hotspots, and incident context.',
-    src: '/docs-gallery/tactical-map.png',
+    start: 160,
+    end: 163.5,
+    poster: '/docs-gallery/tactical-map.png',
   },
 ];
 
@@ -86,24 +98,117 @@ function SignInPlaceholder() {
 
 function DemoHighlights() {
   const reducedMotion = usePrefersReducedMotion();
+  const videoRef = useRef(null);
+  const activeRef = useRef(0);
+  const advancingRef = useRef(false);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
   const slide = DEMO_SLIDES[active];
 
   useEffect(() => {
-    if (reducedMotion || paused) return undefined;
+    activeRef.current = active;
+  }, [active]);
+
+  useEffect(() => {
+    if (reducedMotion || videoFailed) return undefined;
+    const video = videoRef.current;
+    if (!video) return undefined;
+
+    const playClip = (index) => {
+      const clip = DEMO_SLIDES[index];
+      advancingRef.current = false;
+      try {
+        video.currentTime = clip.start;
+      } catch {
+        /* ignore seek before metadata */
+      }
+      const play = () => {
+        if (!paused) video.play().catch(() => {});
+      };
+      if (video.readyState >= 2) play();
+      else video.addEventListener('canplay', play, { once: true });
+    };
+
+    const goNext = () => {
+      if (advancingRef.current) return;
+      advancingRef.current = true;
+      const next = (activeRef.current + 1) % DEMO_SLIDES.length;
+      activeRef.current = next;
+      setActive(next);
+      setProgressKey((k) => k + 1);
+      playClip(next);
+    };
+
+    const onMeta = () => playClip(activeRef.current);
+    if (video.readyState >= 1) onMeta();
+    else video.addEventListener('loadedmetadata', onMeta, { once: true });
+
+    const onTime = () => {
+      if (paused) return;
+      const clip = DEMO_SLIDES[activeRef.current];
+      if (video.currentTime < clip.start - 0.05) {
+        video.currentTime = clip.start;
+        return;
+      }
+      if (video.currentTime >= clip.end - 0.05) goNext();
+    };
+
+    video.addEventListener('timeupdate', onTime);
+    video.addEventListener('ended', goNext);
+    const poll = window.setInterval(onTime, 100);
+    return () => {
+      video.removeEventListener('timeupdate', onTime);
+      video.removeEventListener('ended', goNext);
+      window.clearInterval(poll);
+    };
+  }, [reducedMotion, videoFailed, paused]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !ready || videoFailed || reducedMotion) return;
+    const clip = DEMO_SLIDES[active];
+    if (Math.abs(video.currentTime - clip.start) > 0.35 && !advancingRef.current) {
+      try {
+        video.currentTime = clip.start;
+      } catch {
+        /* ignore */
+      }
+    }
+    if (paused) video.pause();
+    else video.play().catch(() => {});
+  }, [active, ready, paused, videoFailed, reducedMotion]);
+
+  // Screenshot fallback when video is missing or reduced-motion is on.
+  useEffect(() => {
+    if (!(reducedMotion || videoFailed)) return undefined;
+    if (paused) return undefined;
     const id = window.setInterval(() => {
       setActive((prev) => (prev + 1) % DEMO_SLIDES.length);
       setProgressKey((k) => k + 1);
     }, 5000);
     return () => window.clearInterval(id);
-  }, [reducedMotion, paused, active]);
+  }, [reducedMotion, videoFailed, paused, active]);
 
   const select = (index) => {
+    advancingRef.current = false;
     setActive(index);
     setProgressKey((k) => k + 1);
+    const video = videoRef.current;
+    if (video && !videoFailed && !reducedMotion) {
+      try {
+        video.currentTime = DEMO_SLIDES[index].start;
+      } catch {
+        /* ignore */
+      }
+      if (!paused) video.play().catch(() => {});
+    }
   };
+
+  const showFallback = videoFailed || reducedMotion;
+  const clipDuration = Math.max(0.5, slide.end - slide.start);
 
   return (
     <div
@@ -112,7 +217,7 @@ function DemoHighlights() {
       onMouseLeave={() => setPaused(false)}
     >
       <div
-        className="inline-flex flex-wrap items-center gap-1 rounded-[10px] border border-[#E4E4E7] bg-white p-1 mb-4"
+        className="flex flex-wrap items-center gap-1 w-full sm:w-auto rounded-[10px] border border-[#E4E4E7] bg-white p-1 mb-4"
         role="tablist"
         aria-label="Demo highlights"
       >
@@ -135,22 +240,51 @@ function DemoHighlights() {
         })}
       </div>
 
-      <div className="relative w-full aspect-[16/9] rounded-[16px] border border-[#E4E4E7] bg-white overflow-hidden shadow-[0_24px_48px_-28px_rgba(0,0,0,0.35)]">
-        {slide.src ? (
-          <img
-            src={slide.src}
-            alt={slide.caption}
-            className="absolute inset-0 h-full w-full object-cover object-top"
-          />
-        ) : (
-          <SignInPlaceholder />
+      <div className="relative w-full aspect-[16/9] rounded-[16px] border border-[#E4E4E7] bg-[#0A0B0E] overflow-hidden shadow-[0_24px_48px_-28px_rgba(0,0,0,0.35)]">
+        {!showFallback && (
+          <>
+            {!ready && (
+              <div className="absolute inset-0 flex items-center justify-center text-[13px] text-[#A1A1AA] z-10">
+                Loading highlights…
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${ready ? 'opacity-100' : 'opacity-0'}`}
+              src={`${DEMO_SRC}#t=${DEMO_SLIDES[0].start},${DEMO_SLIDES[0].end}`}
+              muted
+              playsInline
+              autoPlay
+              preload="auto"
+              controls={false}
+              onLoadedData={() => setReady(true)}
+              onError={() => setVideoFailed(true)}
+              aria-label={`Demo highlight: ${slide.label}`}
+            />
+          </>
         )}
+
+        {showFallback && (
+          slide.poster ? (
+            <img
+              src={slide.poster}
+              alt={slide.caption}
+              className="absolute inset-0 h-full w-full object-cover object-top"
+            />
+          ) : (
+            <SignInPlaceholder />
+          )
+        )}
+
         {!reducedMotion && (
-          <div className="absolute left-0 right-0 bottom-0 h-[3px] bg-zinc-200/80">
+          <div className="absolute left-0 right-0 bottom-0 h-[3px] bg-white/15 z-10">
             <div
               key={progressKey}
-              className={`h-full bg-[#4338CA] landing-demo-progress ${paused ? '[animation-play-state:paused]' : ''}`}
-              style={{ animationPlayState: paused ? 'paused' : 'running' }}
+              className="h-full bg-[#4338CA] landing-demo-progress"
+              style={{
+                animationDuration: showFallback ? '5s' : `${clipDuration}s`,
+                animationPlayState: paused ? 'paused' : 'running',
+              }}
             />
           </div>
         )}
@@ -184,6 +318,41 @@ function ViewPreview() {
         />
       </div>
     </div>
+  );
+}
+
+const VANTA_TICKER = [
+  'Live CAP alerts',
+  'Public weather feeds',
+  'Predict',
+  'Prepare',
+  'Respond',
+  'Officer approval',
+  'Human in the loop',
+  'Greater Hyderabad',
+  'Tactical map',
+  'Atmospheric radar',
+  'Independent hazard scales',
+  'Citizen field reports',
+];
+
+function SequenceStrip() {
+  const reducedMotion = usePrefersReducedMotion();
+  const items = [...VANTA_TICKER, ...VANTA_TICKER];
+
+  return (
+    <section className="landing-seq-strip" aria-label="Vanta capabilities">
+      <div className="landing-seq-track-wrap">
+        <div className={`landing-seq-track${reducedMotion ? ' is-static' : ''}`}>
+          {items.map((label, index) => (
+            <span key={`${label}-${index}`} className="landing-seq-item">
+              <span className="landing-seq-diamond" aria-hidden="true" />
+              <span className="landing-seq-label">{label}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -309,14 +478,14 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
   return (
     <div className="landing-root font-sans fixed inset-0 z-[900] overflow-y-auto overflow-x-hidden">
       <header className="sticky top-0 z-30 h-16 border-b border-[#E4E4E7]/80 bg-[#F4F4F5]/85 backdrop-blur-xl">
-        <Container className="h-full flex items-center justify-between">
+        <div className="h-full w-full px-6 md:px-8 xl:px-10 flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             <VantaMark size={28} />
             <span className="landing-display text-[14px] font-semibold text-[#09090B] tracking-[-0.02em] truncate">
               Vanta Protocol
             </span>
           </div>
-          <nav className="flex items-center gap-1 sm:gap-2" aria-label="Primary">
+          <nav className="flex items-center gap-1 sm:gap-2 shrink-0 ml-auto" aria-label="Primary">
             <button
               type="button"
               onClick={() => onDocs?.()}
@@ -337,37 +506,24 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                 Sign in
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleEnter}
-              className="landing-focus ml-1 min-h-11 px-3.5 rounded-lg bg-[#09090B] text-white text-[13px] font-medium hover:bg-[#27272A] transition"
-            >
-              {t('landingHeroCta')}
-            </button>
           </nav>
-        </Container>
+        </div>
       </header>
 
       <main>
         {/* Hero */}
-        <section className="relative">
+        <section className="relative overflow-hidden">
           <div className="landing-hero-grid-bg pointer-events-none absolute inset-0" aria-hidden="true" />
-          <Container
-            className="relative flex flex-col justify-center py-12 md:py-16"
-            style={{ minHeight: 'min(820px, calc(100svh - 64px))' }}
-          >
-            <div className="grid grid-cols-1 min-[900px]:grid-cols-[55fr_45fr] gap-10 min-[900px]:gap-12 items-center">
-              <div className="relative z-10">
-                <span className="landing-rise inline-flex items-center min-h-8 px-3 rounded-full border border-[#E4E4E7] bg-white text-[12px] font-medium text-[#52525B]">
-                  Hyderabad hotspot pilot · CipherCop 2026
-                </span>
-                <h1 className="landing-rise landing-rise-delay-1 landing-h1 landing-display mt-5 text-[#09090B] max-w-[16ch]">
+          <Container className="relative landing-hero-shell">
+            <div className="landing-hero-grid">
+              <div className="relative z-10 min-w-0 flex flex-col justify-center">
+                <h1 className="landing-rise landing-h1 landing-display text-[#09090B]">
                   {t('landingTitle')}
                 </h1>
-                <p className="landing-rise landing-rise-delay-2 mt-5 landing-body max-w-[52ch]">
+                <p className="landing-rise landing-rise-delay-2 mt-4 landing-body">
                   {t('landingSub')}
                 </p>
-                <div className="landing-rise landing-rise-delay-2 mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="landing-rise landing-rise-delay-2 mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <button
                     type="button"
                     onClick={handleEnter}
@@ -385,34 +541,23 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                   </button>
                 </div>
                 {bootError && <p className="mt-3 text-[13px] text-red-600">{bootError}</p>}
-                <ul className="landing-rise landing-rise-delay-3 mt-8 flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-[#52525B]">
-                  {['Live CAP alerts', 'Public weather feeds', 'Officer approval required'].map((chip) => (
-                    <li key={chip} className="inline-flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#4338CA]" aria-hidden="true" />
-                      {chip}
-                    </li>
-                  ))}
-                </ul>
               </div>
 
-              <div className="landing-rise landing-rise-delay-2 relative flex items-center justify-center min-[900px]:justify-end">
-                <div
-                  className="relative w-full max-w-[360px] min-[900px]:max-w-[520px] aspect-square mx-auto min-[900px]:mx-0"
-                  aria-hidden="true"
-                >
+              <div className="landing-rise landing-rise-delay-2 landing-hero-visual" aria-hidden="true">
+                <div className="landing-radar-frame">
                   <Radar
                     color="#9CA3AF"
                     backgroundColor="transparent"
                     lightMode
-                    scale={0.92}
+                    scale={0.88}
                     ringCount={6}
                     spokeCount={12}
                     targets={5}
-                    clutter={0.22}
-                    glow={0.55}
+                    clutter={0.18}
+                    glow={0.4}
                     brightness={0.85}
-                    gridOpacity={0.9}
-                    trail={0.3}
+                    gridOpacity={0.85}
+                    trail={0.28}
                     speed={1}
                     mouseInteraction={false}
                     className="w-full h-full"
@@ -421,12 +566,20 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
               </div>
             </div>
           </Container>
+          <SequenceStrip />
         </section>
 
-        {/* Demo — overlaps hero bottom */}
-        <section className="relative z-10 -mt-12 pb-12 md:pb-16" aria-labelledby="demo-heading">
+        {/* Demo — next page / below the fold only */}
+        <section className="relative z-10 landing-demo-section" aria-labelledby="demo-heading">
           <Container>
-            <h2 id="demo-heading" className="sr-only">Demo highlights</h2>
+            <div className="mb-6 max-w-[48ch]">
+              <h2 id="demo-heading" className="landing-display text-[22px] sm:text-[28px] font-semibold text-[#09090B] tracking-tight">
+                Demo highlights
+              </h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-[#52525B]">
+                Short clips from the live control room — Sign-in, Alerts, Radar, Agents, and Map.
+              </p>
+            </div>
             <DemoHighlights />
           </Container>
         </section>
@@ -448,19 +601,19 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                   key={title}
                   className="flex flex-col h-full rounded-[16px] border border-[#E4E4E7] bg-white p-6"
                 >
-                  <div className="w-12 h-12 rounded-[12px] bg-[#EEF2FF] text-[#4338CA] flex items-center justify-center mb-5">
+                  <div className="w-12 h-12 rounded-[12px] bg-[#F4F4F5] border border-[#E4E4E7] text-[#09090B] flex items-center justify-center mb-5">
                     <Icon className="w-5 h-5" strokeWidth={1.5} />
                   </div>
                   <h3 className="landing-display text-[18px] font-semibold text-[#09090B] tracking-[-0.03em]">
                     {title}
                   </h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-[#3F3F46] flex-1">{desc}</p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-[#52525B] flex-1">{desc}</p>
                   {steps && (
-                    <ol className="mt-4 flex flex-wrap items-center gap-1.5 text-[13px] text-[#52525B]">
+                    <ol className="mt-4 flex flex-wrap items-center gap-1.5 text-[13px] text-[#3F3F46]">
                       {steps.map((step, i) => (
                         <React.Fragment key={step}>
                           {i > 0 && <span className="text-[#A1A1AA]" aria-hidden="true">→</span>}
-                          <li className="inline-flex h-7 px-2.5 items-center rounded-md border border-[#E4E4E7] bg-[#FAFAFA] list-none">
+                          <li className="inline-flex h-7 px-2.5 items-center rounded-md border border-[#E4E4E7] bg-[#FAFAFA] text-[#27272A] list-none">
                             {step}
                           </li>
                         </React.Fragment>
@@ -551,18 +704,18 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
         {/* Final CTA */}
         <section className="landing-section border-t border-[#E4E4E7]" aria-labelledby="cta-heading">
           <Container>
-            <div className="rounded-[24px] bg-[#0A0A0A] px-6 py-12 sm:px-12 sm:py-16 text-center">
-              <h2 id="cta-heading" className="landing-h2 landing-on-dark tracking-tight">
+            <div className="rounded-[24px] border border-[#E4E4E7] bg-white px-6 py-12 sm:px-12 sm:py-16 text-center">
+              <h2 id="cta-heading" className="landing-h2 tracking-tight text-[#09090B]">
                 {t('landingCtaTitle')}
               </h2>
-              <p className="mt-4 mx-auto max-w-[48ch] text-[16px] leading-relaxed text-zinc-300">
+              <p className="mt-4 mx-auto max-w-[48ch] text-[16px] leading-relaxed text-[#52525B]">
                 {t('landingCtaSub')}
               </p>
               <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={handleEnter}
-                  className="landing-focus inline-flex items-center justify-center gap-2 min-h-11 px-5 rounded-lg bg-white text-[#0A0A0A] text-[14px] font-medium hover:bg-zinc-100 transition"
+                  className="landing-focus inline-flex items-center justify-center gap-2 min-h-11 px-5 rounded-lg bg-[#09090B] text-white text-[14px] font-medium hover:bg-[#27272A] transition"
                 >
                   {t('landingHeroCta')}
                   <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
@@ -570,7 +723,7 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                 <button
                   type="button"
                   onClick={() => onCitizenPortal?.()}
-                  className="landing-focus inline-flex items-center justify-center min-h-11 px-5 rounded-lg border border-white/30 text-white text-[14px] font-medium hover:bg-white/10 transition"
+                  className="landing-focus inline-flex items-center justify-center min-h-11 px-5 rounded-lg border border-[#D4D4D8] bg-white text-[#3F3F46] text-[14px] font-medium hover:bg-[#FAFAFA] transition"
                 >
                   {t('landingCitizenCta')}
                 </button>
@@ -578,11 +731,12 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
             </div>
           </Container>
         </section>
+
       </main>
 
       <footer className="border-t border-[#E4E4E7] py-12 md:py-16">
         <Container>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div>
               <div className="flex items-center gap-2.5">
                 <VantaMark size={24} />
@@ -590,9 +744,6 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
               </div>
               <p className="mt-3 text-[14px] leading-relaxed text-[#52525B] max-w-[36ch]">
                 Decision-support control room for Greater Hyderabad — live feeds, agent briefings, officer approval.
-              </p>
-              <p className="mt-4 text-[14px] font-medium text-[#3F3F46]">
-                {t('landingFooterReadable')}
               </p>
             </div>
             <div>
@@ -614,11 +765,6 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                   </button>
                 </li>
               </ul>
-            </div>
-            <div className="md:text-right">
-              <p className="text-[14px] text-[#52525B] leading-relaxed">
-                CipherCop 2026 · Track 2 · Hyderabad pilot
-              </p>
             </div>
           </div>
         </Container>
