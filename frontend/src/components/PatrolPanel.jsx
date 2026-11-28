@@ -22,7 +22,7 @@ export default function PatrolPanel({
     return (
       <div className="bg-white border border-[#E2E8F0] rounded-[6px] p-3 text-[13px] shadow-md flex items-center justify-between gap-3 animate-fadeIn">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-[4px] bg-[#EEF2FF] flex items-center justify-center text-[#4338CA]">
+          <div className="w-7 h-7 rounded-[4px] bg-[#F4F4F5] flex items-center justify-center text-[#09090B]">
             <Shield className="w-4 h-4" />
           </div>
           <div>
@@ -32,7 +32,7 @@ export default function PatrolPanel({
         </div>
         <button
           onClick={onToggleAddMode}
-          className="h-7 px-3 rounded-[4px] bg-[#4338CA] hover:bg-[#3730A3] text-white text-[12px] font-medium flex items-center gap-1.5 transition shadow-xs"
+          className="h-7 px-3 rounded-[4px] bg-[#09090B] hover:bg-[#27272A] text-white text-[12px] font-medium flex items-center gap-1.5 transition shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Start Patrol Plan</span>
@@ -70,13 +70,13 @@ export default function PatrolPanel({
       {/* ── Header ── */}
       <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-[4px] bg-[#EEF2FF] border border-[#C7D2FE] flex items-center justify-center text-[#4338CA]">
+          <div className="w-7 h-7 rounded-[4px] bg-[#F4F4F5] border border-[#E4E4E7] flex items-center justify-center text-[#09090B]">
             <Shield className="w-4 h-4" />
           </div>
           <div>
             <div className="font-semibold text-[#0F172A] text-[14px] flex items-center gap-1.5">
               <span>Road Patrol Navigation</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#EEF2FF] text-[#4338CA] font-bold">
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#F4F4F5] text-[#09090B] font-bold">
                 {patrolPoints.length} {patrolPoints.length === 1 ? 'Point' : 'Points'}
               </span>
             </div>
@@ -102,8 +102,8 @@ export default function PatrolPanel({
               {allCompleted ? 'Patrol Status' : `Current Objective: Point ${activePointIndex + 1}`}
             </span>
             {!allCompleted && (
-              <span className="px-2 py-0.5 rounded-[4px] bg-[#EEF2FF] text-[#4338CA] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4338CA] animate-ping" />
+              <span className="px-2 py-0.5 rounded-[4px] bg-[#F4F4F5] text-[#09090B] font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#09090B] animate-ping" />
                 Active Target
               </span>
             )}
@@ -112,7 +112,7 @@ export default function PatrolPanel({
           {!allCompleted && currentTarget ? (
             <div>
               <div className="text-[14px] font-bold text-[#0F172A] flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-[#4338CA] shrink-0" />
+                <MapPin className="w-4 h-4 text-[#09090B] shrink-0" />
                 <span>Point {activePointIndex + 1}</span>
                 {currentTarget.road_name && (
                   <span className="text-[12px] font-normal text-[#64748B] truncate">
@@ -167,7 +167,7 @@ export default function PatrolPanel({
           {allCompleted && (
             <button
               onClick={onResetPatrol}
-              className="w-full h-8 rounded-[6px] bg-[#4338CA] hover:bg-[#3730A3] text-white text-[12px] font-semibold flex items-center justify-center gap-1.5 transition shadow-xs"
+              className="w-full h-8 rounded-[6px] bg-[#09090B] hover:bg-[#27272A] text-white text-[12px] font-semibold flex items-center justify-center gap-1.5 transition shadow-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Restart Patrol from Point 1</span>
@@ -225,7 +225,7 @@ export default function PatrolPanel({
                 <div
                   key={pt.id}
                   className={`px-3 py-2 flex items-center justify-between gap-2 transition ${
-                    isActive ? 'bg-[#EEF2FF]' : isReached ? 'bg-[#F0FDF4]' : 'bg-white'
+                    isActive ? 'bg-[#F4F4F5]' : isReached ? 'bg-[#F0FDF4]' : 'bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
@@ -234,7 +234,7 @@ export default function PatrolPanel({
                         isReached
                           ? 'bg-[#16A34A] text-white'
                           : isActive
-                          ? 'bg-[#4338CA] text-white ring-2 ring-[#C7D2FE]'
+                          ? 'bg-[#09090B] text-white ring-2 ring-[#E4E4E7]'
                           : 'bg-[#E2E8F0] text-[#475569]'
                       }`}
                     >
@@ -254,7 +254,7 @@ export default function PatrolPanel({
 
                   <div className="flex items-center gap-1 shrink-0">
                     {isActive && (
-                      <span className="text-[10px] font-semibold text-[#4338CA] bg-[#C7D2FE]/40 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-semibold text-[#09090B] bg-[#E4E4E7]/40 px-1.5 py-0.5 rounded">
                         Target
                       </span>
                     )}
@@ -284,7 +284,7 @@ export default function PatrolPanel({
           onClick={onToggleAddMode}
           className={`h-7 px-2.5 rounded-[4px] text-[12px] font-medium transition border flex items-center gap-1.5 ${
             isAddMode
-              ? 'bg-[#4338CA] text-white border-[#4338CA] shadow-xs'
+              ? 'bg-[#09090B] text-white border-[#09090B] shadow-xs'
               : 'bg-white text-[#475569] border-[#CBD5E1] hover:text-[#0F172A]'
           }`}
           title="Click on the map to add more patrol points"

@@ -170,14 +170,14 @@ export default function UnitRegisterModal({ isOpen, onClose, onRegister }) {
           <div className="flex flex-col gap-2 pt-2 border-t border-[#E2E8F0]">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
+                <MapPin className="w-3.5 h-3.5 text-[#09090B]" strokeWidth={1.5} />
                 Position Coordinates
               </span>
               <button
                 type="button"
                 onClick={handleGetLocation}
                 disabled={gettingLocation}
-                className="text-[12px] text-[#4338CA] hover:underline flex items-center gap-1"
+                className="text-[12px] text-[#09090B] hover:underline flex items-center gap-1"
               >
                 <Navigation className={`w-3 h-3 ${gettingLocation ? 'animate-spin' : ''}`} strokeWidth={1.5} />
                 <span>{gettingLocation ? 'Locating…' : 'Use GPS'}</span>

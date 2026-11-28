@@ -79,7 +79,7 @@ export default function BlockedRoadModal({ isOpen, onClose, onReport }) {
 
           <div className="flex flex-col gap-2 pt-2 border-t border-[#E2E8F0]">
             <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
-              <Route className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
+              <Route className="w-3.5 h-3.5 text-[#09090B]" strokeWidth={1.5} />
               Blockage Coordinates (Start & End)
             </span>
             <div className="grid grid-cols-2 gap-3">

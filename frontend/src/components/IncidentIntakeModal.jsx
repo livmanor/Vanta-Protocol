@@ -105,7 +105,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport, pinnedL
               placeholder="e.g. Water ingress at underpass, vehicle stranded"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full bg-white border border-[#E2E8F0] rounded-[6px] p-2.5 text-[14px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none focus:border-[#4338CA] focus:ring-2 focus:ring-[#4338CA]/15 resize-none"
+              className="w-full bg-white border border-[#E2E8F0] rounded-[6px] p-2.5 text-[14px] text-[#0F172A] placeholder:text-[#94A3B8] outline-none focus:border-[#09090B] focus:ring-2 focus:ring-[#09090B]/15 resize-none"
             />
           </div>
 
@@ -127,7 +127,7 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport, pinnedL
                 id="vuln"
                 checked={vulnerable}
                 onChange={(e) => setVulnerable(e.target.checked)}
-                className="w-4 h-4 rounded-[4px] border-[#CBD5E1] text-[#4338CA] focus:ring-[#4338CA]"
+                className="w-4 h-4 rounded-[4px] border-[#CBD5E1] text-[#09090B] focus:ring-[#09090B]"
               />
               <label htmlFor="vuln" className="text-[12px] text-[#334155] cursor-pointer">
                 Elderly / infants present
@@ -138,12 +138,12 @@ export default function IncidentIntakeModal({ isOpen, onClose, onReport, pinnedL
           <div className="flex flex-col gap-2 pt-2 border-t border-[#E2E8F0]">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-medium text-[#475569] flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#4338CA]" strokeWidth={1.5} />
+                <MapPin className="w-3.5 h-3.5 text-[#09090B]" strokeWidth={1.5} />
                 Coordinates (GPS / Pin Location)
               </span>
               {pinnedLocation?.lat != null ? (
-                <span className="text-[11px] font-medium text-[#4338CA] bg-[#EEF2FF] px-2 py-0.5 rounded-[4px] border border-[#C7D2FE] flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#4338CA] animate-pulse" />
+                <span className="text-[11px] font-medium text-[#09090B] bg-[#F4F4F5] px-2 py-0.5 rounded-[4px] border border-[#E4E4E7] flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#09090B] animate-pulse" />
                   Auto-filled from map pin
                 </span>
               ) : (

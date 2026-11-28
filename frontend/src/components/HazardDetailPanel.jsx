@@ -70,12 +70,12 @@ export default function HazardDetailPanel({
       <div className="bg-white border border-[#E2E8F0] rounded-[6px] p-3 shadow-xs">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[12px] font-semibold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-[#4338CA]" />
+            <Layers className="w-3.5 h-3.5 text-[#09090B]" />
             <span>Hazard Layers</span>
           </span>
           <button
             onClick={() => setShowTierBModal(true)}
-            className="text-[11px] text-[#4338CA] hover:underline font-medium"
+            className="text-[11px] text-[#09090B] hover:underline font-medium"
           >
             Tier B Status (7 modules)
           </button>
@@ -116,7 +116,7 @@ export default function HazardDetailPanel({
 
       {/* SELECTED HAZARD DETAIL CARD */}
       {selectedHazard ? (
-        <div className="bg-white border-2 rounded-[8px] p-4 shadow-sm flex flex-col gap-3 relative animate-in fade-in" style={{ borderColor: HAZARD_COLORS[selectedHazard.hazard_id]?.border || '#4338CA' }}>
+        <div className="bg-white border-2 rounded-[8px] p-4 shadow-sm flex flex-col gap-3 relative animate-in fade-in" style={{ borderColor: HAZARD_COLORS[selectedHazard.hazard_id]?.border || '#09090B' }}>
           <div className="flex items-start justify-between gap-2">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -127,7 +127,7 @@ export default function HazardDetailPanel({
                     <span>[Observed Event]</span>
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE] rounded-[4px] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                  <span className="px-2 py-0.5 bg-[#F4F4F5] text-[#09090B] border border-[#E4E4E7] rounded-[4px] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
                     <span>[Predicted Risk Screen]</span>
                   </span>
@@ -225,7 +225,7 @@ export default function HazardDetailPanel({
             <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-[#E2E8F0]">
               <div className="flex items-center justify-between">
                 <span className="text-[12px] font-bold text-[#0F172A] flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4 text-[#4338CA]" />
+                  <ShieldAlert className="w-4 h-4 text-[#09090B]" />
                   <span>Officer Response Recommendations:</span>
                 </span>
                 <span className="text-[10px] text-[#94A3B8] font-mono">Requires Approval</span>
@@ -303,7 +303,7 @@ export default function HazardDetailPanel({
                         {m.status}
                       </span>
                     </div>
-                    <div className="text-[11px] text-[#4338CA] font-medium">Required telemetry: {m.data_source}</div>
+                    <div className="text-[11px] text-[#09090B] font-medium">Required telemetry: {m.data_source}</div>
                     <div className="text-[11px] text-[#991B1B] bg-[#FEF2F2] p-2 rounded-[4px] border border-[#FCA5A5] leading-normal">
                       <strong>Deficit Note:</strong> {m.message}
                     </div>

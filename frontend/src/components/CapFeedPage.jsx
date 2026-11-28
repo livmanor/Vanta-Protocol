@@ -5,7 +5,7 @@ import AlertsBanner from './AlertsBanner.jsx';
 function SummaryCard({ label, value, hint, icon: Icon, tone = 'slate' }) {
   const colors = {
     slate: 'bg-slate-50 text-slate-700',
-    indigo: 'bg-indigo-50 text-indigo-700',
+    indigo: 'bg-zinc-100 text-zinc-800',
     amber: 'bg-amber-50 text-amber-800',
   };
 
@@ -37,7 +37,7 @@ export default function CapFeedPage({ alertsPayload, onRefresh, loading, onOpenR
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[#E2E8F0] pb-5">
           <div>
-            <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#4338CA]">
+            <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#09090B]">
               <Radio className="h-4 w-4" strokeWidth={1.6} />
               Official alert feed
             </div>

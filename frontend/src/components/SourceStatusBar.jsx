@@ -94,9 +94,9 @@ export default function SourceStatusBar({ sources = [], onRefresh, loading }) {
       <button
         onClick={onRefresh}
         disabled={loading}
-        className="ml-auto shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-indigo-600 transition disabled:opacity-40"
+        className="ml-auto shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-zinc-900 transition disabled:opacity-40"
       >
-        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
+        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-zinc-900' : ''}`} />
         <span>Refresh Feeds</span>
       </button>
     </div>

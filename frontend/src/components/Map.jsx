@@ -293,7 +293,7 @@ const handleSelectLocation = (loc) => {
       { type: 'Feature', geometry },
       {
         style: {
-          color: '#4338CA',
+          color: '#09090B',
           weight: 5,
           opacity: 0.88,
           dashArray: '8, 6',
@@ -558,7 +558,7 @@ useEffect(() => {
       layer.bindTooltip(`
           <div class="font-sans text-xs p-1">
             <div class="font-extrabold text-slate-900">${z.name}</div>
-            <div class="text-indigo-700 font-bold mt-0.5">${z.risk_level == null ? 'Data unavailable · verify conditions' : 'Risk Level: ' + z.risk_level + ' / 5'}</div>
+            <div class="text-zinc-800 font-bold mt-0.5">${z.risk_level == null ? 'Data unavailable · verify conditions' : 'Risk Level: ' + z.risk_level + ' / 5'}</div>
             <div class="text-[11px] text-slate-500">Weather feed: ${z.explanation?.weather_status || 'unknown'}</div>
             <div class="text-[11px] text-slate-500 mt-1 max-w-[210px]">${z.explanation?.why_this || ''}</div>
           </div>
@@ -640,7 +640,7 @@ useEffect(() => {
         track.on('click', () => onSelectHazard(item));
         track.bindTooltip(`
           <div class="font-sans text-xs p-1">
-            <div class="text-[10px] font-bold text-purple-700 uppercase">[OBSERVED CYCLONE TRACK]</div>
+            <div class="text-[10px] font-bold text-zinc-800 uppercase">[OBSERVED CYCLONE TRACK]</div>
             <div class="font-bold text-slate-900">${item.name}</div>
             <div class="text-slate-600">${item.summary}</div>
           </div>
@@ -772,8 +772,8 @@ useEffect(() => {
     className: 'custom-shelter-marker',
     html: `
         <div class="relative flex items-center justify-center">
-          <div class="absolute w-8 h-8 bg-indigo-500/20 rounded-full animate-ping"></div>
-          <div class="w-8 h-8 bg-indigo-600 border-2 border-white rounded-xl flex items-center justify-center text-white text-xs font-black shadow-lg">
+          <div class="absolute w-8 h-8 bg-zinc-500/20 rounded-full animate-ping"></div>
+          <div class="w-8 h-8 bg-zinc-800 border-2 border-white rounded-xl flex items-center justify-center text-white text-xs font-black shadow-lg">
             S
           </div>
         </div>
@@ -785,7 +785,7 @@ useEffect(() => {
   const shelterMarker = L.marker([activeRoute.shelter_lat, activeRoute.shelter_lng], { icon: shelterIcon })
     .bindPopup(`
         <div class="text-xs p-1">
-          <div class="font-extrabold text-indigo-700 uppercase tracking-wide text-[10px]">Designated Relief Shelter</div>
+          <div class="font-extrabold text-zinc-800 uppercase tracking-wide text-[10px]">Designated Relief Shelter</div>
           <div class="text-slate-900 font-bold text-sm mt-0.5">${activeRoute.shelter_name}</div>
           <div class="text-slate-600 mt-1 font-medium">Route Distance: ${(activeRoute.distance_meters / 1000).toFixed(1)} km</div>
           <div class="text-slate-600 font-medium">Est. Travel Time: ${(activeRoute.duration_seconds / 60).toFixed(0)} mins</div>
@@ -824,7 +824,7 @@ useEffect(() => {
     const unitIcon = L.divIcon({
       className: 'custom-unit-icon',
       html: `
-          <div class="w-8 h-8 bg-white border-2 border-slate-300 hover:border-indigo-600 rounded-xl flex items-center justify-center shadow-md text-sm transition">
+          <div class="w-8 h-8 bg-white border-2 border-slate-300 hover:border-zinc-800 rounded-xl flex items-center justify-center shadow-md text-sm transition">
             ${label}
           </div>
         `,
@@ -835,7 +835,7 @@ useEffect(() => {
     const m = L.marker([u.lat, u.lng], { icon: unitIcon })
       .bindPopup(`
           <div class="text-xs p-1">
-            <div class="font-extrabold text-indigo-700 uppercase tracking-wide text-[10px]">${u.kind.replace('_', ' ')}</div>
+            <div class="font-extrabold text-zinc-800 uppercase tracking-wide text-[10px]">${u.kind.replace('_', ' ')}</div>
             <div class="text-slate-900 font-bold text-sm mt-0.5">Unit ID: ${u.id}</div>
             <div class="text-slate-600 mt-1">Station: <strong class="text-slate-800">${u.station}</strong></div>
             <div class="text-slate-600">Status: <span class="capitalize font-bold text-emerald-700">${u.status}</span></div>
@@ -1003,10 +1003,10 @@ useEffect(() => {
     className: 'custom-pin-marker',
     html: `
         <div style="position: relative; display: flex; align-items: center; justify-content: center; pointer-events: auto;">
-          <div style="position: absolute; bottom: 0; left: 50%; transform: translate(-50%, -100%); width: 36px; height: 36px; border-radius: 50% 50% 50% 0; transform-origin: 0% 100%; transform: rotate(-45deg) translate(9px, -9px); background: #4338CA; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; bottom: 0; left: 50%; transform: translate(-50%, -100%); width: 36px; height: 36px; border-radius: 50% 50% 50% 0; transform-origin: 0% 100%; transform: rotate(-45deg) translate(9px, -9px); background: #09090B; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
             <div style="transform: rotate(45deg); color: #ffffff; font-size: 16px; line-height: 1;">📍</div>
           </div>
-          <div style="width: 12px; height: 12px; background: rgba(67, 56, 202, 0.45); border-radius: 50%; box-shadow: 0 0 8px #4338CA;"></div>
+          <div style="width: 12px; height: 12px; background: rgba(9, 9, 11, 0.45); border-radius: 50%; box-shadow: 0 0 8px #09090B;"></div>
         </div>
       `,
     iconSize: [36, 36],
@@ -1035,17 +1035,17 @@ useEffect(() => {
           <div style="font-weight: 700; color: #0F172A; font-size: 13px; display: flex; align-items: center; gap: 4px;">
             <span>📍</span> Pinned Incident Location
           </div>
-          <span style="font-size: 10px; color: #4338CA; background: #EEF2FF; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #C7D2FE;">Draggable</span>
+          <span style="font-size: 10px; color: #09090B; background: #F4F4F5; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #E4E4E7;">Draggable</span>
         </div>
         <div style="font-family: monospace; font-size: 12px; color: #334155; margin-top: 6px; background: #F8FAFC; padding: 5px 8px; border-radius: 4px; border: 1px solid #E2E8F0; display: flex; justify-content: space-between;">
           <span>Lat: <strong>${pinnedLocation.lat.toFixed(6)}</strong></span>
           <span>Lng: <strong>${pinnedLocation.lng.toFixed(6)}</strong></span>
         </div>
         <div style="display: flex; gap: 6px; margin-top: 8px;">
-          <button id="btn-log-incident-pin" style="flex: 1; background: #4338CA; color: white; border: none; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+          <button id="btn-log-incident-pin" style="flex: 1; background: #09090B; color: white; border: none; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
             🚨 Log Incident
           </button>
-          <button id="btn-add-patrol-pin" style="background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE; border-radius: 4px; padding: 6px 8px; font-size: 11px; font-weight: 600; cursor: pointer;" title="Add as patrol waypoint (snaps to road)">
+          <button id="btn-add-patrol-pin" style="background: #F4F4F5; color: #09090B; border: 1px solid #E4E4E7; border-radius: 4px; padding: 6px 8px; font-size: 11px; font-weight: 600; cursor: pointer;" title="Add as patrol waypoint (snaps to road)">
             🛡️ + Patrol
           </button>
           <button id="btn-clear-pin" title="Remove pin" style="background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; border-radius: 4px; padding: 6px 8px; font-size: 12px; cursor: pointer;">
@@ -1105,10 +1105,10 @@ useEffect(() => {
       snapGroup.addLayer(dot);
     }
 
-    const badgeBg = isReached ? '#16A34A' : isActive ? '#4338CA' : '#475569';
+    const badgeBg = isReached ? '#16A34A' : isActive ? '#09090B' : '#475569';
     const markerHtml = `
       <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-        ${isActive ? '<div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(67, 56, 202, 0.3); animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>' : ''}
+        ${isActive ? '<div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(9, 9, 11, 0.3); animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>' : ''}
         <div style="width: 26px; height: 26px; border-radius: 50%; background: ${badgeBg}; border: 2.5px solid #ffffff; box-shadow: 0 3px 8px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 11px; z-index: 10;">
           ${isReached ? '✓' : idx + 1}
         </div>
@@ -1169,7 +1169,7 @@ useEffect(() => {
       <div style="min-width: 210px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 2px;">
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <div style="font-weight: 800; color: #0F172A; font-size: 13px;">Patrol Point ${idx + 1}</div>
-          <span style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: ${isReached ? '#DCFCE7; color: #16A34A;' : isActive ? '#EEF2FF; color: #4338CA;' : '#F1F5F9; color: #64748B;'}">
+          <span style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: ${isReached ? '#DCFCE7; color: #16A34A;' : isActive ? '#F4F4F5; color: #09090B;' : '#F1F5F9; color: #64748B;'}">
             ${isReached ? 'Reached' : isActive ? 'Active Target' : 'Pending'}
           </span>
         </div>
@@ -1223,10 +1223,10 @@ return (
 
     {/* Location Search Bar */}
     <div ref={searchContainerRef} className="absolute top-4 left-14 z-[500] w-72 sm:w-80 md:w-96">
-      <div className="relative flex items-center bg-white rounded-[6px] border border-[#CBD5E1] shadow-md hover:border-[#4338CA] focus-within:border-[#4338CA] focus-within:ring-2 focus-within:ring-[#4338CA]/20 transition">
+      <div className="relative flex items-center bg-white rounded-[6px] border border-[#CBD5E1] shadow-md hover:border-[#09090B] focus-within:border-[#09090B] focus-within:ring-2 focus-within:ring-[#09090B]/20 transition">
         <div className="pl-3 pr-2 text-[#64748B] flex items-center justify-center">
           {isSearching ? (
-            <Loader2 className="w-4 h-4 animate-spin text-[#4338CA]" />
+            <Loader2 className="w-4 h-4 animate-spin text-[#09090B]" />
           ) : (
             <Search className="w-4 h-4" />
           )}
@@ -1279,7 +1279,7 @@ return (
                   cat === 'City' ? 'bg-[#FAF5FF] text-[#7E22CE] border-[#E9D5FF]' :
                     cat === 'Hotspot' ? 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]' :
                       cat === 'Hospital' ? 'bg-[#DCFCE7] text-[#16A34A] border-[#BBF7D0]' :
-                        cat === 'Police' ? 'bg-[#EEF2FF] text-[#4338CA] border-[#C7D2FE]' :
+                        cat === 'Police' ? 'bg-[#F4F4F5] text-[#09090B] border-[#E4E4E7]' :
                           cat === 'Water Body' ? 'bg-[#E0F2FE] text-[#0284C7] border-[#BAE6FD]' :
                             cat === 'GPS' ? 'bg-[#F3E8FF] text-[#9333EA] border-[#E9D5FF]' :
                               'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]';
@@ -1292,8 +1292,8 @@ return (
                   className="w-full text-left px-3 py-2.5 hover:bg-[#F8FAFC] transition flex items-center justify-between gap-2 group cursor-pointer"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-medium text-[#0F172A] group-hover:text-[#4338CA] truncate flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#4338CA] shrink-0" />
+                    <div className="text-[13px] font-medium text-[#0F172A] group-hover:text-[#09090B] truncate flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#09090B] shrink-0" />
                       <span>{loc.name}</span>
                     </div>
                     {loc.subText && (
@@ -1322,14 +1322,14 @@ return (
     {/* Top right floating toolbar */}
     <div className="absolute top-4 right-4 z-[400] flex items-center gap-2">
       {pinnedLocation && (
-        <div className="h-8 px-2.5 rounded-[6px] border border-[#C7D2FE] bg-[#EEF2FF] text-[#4338CA] text-[12px] font-medium shadow-sm flex items-center gap-2 animate-fadeIn">
+        <div className="h-8 px-2.5 rounded-[6px] border border-[#E4E4E7] bg-[#F4F4F5] text-[#09090B] text-[12px] font-medium shadow-sm flex items-center gap-2 animate-fadeIn">
           <span className="flex items-center gap-1 font-mono text-[11px]">
             📍 {pinnedLocation.lat.toFixed(4)}, {pinnedLocation.lng.toFixed(4)}
           </span>
           <button
             type="button"
             onClick={() => onLogIncidentAtPin?.(pinnedLocation)}
-            className="px-2 py-0.5 rounded-[4px] bg-[#4338CA] text-white hover:bg-[#3730A3] text-[11px] font-medium transition shadow-xs"
+            className="px-2 py-0.5 rounded-[4px] bg-[#09090B] text-white hover:bg-[#27272A] text-[11px] font-medium transition shadow-xs"
           >
             Log Incident
           </button>
@@ -1349,7 +1349,7 @@ return (
           type="button"
           onClick={onOpenWindy}
           title="Open live Windy weather radar and overlays"
-          className="h-8 px-3 rounded-[6px] border border-[#E2E8F0] bg-white text-[#475569] hover:text-[#4338CA] hover:border-[#C7D2FE] text-[12px] font-medium shadow-sm flex items-center gap-1.5 transition"
+          className="h-8 px-3 rounded-[6px] border border-[#E2E8F0] bg-white text-[#475569] hover:text-[#09090B] hover:border-[#E4E4E7] text-[12px] font-medium shadow-sm flex items-center gap-1.5 transition"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>Windy Overlay</span>
@@ -1365,7 +1365,7 @@ return (
         aria-pressed={isPatrolMode}
         className={`h-8 px-3 rounded-[6px] border text-[12px] font-medium shadow-sm flex items-center gap-1.5 transition ${
           isPatrolMode
-            ? 'bg-[#4338CA] text-white border-[#4338CA]'
+            ? 'bg-[#09090B] text-white border-[#09090B]'
             : 'bg-white text-[#475569] border-[#E2E8F0] hover:text-[#0F172A]'
         }`}
         title="Toggle patrol waypoints mode (auto-snaps to roads)"

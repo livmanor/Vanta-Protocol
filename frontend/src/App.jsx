@@ -47,7 +47,7 @@ function isHighSeverityAlert(alert) {
 }
 
 export default function App() {
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const [riskZones, setRiskZones] = useState([]);
   const [riskZonesError, setRiskZonesError] = useState('');
   const [zoneWeather, setZoneWeather] = useState([]);
@@ -529,10 +529,7 @@ export default function App() {
         <header className="flex items-center justify-between px-6 h-[56px] border-b border-[#E2E8F0] bg-white shrink-0">
           <div className="flex items-center gap-3">
             <VantaMark size={32} />
-            <div>
-              <div className="font-semibold text-[14px] text-[#0F172A] leading-tight tracking-[-0.02em]">Vanta Protocol</div>
-              <div className="vp-mono text-[12px] text-[#475569] leading-tight">{t('area')}</div>
-            </div>
+            <div className="font-semibold text-[14px] text-[#09090B] leading-tight tracking-[-0.02em]">Vanta Protocol</div>
           </div>
           {officer && (
             <button
@@ -545,45 +542,45 @@ export default function App() {
         </header>
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="w-full max-w-4xl">
-            <h1 className="text-[22px] font-semibold text-[#0F172A] tracking-tight text-center mb-2">
+            <h1 className="text-[22px] font-semibold text-[#09090B] tracking-tight text-center mb-2">
               {t('modeSelectTitle')}
             </h1>
-            <p className="text-[14px] text-[#64748B] text-center mb-8">
+            <p className="text-[14px] text-[#52525B] text-center mb-8">
               {officer?.display_name || officer?.username || 'Officer'} · switch modes anytime from the header
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button
                 type="button"
                 onClick={() => selectMode('view')}
-                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#4338CA] hover:bg-[#EEF2FF]/40 transition"
+                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#09090B] hover:bg-[#FAFAFA] transition"
               >
-                <div className="flex items-center gap-2 text-[#4338CA] mb-3">
+                <div className="flex items-center gap-2 text-[#09090B] mb-3">
                   <Radio className="w-5 h-5" strokeWidth={1.5} />
                   <span className="text-[16px] font-semibold">{t('modeView')}</span>
                 </div>
-                <p className="text-[14px] text-[#475569]">{t('modeViewDesc')}</p>
+                <p className="text-[14px] text-[#52525B]">{t('modeViewDesc')}</p>
               </button>
               <button
                 type="button"
                 onClick={() => selectMode('action')}
-                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#4338CA] hover:bg-[#EEF2FF]/40 transition"
+                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#09090B] hover:bg-[#FAFAFA] transition"
               >
-                <div className="flex items-center gap-2 text-[#4338CA] mb-3">
+                <div className="flex items-center gap-2 text-[#09090B] mb-3">
                   <Bot className="w-5 h-5" strokeWidth={1.5} />
                   <span className="text-[16px] font-semibold">{t('modeAction')}</span>
                 </div>
-                <p className="text-[14px] text-[#475569]">{t('modeActionDesc')}</p>
+                <p className="text-[14px] text-[#52525B]">{t('modeActionDesc')}</p>
               </button>
               <button
                 type="button"
                 onClick={() => selectMode('docs')}
-                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#4338CA] hover:bg-[#EEF2FF]/40 transition"
+                className="text-left rounded-[8px] border border-[#E2E8F0] bg-white p-6 hover:border-[#09090B] hover:bg-[#FAFAFA] transition"
               >
-                <div className="flex items-center gap-2 text-[#4338CA] mb-3">
+                <div className="flex items-center gap-2 text-[#09090B] mb-3">
                   <BookOpen className="w-5 h-5" strokeWidth={1.5} />
                   <span className="text-[16px] font-semibold">{t('modeDocs')}</span>
                 </div>
-                <p className="text-[14px] text-[#475569]">{t('modeDocsDesc')}</p>
+                <p className="text-[14px] text-[#52525B]">{t('modeDocsDesc')}</p>
               </button>
             </div>
           </div>
@@ -602,10 +599,7 @@ export default function App() {
           {/* Brand */}
           <div className="flex items-center gap-3">
             <VantaMark size={32} />
-            <div>
-              <div className="font-semibold text-[14px] text-[#0F172A] leading-tight tracking-[-0.02em]">Vanta Protocol</div>
-              <div className="vp-mono text-[12px] text-[#475569] leading-tight whitespace-nowrap">{t('area')}</div>
-            </div>
+            <div className="font-semibold text-[14px] text-[#09090B] leading-tight tracking-[-0.02em]">Vanta Protocol</div>
           </div>
 
           <div className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]" role="group" aria-label="Officer mode">
@@ -670,50 +664,11 @@ export default function App() {
               </button>
             </div>
           )}
-          <div className="hidden md:flex items-center gap-2 rounded-[6px] border border-[#E2E8F0] px-2 h-[36px] bg-[#F8FAFC]">
-            <label className="flex items-center gap-1.5 text-[12px] text-[#334155]">
-              <input
-                type="checkbox"
-                checked={replayMode}
-                onChange={(event) => setReplayMode(event.target.checked)}
-              />
-              Replay
-            </label>
-            <input
-              type="date"
-              value={replayDate}
-              onChange={(event) => setReplayDate(event.target.value)}
-              disabled={!replayMode}
-              className="h-[28px] rounded-[4px] border border-[#E2E8F0] bg-white px-1.5 text-[12px] text-[#0F172A] disabled:opacity-50"
-            />
-          </div>
-
-          {/* Language Switch: Segmented control 14px */}
-          <div
-            className="flex items-center rounded-[6px] border border-[#E2E8F0] p-[2px] bg-[#F8FAFC]"
-            aria-label={t('langLabel')}
-          >
-            {[['en', 'EN'], ['hi', 'हिं'], ['te', 'తె']].map(([code, label]) => (
-              <button
-                key={code}
-                onClick={() => setLanguage(code)}
-                aria-pressed={language === code}
-                className={`h-7 px-2.5 rounded-[4px] text-[14px] font-medium transition ${
-                  language === code
-                    ? 'bg-white text-[#0F172A] shadow-xs font-semibold'
-                    : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           {/* Single "New" Primary Action Dropdown */}
           <div className="relative" ref={newMenuRef}>
             <button
               onClick={() => setIsNewMenuOpen(prev => !prev)}
-              className="h-[36px] px-3.5 rounded-[6px] bg-[#4338CA] hover:bg-[#3730A3] text-white text-[14px] font-medium inline-flex items-center gap-2 transition"
+              className="h-[36px] px-3.5 rounded-[6px] bg-[#09090B] hover:bg-[#27272A] text-white text-[14px] font-medium inline-flex items-center gap-2 transition"
             >
               <Plus className="w-4 h-4 text-white" strokeWidth={1.5} />
               <span>New</span>
@@ -811,15 +766,15 @@ export default function App() {
                 title={label}
                 className={`relative h-[36px] rounded-[6px] px-3 flex items-center gap-3 transition text-left ${
                   view === id
-                    ? 'bg-[#EEF2FF] text-[#4338CA] font-medium'
+                    ? 'bg-[#F4F4F5] text-[#09090B] font-medium'
                     : 'text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
                 }`}
               >
                 {view === id && (
-                  <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-[#4338CA]" />
+                  <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-[#09090B]" />
                 )}
                 <Icon
-                  className={`w-4 h-4 shrink-0 ${view === id ? 'text-[#4338CA]' : 'text-[#64748B]'}`}
+                  className={`w-4 h-4 shrink-0 ${view === id ? 'text-[#09090B]' : 'text-[#64748B]'}`}
                   strokeWidth={1.5}
                 />
                 <span className="text-[14px] hidden lg:inline">{label}</span>
@@ -892,7 +847,7 @@ export default function App() {
                 <div className="absolute bottom-6 left-6 z-[500] w-80 bg-white border border-[#E2E8F0] rounded-[8px] shadow-sm p-3">
                   <div className="text-[12px] font-semibold text-[#0F172A]">Route</div>
                   <p className="mt-1 text-[12px] leading-5 text-[#475569]">{routeNotice}</p>
-                  <button type="button" onClick={() => setRouteNotice(null)} className="mt-2 text-[12px] font-medium text-[#4338CA]">Dismiss</button>
+                  <button type="button" onClick={() => setRouteNotice(null)} className="mt-2 text-[12px] font-medium text-[#09090B]">Dismiss</button>
                 </div>
               )}
               {activeRoute && (
@@ -921,7 +876,7 @@ export default function App() {
                     onClick={() => setActiveTab(id)}
                     className={`relative py-3 font-medium transition flex items-center gap-1.5 shrink-0 ${
                       activeTab === id
-                        ? 'text-[#4338CA] font-semibold'
+                        ? 'text-[#09090B] font-semibold'
                         : 'text-[#64748B] hover:text-[#0F172A]'
                     }`}
                   >
@@ -932,7 +887,7 @@ export default function App() {
                       </span>
                     )}
                     {activeTab === id && (
-                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA]" />
+                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#09090B]" />
                     )}
                   </button>
                 ))}
@@ -979,7 +934,7 @@ export default function App() {
                           key={z.id}
                           onClick={() => setSelectedZone(z)}
                           className={`w-full min-h-[40px] py-2 px-1 text-left flex items-center justify-between transition hover:bg-[#F8FAFC] ${
-                            selectedZone?.id === z.id ? 'bg-[#EEF2FF]/60' : ''
+                            selectedZone?.id === z.id ? 'bg-[#F4F4F5]/60' : ''
                           }`}
                         >
                           <div className="min-w-0 pr-2">
@@ -1083,7 +1038,7 @@ export default function App() {
                       </span>
                       <button
                         onClick={() => setIsIncidentModalOpen(true)}
-                        className="text-[#4338CA] text-[12px] font-medium hover:underline flex items-center gap-1"
+                        className="text-[#09090B] text-[12px] font-medium hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
                         <span>{t('addIncident')}</span>
@@ -1161,7 +1116,7 @@ export default function App() {
                       </span>
                       <button
                         onClick={() => setIsUnitModalOpen(true)}
-                        className="text-[#4338CA] text-[12px] font-medium hover:underline flex items-center gap-1"
+                        className="text-[#09090B] text-[12px] font-medium hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
                         <span>{t('registerUnit')}</span>
@@ -1255,9 +1210,9 @@ export default function App() {
 
                     {/* Underline Tab Bar (Clean, no redundant Tactical Map) */}
                     <div className="flex items-center gap-6 text-[14px]">
-                      <span className="text-[#4338CA] font-semibold relative py-2">
+                      <span className="text-[#09090B] font-semibold relative py-2">
                         AI Briefing
-                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4338CA]" />
+                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#09090B]" />
                       </span>
                       <button
                         onClick={() => { setView('map'); setActiveTab('preposition'); }}

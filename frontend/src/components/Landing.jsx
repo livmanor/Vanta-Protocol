@@ -280,7 +280,7 @@ function DemoHighlights() {
           <div className="absolute left-0 right-0 bottom-0 h-[3px] bg-white/15 z-10">
             <div
               key={progressKey}
-              className="h-full bg-[#4338CA] landing-demo-progress"
+              className="h-full bg-[#09090B] landing-demo-progress"
               style={{
                 animationDuration: showFallback ? '5s' : `${clipDuration}s`,
                 animationPlayState: paused ? 'paused' : 'running',
@@ -382,7 +382,7 @@ function ActionPreview() {
             </span>
           ))}
         </div>
-        <span className="shrink-0 h-9 px-3 rounded-lg bg-[#4338CA] text-white text-[12px] font-medium inline-flex items-center">
+        <span className="shrink-0 h-9 px-3 rounded-lg bg-[#09090B] text-white text-[12px] font-medium inline-flex items-center">
           Approve dispatch
         </span>
       </div>
@@ -631,7 +631,7 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
           <Container>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div className="max-w-[460px]">
-                <div className="text-[13px] font-medium text-[#4338CA] mb-3">View</div>
+                <div className="text-[13px] font-medium text-[#09090B] mb-3">View</div>
                 <h2 id="view-heading" className="landing-h2 landing-display">
                   {t('landingViewTitle')}
                 </h2>
@@ -641,7 +641,7 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                 <button
                   type="button"
                   onClick={scrollHow}
-                  className="landing-focus mt-6 inline-flex items-center gap-1.5 min-h-11 text-[14px] font-medium text-[#09090B] hover:text-[#4338CA] transition"
+                  className="landing-focus mt-6 inline-flex items-center gap-1.5 min-h-11 text-[14px] font-medium text-[#09090B] hover:text-[#09090B] transition"
                 >
                   Learn more <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                 </button>
@@ -659,7 +659,7 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                 <ActionPreview />
               </div>
               <div className="order-1 lg:order-2 max-w-[460px] lg:justify-self-end">
-                <div className="text-[13px] font-medium text-[#4338CA] mb-3">Action</div>
+                <div className="text-[13px] font-medium text-[#09090B] mb-3">Action</div>
                 <h2 id="action-heading" className="landing-h2 landing-display">
                   {t('landingActionTitle')}
                 </h2>
@@ -669,7 +669,7 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
                 <button
                   type="button"
                   onClick={() => onDocs?.()}
-                  className="landing-focus mt-6 inline-flex items-center gap-1.5 min-h-11 text-[14px] font-medium text-[#09090B] hover:text-[#4338CA] transition"
+                  className="landing-focus mt-6 inline-flex items-center gap-1.5 min-h-11 text-[14px] font-medium text-[#09090B] hover:text-[#09090B] transition"
                 >
                   Learn more <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                 </button>
@@ -685,15 +685,15 @@ export default function Landing({ onEnter, onAuthenticated, onCitizenPortal, onD
               <span className="text-[13px] font-medium text-[#52525B] shrink-0">Live sources</span>
               <ul className="flex flex-wrap gap-x-6 gap-y-2 text-[14px] text-[#3F3F46]">
                 <li className="inline-flex items-center gap-2">
-                  <Radio className="w-4 h-4 text-[#4338CA]" strokeWidth={1.5} />
+                  <Radio className="w-4 h-4 text-[#09090B]" strokeWidth={1.5} />
                   CAP / SACHET alerts
                 </li>
                 <li className="inline-flex items-center gap-2">
-                  <Wind className="w-4 h-4 text-[#4338CA]" strokeWidth={1.5} />
+                  <Wind className="w-4 h-4 text-[#09090B]" strokeWidth={1.5} />
                   Windy / Doppler radar
                 </li>
                 <li className="inline-flex items-center gap-2">
-                  <Database className="w-4 h-4 text-[#4338CA]" strokeWidth={1.5} />
+                  <Database className="w-4 h-4 text-[#09090B]" strokeWidth={1.5} />
                   Public weather feeds
                 </li>
               </ul>

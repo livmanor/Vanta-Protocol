@@ -214,17 +214,17 @@ export default function AgentPanel({
             <div
               key={id}
               className={`bg-white border rounded-[6px] p-4 flex flex-col gap-3 transition ${
-                active ? 'border-[#4338CA] ring-1 ring-[#4338CA]/20' : 'border-[#E2E8F0]'
+                active ? 'border-[#09090B] ring-1 ring-[#09090B]/20' : 'border-[#E2E8F0]'
               }`}
             >
               <button type="button" onClick={() => setSelected(id)} className="text-left flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-[#4338CA]" strokeWidth={1.5} />
+                    <Icon className="w-4 h-4 text-[#09090B]" strokeWidth={1.5} />
                     <span className="font-semibold text-[#0F172A]">{item.title[langIndex]}</span>
                   </div>
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-[4px] ${
-                    state === 'running' ? 'bg-[#EEF2FF] text-[#4338CA]' :
+                    state === 'running' ? 'bg-[#F4F4F5] text-[#09090B]' :
                     state === 'done' ? 'bg-[#DCFCE7] text-[#16A34A]' :
                     state === 'error' ? 'bg-[#FEE2E2] text-[#DC2626]' :
                     'bg-[#F1F5F9] text-[#64748B]'
@@ -346,7 +346,7 @@ export default function AgentPanel({
                             </span>
                           </div>
                           <p className="text-[14px] text-[#475569]">{item.evidence}</p>
-                          <div className="text-[12px] text-[#4338CA]">
+                          <div className="text-[12px] text-[#09090B]">
                             Officer check: {item.officer_check}
                           </div>
                         </div>
@@ -365,7 +365,7 @@ export default function AgentPanel({
                         <div key={`${item.zone_id}-${idx}`} className="py-2.5 flex flex-col gap-1">
                           <span className="font-medium text-[#0F172A] text-[14px]">{zoneName(item.zone_id)}</span>
                           <p className="text-[14px] text-[#475569]">{item.observation}</p>
-                          <div className="text-[12px] text-[#4338CA]">
+                          <div className="text-[12px] text-[#09090B]">
                             Recommended check: {item.officer_check}
                           </div>
                         </div>
@@ -394,7 +394,7 @@ export default function AgentPanel({
                         {item.zone_id ? zoneName(item.zone_id) : 'Citywide'} · {item.action}
                       </span>
                       <p className="text-[14px] text-[#475569]">{item.reason}</p>
-                      <div className="text-[12px] text-[#4338CA]">
+                      <div className="text-[12px] text-[#09090B]">
                         Officer verification: {item.officer_check}
                       </div>
                     </div>
@@ -403,7 +403,7 @@ export default function AgentPanel({
 
                 <button
                   onClick={onReviewPreparation}
-                  className="self-start text-[14px] font-medium text-[#4338CA] hover:underline flex items-center gap-1.5"
+                  className="self-start text-[14px] font-medium text-[#09090B] hover:underline flex items-center gap-1.5"
                 >
                   <span>Review prepositioning recommendations</span>
                   <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
@@ -433,7 +433,7 @@ export default function AgentPanel({
                           <li key={i}>{step}</li>
                         ))}
                       </ul>
-                      <div className="text-[12px] text-[#4338CA] pt-1">
+                      <div className="text-[12px] text-[#09090B] pt-1">
                         Officer verification: {item.officer_check}
                       </div>
                     </div>

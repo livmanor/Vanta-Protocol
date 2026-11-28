@@ -14,9 +14,9 @@ export default {
         secondary: '#475569',
         tertiary: '#64748B',
         brand: {
-          DEFAULT: '#4338CA',
-          hover: '#3730A3',
-          subtle: '#EEF2FF',
+          DEFAULT: '#09090B',
+          hover: '#27272A',
+          subtle: '#F4F4F5',
         },
         risk: {
           green: '#16A34A',

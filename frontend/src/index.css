@@ -6,7 +6,7 @@
    Vanta Protocol – Government-Grade Control-Room Design System
    Linear / Stripe / Palantir Gotham Aesthetic
    Neutral: #F8FAFC · Surfaces: #FFFFFF · Hairline: #E2E8F0
-   Brand: #4338CA · Radius: 6px · Strict 4px Grid
+   Brand: #09090B · Radius: 6px · Strict 4px Grid
 ═══════════════════════════════════════════════════════ */
 :root {
   --vp-bg:              #F8FAFC;
@@ -17,9 +17,9 @@
   --vp-text-tertiary:   #64748B;
   --vp-placeholder:     #94A3B8;
 
-  --vp-brand:           #4338CA;
-  --vp-brand-hover:     #3730A3;
-  --vp-brand-subtle:    #EEF2FF;
+  --vp-brand:           #09090B;
+  --vp-brand-hover:     #27272A;
+  --vp-brand-subtle:    #F4F4F5;
 
   --vp-green:           #16A34A;
   --vp-green-subtle:    #DCFCE7;
@@ -48,6 +48,7 @@ html, body, #root {
   padding: 0;
   background-color: var(--vp-bg);
   color: var(--vp-text-primary);
+  accent-color: var(--vp-brand);
 }
 
 body {
@@ -100,7 +101,7 @@ button, input, select, textarea {
 }
 .vp-input:focus {
   border-color: var(--vp-brand);
-  box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.15);
+  box-shadow: 0 0 0 2px rgba(9, 9, 11, 0.15);
 }
 .vp-input::placeholder {
   color: var(--vp-placeholder);
@@ -274,7 +275,7 @@ button, input, select, textarea {
   --landing-muted: #52525B;
   --landing-border: #E4E4E7;
   --landing-surface: #FFFFFF;
-  --landing-accent: #4338CA;
+  --landing-accent: #09090B;
   --landing-nav-h: 64px;
   --landing-container: 1200px;
 

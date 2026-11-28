@@ -243,7 +243,7 @@ function GallerySection() {
             type="button"
             onClick={() => setActive(index)}
             className={`text-left rounded-[8px] border overflow-hidden transition ${
-              index === active ? 'border-[#4338CA] ring-2 ring-[#4338CA]/20' : 'border-[#E2E8F0] hover:border-[#CBD5E1]'
+              index === active ? 'border-[#09090B] ring-2 ring-[#09090B]/20' : 'border-[#E2E8F0] hover:border-[#CBD5E1]'
             }`}
           >
             <img src={item.src} alt="" className="w-full h-24 object-cover bg-[#F1F5F9]" />

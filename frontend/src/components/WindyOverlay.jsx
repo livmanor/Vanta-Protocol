@@ -27,7 +27,7 @@ const MODELS = [
 ];
 
 const selectClass =
-  'h-7 max-w-[160px] rounded-[4px] border border-[#E2E8F0] bg-white px-2 text-[12px] text-[#0F172A] focus:outline-none focus:border-[#4338CA]';
+  'h-7 max-w-[160px] rounded-[4px] border border-[#E2E8F0] bg-white px-2 text-[12px] text-[#0F172A] focus:outline-none focus:border-[#09090B]';
 
 export default function WindyOverlay({ compact = false, onExpand = null }) {
   const [selectedOverlay, setSelectedOverlay] = useState('radar');
@@ -91,7 +91,7 @@ export default function WindyOverlay({ compact = false, onExpand = null }) {
                 : 'text-[#64748B] hover:text-[#0F172A]'
             }`}
           >
-            <Icon className={`w-3.5 h-3.5 ${active ? 'text-[#4338CA]' : 'text-[#64748B]'}`} strokeWidth={1.5} />
+            <Icon className={`w-3.5 h-3.5 ${active ? 'text-[#09090B]' : 'text-[#64748B]'}`} strokeWidth={1.5} />
             <span className={compact ? 'hidden sm:inline' : ''}>{label}</span>
           </button>
         );
@@ -132,7 +132,7 @@ export default function WindyOverlay({ compact = false, onExpand = null }) {
           type="checkbox"
           checked={showPressure}
           onChange={(e) => setShowPressure(e.target.checked)}
-          className="rounded border-[#CBD5E1] text-[#4338CA] focus:ring-[#4338CA] w-3.5 h-3.5"
+          className="rounded border-[#CBD5E1] text-[#09090B] focus:ring-[#09090B] w-3.5 h-3.5"
         />
         <span>Isobars</span>
       </label>
@@ -162,7 +162,7 @@ export default function WindyOverlay({ compact = false, onExpand = null }) {
         target="_blank"
         rel="noreferrer"
         title="Open in Windy.com"
-        className="h-7 w-7 rounded-[4px] bg-[#4338CA] text-white hover:bg-[#3730A3] flex items-center justify-center transition"
+        className="h-7 w-7 rounded-[4px] bg-[#09090B] text-white hover:bg-[#27272A] flex items-center justify-center transition"
       >
         <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
       </a>

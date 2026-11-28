@@ -225,13 +225,13 @@ export default function CitizenPortal({ onExit }) {
               <button
                 type="submit"
                 disabled={busy}
-                className="h-11 rounded-[6px] bg-[#4338CA] text-white text-[14px] font-medium disabled:opacity-60"
+                className="h-11 rounded-[6px] bg-[#09090B] text-white text-[14px] font-medium disabled:opacity-60"
               >
                 {busy ? 'Please wait…' : mode === 'register' ? 'Create account' : 'Sign in'}
               </button>
               <button
                 type="button"
-                className="text-[12px] text-[#4338CA] hover:underline"
+                className="text-[12px] text-[#09090B] hover:underline"
                 onClick={() => { setMode(mode === 'register' ? 'login' : 'register'); setError(''); }}
               >
                 {mode === 'register' ? 'Already have an account? Sign in' : 'New here? Create an account'}
@@ -253,7 +253,7 @@ export default function CitizenPortal({ onExit }) {
                       onClick={() => setPhase(item.id)}
                       className={`h-8 px-3 rounded-[6px] text-[12px] font-medium border ${
                         phase === item.id
-                          ? 'bg-[#EEF2FF] border-[#C7D2FE] text-[#3730A3]'
+                          ? 'bg-[#F4F4F5] border-[#E4E4E7] text-[#27272A]'
                           : 'bg-white border-[#E2E8F0] text-[#475569]'
                       }`}
                     >
@@ -276,7 +276,7 @@ export default function CitizenPortal({ onExit }) {
 
                 <div className="flex flex-col gap-2">
                   <label className="h-24 border border-dashed border-[#CBD5E1] rounded-[6px] flex flex-col items-center justify-center gap-1 text-[12px] text-[#475569] cursor-pointer hover:bg-[#F8FAFC]">
-                    <Camera className="w-5 h-5 text-[#4338CA]" />
+                    <Camera className="w-5 h-5 text-[#09090B]" />
                     <span className="inline-flex items-center gap-1"><Upload className="w-3.5 h-3.5" /> Take / choose photo</span>
                     <input
                       type="file"
@@ -296,7 +296,7 @@ export default function CitizenPortal({ onExit }) {
                   onClick={captureLocation}
                   className="h-10 rounded-[6px] border border-[#E2E8F0] text-[13px] font-medium inline-flex items-center justify-center gap-2 hover:bg-[#F8FAFC]"
                 >
-                  <MapPin className="w-4 h-4 text-[#4338CA]" />
+                  <MapPin className="w-4 h-4 text-[#09090B]" />
                   {coords ? `GPS ${coords.lat}, ${coords.lng}` : 'Use my current location'}
                 </button>
                 {coords?.accuracy_m != null && (
@@ -309,7 +309,7 @@ export default function CitizenPortal({ onExit }) {
                 <button
                   type="submit"
                   disabled={busy}
-                  className="h-11 rounded-[6px] bg-[#4338CA] text-white text-[14px] font-medium disabled:opacity-60"
+                  className="h-11 rounded-[6px] bg-[#09090B] text-white text-[14px] font-medium disabled:opacity-60"
                 >
                   {busy ? 'Sending…' : 'Send to watch officers'}
                 </button>
@@ -318,7 +318,7 @@ export default function CitizenPortal({ onExit }) {
               <section className="bg-white border border-[#E2E8F0] rounded-[8px] p-5">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-[14px] font-semibold">Your reports</h2>
-                  <button type="button" onClick={refreshMine} className="text-[12px] text-[#4338CA] inline-flex items-center gap-1">
+                  <button type="button" onClick={refreshMine} className="text-[12px] text-[#09090B] inline-flex items-center gap-1">
                     <RefreshCw className="w-3.5 h-3.5" /> Refresh
                   </button>
                 </div>

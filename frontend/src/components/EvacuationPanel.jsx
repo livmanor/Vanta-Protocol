@@ -8,7 +8,7 @@ export default function EvacuationPanel({ route, onClose, onClearRoute }) {
     <div className="bg-white border border-[#E2E8F0] rounded-[6px] p-4 text-[14px] shadow-sm flex flex-col gap-3">
       <div className="flex items-start justify-between border-b border-[#E2E8F0] pb-2">
         <div className="flex items-center gap-2">
-          <Route className="w-4 h-4 text-[#4338CA]" strokeWidth={1.5} />
+          <Route className="w-4 h-4 text-[#09090B]" strokeWidth={1.5} />
           <span className="font-semibold text-[#0F172A] text-[14px]">Evacuation Corridor</span>
           <span className="text-[12px] text-[#16A34A] font-medium ml-1">OSRM Live</span>
         </div>
@@ -24,7 +24,7 @@ export default function EvacuationPanel({ route, onClose, onClearRoute }) {
         <div className="text-[12px] text-[#64748B]">Origin Hotspot</div>
         <div className="font-medium text-[#0F172A]">{route.zone_name}</div>
         <div className="text-[12px] text-[#64748B] mt-1">Destination Safe Shelter</div>
-        <div className="font-medium text-[#4338CA]">{route.shelter_name}</div>
+        <div className="font-medium text-[#09090B]">{route.shelter_name}</div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 py-2 border-t border-b border-[#E2E8F0] text-[12px]">
