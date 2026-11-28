@@ -49,6 +49,32 @@ _WIND_THRESHOLDS = [
 
 RULE_BASED_VERSION = "none"
 
+# ML advisory thresholds (from threshold table in models/rainfall/metrics.json).
+ML_P_HEAVY_ELEVATED = 0.10
+ML_P_HEAVY_HIGH = 0.30
+
+
+def _imd_floor(mm: float) -> int:
+    """Minimum flood category implied by 24h rainfall alone (IMD classes)."""
+    if mm >= 204.4:
+        return 5
+    if mm >= 115.5:
+        return 4
+    if mm >= 64.5:
+        return 3
+    return 1
+
+
+async def get_ml_p_heavy() -> Optional[float]:
+    """Heavy-rain probability from the trained model, or None if unavailable."""
+    try:
+        from backend.services.ml_model import predict_live
+        res = await predict_live()
+        return None if res is None else float(res["p_heavy"])
+    except Exception as exc:  # never let the advisory signal break scoring
+        logger.warning("ML advisory unavailable: %s", exc)
+        return None
+
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -95,6 +121,7 @@ def score_urban_flood(
     htp_severity: Optional[str] = None,
     weather_status: Optional[str] = None,
     weather_last_updated: Optional[str] = None,
+    ml_p_heavy: Optional[float] = None,
 ) -> Tuple[Optional[int], Optional[float], List[ContributingFactor], List[str]]:
     """Return (category 1-5, raw_score, factors, missing_warnings).
 
@@ -186,8 +213,26 @@ def score_urban_flood(
             note="Context only; no absolute threshold applied for inland city"
         ))
 
+    # 6. Experimental ML signal: P(heavy rain >= 15.6 mm) from the trained
+    # next-day rainfall classifier. Advisory only; it can raise the score by at
+    # most 1.0 and never lowers it. Not a flood probability.
+    if ml_p_heavy is not None:
+        if ml_p_heavy >= ML_P_HEAVY_HIGH:
+            score += 1.0
+        elif ml_p_heavy >= ML_P_HEAVY_ELEVATED:
+            score += 0.5
+        factors.append(ContributingFactor(
+            name="ml_p_heavy_rain", value=round(ml_p_heavy, 3), unit="prob",
+            note="Experimental ML rainfall classifier (heavy rain >= 15.6 mm); not a flood probability",
+        ))
+
     raw_score = round(score, 2)
-    category = min(5, max(1, round(score)))
+    # Round half up (Python's round() is banker's rounding: round(2.5) == 2).
+    category = min(5, max(1, int(score + 0.5)))
+    # An IMD rainfall class is a hard floor: 24h heavy/very heavy/extreme rain
+    # can never be reported below IMD category 3/4/5 because other factors are low.
+    if rainfall_24h is not None:
+        category = max(category, _imd_floor(rainfall_24h))
     return category, raw_score, factors, warnings
 
 
@@ -408,6 +453,7 @@ def score_observations(
     temperature_max_c: Optional[float] = None,
     apparent_temperature_max_c: Optional[float] = None,
     htp_severity: Optional[str] = None,
+    ml_p_heavy: Optional[float] = None,
 ) -> Tuple[Optional[int], Optional[float], RiskExplanation]:
     """Legacy interface used by grid.py and test_risk_score.py.
 
@@ -425,6 +471,7 @@ def score_observations(
         htp_severity=htp_severity,
         weather_status=weather_status,
         weather_last_updated=weather_last_updated,
+        ml_p_heavy=ml_p_heavy,
     )
 
     heat_note = describe_heat(temperature_max_c, apparent_temperature_max_c)
@@ -515,6 +562,7 @@ def calculate_zone_risk(
     temperature_max_c: Optional[float] = None,
     apparent_temperature_max_c: Optional[float] = None,
     htp_severity: Optional[str] = None,
+    ml_p_heavy: Optional[float] = None,
 ) -> Tuple[Optional[int], RiskExplanation]:
     """Legacy wrapper for HTP hotspot scoring (compute_real_risk_zones)."""
     level, _score, explanation = score_observations(
@@ -531,6 +579,7 @@ def calculate_zone_risk(
         temperature_max_c=temperature_max_c,
         apparent_temperature_max_c=apparent_temperature_max_c,
         htp_severity=htp_severity,
+        ml_p_heavy=ml_p_heavy,
     )
     return level, explanation
 
@@ -552,6 +601,7 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
     this explicitly. Wind is excluded from the flood level.
     """
     from backend.data_sources.htp_waterlogging import ensure_catalog, get_hotspot_catalog
+    ml_p_heavy = await get_ml_p_heavy()
     from backend.data_sources.open_meteo import (
         get_real_river_discharge,
         get_real_weather_forecast,
@@ -666,6 +716,7 @@ async def compute_real_risk_zones(include_rule_score: bool = True) -> List[RiskZ
                 temperature_max_c=temperature_max,
                 apparent_temperature_max_c=apparent_max,
                 htp_severity=severity,
+                ml_p_heavy=ml_p_heavy,
             )
             explanation.why_this = (
                 f"HTP {zone_label}"

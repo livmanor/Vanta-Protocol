@@ -79,7 +79,12 @@ def build(d: pd.DataFrame, *, for_inference: bool = False, heavy_mm: float = HEA
     x = d.copy()
     p = x["precipitation_sum"]
 
-    # ---- rainfall lags & rolling sums (all shifted 1 to avoid leakage) ----
+    # ---- rainfall lags & rolling sums ----
+    # rain_0d is the most recent observed day (day t). The target is day t+1,
+    # so day t is known at prediction time and is the strongest short-term signal.
+    # (Earlier versions shifted every feature by 1 and silently dropped it.)
+    x["rain_0d"]  = p
+    x["log1p_rain_0d"] = np.log1p(p.clip(lower=0))
     x["rain_1d"]  = p.shift(1)
     x["rain_3d"]  = p.shift(1).rolling(3,  min_periods=3).sum()
     x["rain_7d"]  = p.shift(1).rolling(7,  min_periods=7).sum()
@@ -135,6 +140,7 @@ def build(d: pd.DataFrame, *, for_inference: bool = False, heavy_mm: float = HEA
 
 
 FEATURES: list[str] = [
+    "rain_0d", "log1p_rain_0d",
     "rain_1d", "rain_3d", "rain_7d", "rain_14d", "rain_30d",
     "log1p_rain_1d", "log1p_rain_7d", "log1p_rain_30d",
     "wet_streak",
@@ -213,9 +219,10 @@ def _make_models():
 
 
 def _persistence_mae(test_df: pd.DataFrame) -> float:
-    mask = test_df["rain_1d"].notna() & test_df["rain_next_mm"].notna()
+    # True persistence: tomorrow's rain = today's rain (rain_0d), not the day before.
+    mask = test_df["rain_0d"].notna() & test_df["rain_next_mm"].notna()
     return float(np.mean(np.abs(test_df.loc[mask, "rain_next_mm"].values
-                                - test_df.loc[mask, "rain_1d"].values)))
+                                - test_df.loc[mask, "rain_0d"].values)))
 
 
 def _climatology_per_doy(train_df: pd.DataFrame, test_df: pd.DataFrame) -> np.ndarray:

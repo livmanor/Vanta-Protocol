@@ -55,9 +55,9 @@ pip install -r requirements.txt`}</CodeBlock>
         <CodeBlock>{`copy .env.example .env`}</CodeBlock>
         <p className="mt-2 text-[13px] text-[#475569]">Set local officer login values:</p>
         <CodeBlock>{`AUTH_REQUIRED=true
-BOOTSTRAP_OFFICER_USERNAME=watch.officer
-BOOTSTRAP_OFFICER_PASSWORD=choose-a-private-password
-BOOTSTRAP_OFFICER_DISPLAY_NAME=Watch Officer`}</CodeBlock>
+BOOTSTRAP_OFFICER_USERNAME=officer
+BOOTSTRAP_OFFICER_PASSWORD=off123
+BOOTSTRAP_OFFICER_DISPLAY_NAME=Officer`}</CodeBlock>
         <p className="mt-2 text-[13px] text-[#475569]">Optional: <code className="vp-mono text-[12px]">GROQ_API_KEY</code>, <code className="vp-mono text-[12px]">GEMINI_API_KEY</code>, <code className="vp-mono text-[12px]">MAP_KEY</code> (FIRMS).</p>
       </section>
 
