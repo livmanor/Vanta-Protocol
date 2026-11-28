@@ -45,6 +45,11 @@ const messages = {
     landingActionDesc: 'Run Predict, Prepare, and Respond, then approve recommendations on the tactical map. Nothing dispatches itself.',
     landingCloseTitle: 'Built for the next storm. Available today.',
     landingCloseSub: 'Hyderabad hotspot pilot · CipherCop 2026 Track 2',
+    landingHowTitle: 'How it works',
+    landingHowSub: 'One control room for live evidence, on-demand agents, and human approval — zero mock data.',
+    landingCtaTitle: 'Ready when the next alert lands.',
+    landingCtaSub: 'Open the Hyderabad pilot control room, or send a citizen field report for officer review.',
+    landingFooterReadable: 'Zero mock data · honest states',
   },
   hi: {
     controlRoom: 'पुलिस नियंत्रण कक्ष', area: 'हैदराबाद · हॉटस्पॉट पायलट',
@@ -90,6 +95,11 @@ const messages = {
     landingActionDesc: 'अनुमान, तैयारी और प्रतिक्रिया चलाएँ, फिर टैक्टिकल मानचित्र पर सिफ़ारिशें स्वीकृत करें। कुछ भी स्वयं प्रेषित नहीं होता।',
     landingCloseTitle: 'अगले तूफ़ान के लिए तैयार। आज उपलब्ध।',
     landingCloseSub: 'हैदराबाद हॉटस्पॉट पायलट · सिफरकॉप 2026 ट्रैक 2',
+    landingHowTitle: 'यह कैसे काम करता है',
+    landingHowSub: 'लाइव साक्ष्य, माँग पर एजेंट और मानवीय मंज़ूरी का एक नियंत्रण कक्ष — कोई नकली डेटा नहीं।',
+    landingCtaTitle: 'अगले अलर्ट के लिए तैयार।',
+    landingCtaSub: 'हैदराबाद पायलट नियंत्रण कक्ष खोलें, या अधिकारी समीक्षा के लिए नागरिक फील्ड रिपोर्ट भेजें।',
+    landingFooterReadable: 'कोई नकली डेटा नहीं · ईमानदार स्थिति',
   },
   te: {
     controlRoom: 'పోలీస్ నియంత్రణ గది', area: 'హైదరాబాద్ · హాట్‌స్పాట్ పైలట్',
@@ -135,6 +145,11 @@ const messages = {
     landingActionDesc: 'అంచనా, సన్నద్ధత, ప్రతిస్పందన నడిపి టాక్టికల్ మ్యాప్‌లో సిఫార్సులను ఆమోదించండి. ఏదీ స్వయంగా పంపబడదు.',
     landingCloseTitle: 'తదుపరి తుఫాను కోసం సిద్ధం. ఈరోజు అందుబాటులో.',
     landingCloseSub: 'హైదరాబాద్ హాట్‌స్పాట్ పైలట్ · సిఫర్‌కాప్ 2026 ట్రాక్ 2',
+    landingHowTitle: 'ఇది ఎలా పనిచేస్తుంది',
+    landingHowSub: 'ప్రత్యక్ష ఆధారాలు, అవసరమైనప్పుడు ఏజెంట్లు, మానవ ఆమోదం — ఒక నియంత్రణ గది. నకిలీ డేటా లేదు.',
+    landingCtaTitle: 'తదుపరి అలర్ట్‌కు సిద్ధం.',
+    landingCtaSub: 'హైదరాబాద్ పైలట్ నియంత్రణ గది తెరవండి, లేదా అధికారి సమీక్ష కోసం పౌర ఫీల్డ్ నివేదిక పంపండి.',
+    landingFooterReadable: 'నకిలీ డేటా లేదు · నిజాయితీ స్థితి',
   },
 };
 
