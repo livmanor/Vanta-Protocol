@@ -30,7 +30,27 @@ export default {
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        landing: [
+          '"IBM Plex Sans"',
+          '"Noto Sans"',
+          '"Noto Sans Devanagari"',
+          '"Noto Sans Telugu"',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
+        display: [
+          'Sora',
+          '"IBM Plex Sans"',
+          '"Noto Sans"',
+          '"Noto Sans Devanagari"',
+          '"Noto Sans Telugu"',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
       },
+
       borderRadius: {
         DEFAULT: '6px',
         sm: '4px',
